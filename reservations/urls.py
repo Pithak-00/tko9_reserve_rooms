@@ -10,7 +10,7 @@ from .views import (
 
 urlpatterns = [
     path("", CalendarView.as_view(), name="home"),
-    # F-06: my reservations list  (/reservations/my/?tab=upcoming or ?tab=past)
+    # F-06: my reservations list
     path("my/", MyReservationListView.as_view(), name="my_reservations"),
     # F-09: reservation create
     path("create/", ReservationCreateView.as_view(), name="reservation_create"),
