@@ -26,7 +26,7 @@ function openDepartmentModal(mode, btn) {
   } else {
     title.textContent  = '所属を編集';
     submit.textContent = '保存する';
-    const pk  = btn.dataset.buildingId;
+    const pk  = btn.dataset.departmentId;
     const tpl = _depUrls.dataset.editUrlTemplate;
     // URL テンプレートの "/0/" を実際の pk で置換
     form.action = tpl.replace('/0/', '/' + pk + '/');
