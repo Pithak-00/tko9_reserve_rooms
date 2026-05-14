@@ -63,13 +63,15 @@ function showConfirm(message, onOk) {
 }
 
 /* ── data-confirm-msg 属性を持つボタンに削除確認を自動登録 ──
+   ※ このスクリプトは </body> 直前で読み込むため、
+      DOMContentLoaded を使わず即時実行する。
    使い方:
      <form id="del-form-1" method="post" action="..." class="logout-form">{% csrf_token %}</form>
      <button type="button"
              data-confirm-msg="本当に削除しますか？"
              data-form="del-form-1">削除</button>
    ─────────────────────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
   document.querySelectorAll('[data-confirm-msg]').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -82,4 +84,4 @@ document.addEventListener('DOMContentLoaded', function () {
       showConfirm(msg, function () { form.submit(); });
     });
   });
-});
+}());
