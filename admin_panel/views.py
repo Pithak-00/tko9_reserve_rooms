@@ -10,12 +10,15 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.core.paginator import Paginator
+from django.db.models import Count
+from django.http import HttpResponseForbidden
 from datetime import date
 
 from reservations.models import Room, Reservation, Building, Facility
 from reservations.forms import ReservationFilterForm
 from accounts.models import Department, User
-from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm
+from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm, FacilityForm, BuildingForm, DepartmentForm
 
 logger = logging.getLogger(__name__)
 
@@ -573,3 +576,74 @@ class AllReservationListView(StaffRequiredMixin, ListView):
             }
         )
         return context
+
+
+# ── F-22 設備管理 ──────────────────────────────────────────
+class FacilityListView(StaffRequiredMixin, View):
+    template_name = 'admin_panel/facility_list.html'
+
+    def get(self, request):
+        q = request.GET.get('q', '')
+        qs = Facility.objects.annotate(room_count=Count('rooms'))
+        if q:
+            qs = qs.filter(name__icontains=q)
+        qs = qs.order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, self.template_name, {
+            'page_obj': page_obj, 'q': q,
+            'total': qs.count(),
+            'toast': request.session.pop('toast', None),
+        })
+
+
+class FacilityCreateView(StaffRequiredMixin, View):
+    def post(self, request):
+        form = FacilityForm(request.POST)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '設備を追加しました'
+            return redirect('facility_list')
+        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
+        qs = Facility.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/facility_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'add_form': form, 'show_add_modal': True,
+        })
+
+
+class FacilityUpdateView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        facility = get_object_or_404(Facility, pk=pk)
+        form = FacilityForm(request.POST, instance=facility)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '設備を更新しました'
+            return redirect('facility_list')
+        qs = Facility.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/facility_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'edit_form': form, 'edit_target': facility, 'show_edit_modal': True,
+        })
+
+
+class FacilityDeleteView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        facility = get_object_or_404(Facility, pk=pk)
+        facility.delete()  # RoomFacility は CASCADE 削除
+        request.session['toast'] = '設備を削除しました'
+        return redirect('facility_list')
+
+
+# ── F-23 建物管理 ─ BuildingXxxView も同パターン ─────────
+# ── F-24 所属管理 ─ DepartmentXxxView（user_count+room_count annotate）
+class DepartmentDeleteView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        dept = get_object_or_404(Department, pk=pk)
+        dept.delete()  # User.department→SET_NULL / DepartmentRoom→CASCADE
+        request.session['toast'] = '所属を削除しました'
+        return redirect('department_list')
