@@ -12,6 +12,18 @@ from .views import (
     CSVImportView,
     CSVImportExecuteView,
     AllReservationListView,
+    FacilityListView,
+    FacilityCreateView,
+    FacilityUpdateView,
+    FacilityDeleteView,
+    BuildingListView,
+    BuildingCreateView,
+    BuildingUpdateView,
+    BuildingDeleteView,
+    DepartmentListView,
+    DepartmentCreateView,
+    DepartmentUpdateView,
+    DepartmentDeleteView,
 )
 
 urlpatterns = [
@@ -47,4 +59,19 @@ urlpatterns = [
     path(
         "reservations/", AllReservationListView.as_view(), name="all_reservation_list"
     ),
+    # F-22 設備管理
+    path('facilities/',                    FacilityListView.as_view(),   name='facility_list'),
+    path('facilities/create/',             FacilityCreateView.as_view(), name='facility_create'),
+    path('facilities/<int:pk>/edit/',      FacilityUpdateView.as_view(), name='facility_edit'),
+    path('facilities/<int:pk>/delete/',    FacilityDeleteView.as_view(), name='facility_delete'),
+    # F-23 建物管理
+    path('buildings/',                     BuildingListView.as_view(),   name='building_list'),
+    path('buildings/create/',              BuildingCreateView.as_view(), name='building_create'),
+    path('buildings/<int:pk>/edit/',       BuildingUpdateView.as_view(), name='building_edit'),
+    path('buildings/<int:pk>/delete/',     BuildingDeleteView.as_view(), name='building_delete'),
+    # F-24 所属管理
+    path('departments/',                   DepartmentListView.as_view(),   name='department_list'),
+    path('departments/create/',            DepartmentCreateView.as_view(), name='department_create'),
+    path('departments/<int:pk>/edit/',     DepartmentUpdateView.as_view(), name='department_edit'),
+    path('departments/<int:pk>/delete/',   DepartmentDeleteView.as_view(), name='department_delete'),
 ]
