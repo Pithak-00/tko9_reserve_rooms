@@ -1,0 +1,154 @@
+{% block content %}
+<div class="admin-container">
+  <!-- ページヘッダー -->
+  <div class="admin-header">
+    <h1 class="admin-title">⚙ 設備管理</h1>
+  </div>
+
+  <!-- ツールバー -->
+  <div class="admin-toolbar">
+    <button class="btn btn-primary" onclick="openModal('add-modal')">
+      ＋ 新規追加
+    </button>
+    <form method="get" class="search-form">
+      <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="設備名称で検索"
+        class="form-control"
+      />
+      <button type="submit" class="btn btn-secondary">検索</button>
+    </form>
+  </div>
+  <p class="count-badge">全 {{ total }} 件</p>
+
+  <!-- テーブル（SP横スクロール対応） -->
+  <div class="table-scroll">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>No.</th>
+          <th>設備名称</th>
+          <th>紐づく会議室数</th>
+          <th>作成日時</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for facility in page_obj %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ facility.name }}</td>
+          <td>{{ facility.room_count }} 室</td>
+          <td>{{ facility.created_at|date:'Y/m/d' }}</td>
+          <td>
+            <button
+              class="btn btn-sm btn-primary"
+              onclick='openEditModal({{ facility.pk }}, "{{ facility.name|escapejs }}")'
+            >
+              編集
+            </button>
+            <form
+              id="del-form-{{ facility.pk }}"
+              method="post"
+              action='{% url "facility_delete" facility.pk %}'
+              style="display: none"
+            >
+              {% csrf_token %}
+            </form>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger"
+              data-confirm-msg="「{{ facility.name|escapejs }}」を削除すると、紐づく会議室（{{ facility.room_count }}室）の設備情報からも除去されます。削除しますか？"
+              data-form="del-form-{{ facility.pk }}"
+            >
+              削除
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 新規追加モーダル -->
+  <div
+    id="add-modal"
+    class="modal-overlay {% if show_add_modal %}open{% endif %}"
+  >
+    <div class="modal-box">
+      <h2 class="modal-title">設備を追加</h2>
+      <form method="post" action='{% url "facility_create" %}'>
+        {% csrf_token %}
+        <div class="form-group">
+          <label>設備名称（必須）</label>
+          {{ add_form.name }} {% if add_form.name.errors %}
+          <p class="error-text">{{ add_form.name.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeModal('add-modal')"
+          >
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 編集モーダル（各行ごとに生成） -->
+  {% for facility in page_obj %}
+  <div
+    id="edit-modal-{{ facility.pk }}"
+    class="modal-overlay {% if show_edit_modal and edit_target.pk == facility.pk %}open{% endif %}"
+  >
+    <div class="modal-box">
+      <h2 class="modal-title">設備を編集</h2>
+      <form method="post" action='{% url "facility_edit" facility.pk %}'>
+        {% csrf_token %}
+        <div class="form-group">
+          <label>設備名称（必須）</label>
+          {% if show_edit_modal and edit_target.pk == facility.pk %} {{
+          edit_form.name }} {% if edit_form.name.errors %}
+          <p class="error-text">{{ edit_form.name.errors.0 }}</p>
+          {% endif %} {% else %}
+          <input
+            type="text"
+            name="name"
+            value="{{ facility.name }}"
+            class="form-control"
+          />
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick='closeModal("edit-modal-{{ facility.pk }}")'
+          >
+            キャンセル
+          </button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- トースト -->
+  {% if toast %}
+  <div class="toast show">{{ toast }}</div>
+  {% endif %}
+</div>
+
+<script>
+  function openEditModal(pk, name) {
+    document.getElementById('edit-modal-' + pk).classList.add('open');
+  }
+</script>
+{% endblock %}

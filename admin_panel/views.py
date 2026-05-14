@@ -584,7 +584,7 @@ class FacilityListView(StaffRequiredMixin, View):
 
     def get(self, request):
         q = request.GET.get('q', '')
-        qs = Facility.objects.annotate(room_count=Count('rooms'))
+        qs = Facility.objects.annotate(room_count=Count('room'))
         if q:
             qs = qs.filter(name__icontains=q)
         qs = qs.order_by('name')
@@ -605,7 +605,7 @@ class FacilityCreateView(StaffRequiredMixin, View):
             request.session['toast'] = '設備を追加しました'
             return redirect('facility_list')
         # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
-        qs = Facility.objects.annotate(room_count=Count('rooms')).order_by('name')
+        qs = Facility.objects.annotate(room_count=Count('room')).order_by('name')
         paginator = Paginator(qs, 20)
         page_obj = paginator.get_page(request.GET.get('page'))
         return render(request, 'admin_panel/facility_list.html', {
@@ -622,7 +622,7 @@ class FacilityUpdateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '設備を更新しました'
             return redirect('facility_list')
-        qs = Facility.objects.annotate(room_count=Count('rooms')).order_by('name')
+        qs = Facility.objects.annotate(room_count=Count('room')).order_by('name')
         paginator = Paginator(qs, 20)
         page_obj = paginator.get_page(request.GET.get('page'))
         return render(request, 'admin_panel/facility_list.html', {
@@ -640,7 +640,119 @@ class FacilityDeleteView(StaffRequiredMixin, View):
 
 
 # ── F-23 建物管理 ─ BuildingXxxView も同パターン ─────────
+class BuildingListView(StaffRequiredMixin, View):
+    template_name = 'admin_panel/building_list.html'
+
+    def get(self, request):
+        q = request.GET.get('q', '')
+        qs = Building.objects.annotate(room_count=Count('rooms'))
+        if q:
+            qs = qs.filter(name__icontains=q)
+        qs = qs.order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, self.template_name, {
+            'page_obj': page_obj, 'q': q,
+            'total': qs.count(),
+            'toast': request.session.pop('toast', None),
+        })
+
+
+class BuildingCreateView(StaffRequiredMixin, View):
+    def post(self, request):
+        form = BuildingForm(request.POST)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '建物を追加しました'
+            return redirect('building_list')
+        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
+        qs = Building.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/building_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'add_form': form, 'show_add_modal': True,
+        })
+
+
+class BuildingUpdateView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        building = get_object_or_404(Building, pk=pk)
+        form = BuildingForm(request.POST, instance=building)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '建物を更新しました'
+            return redirect('building_list')
+        qs = Building.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/building_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'edit_form': form, 'edit_target': building, 'show_edit_modal': True,
+        })
+
+
+class BuildingDeleteView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        building = get_object_or_404(Building, pk=pk)
+        building.delete()
+        request.session['toast'] = '建物を削除しました'
+        return redirect('building_list')
+
+
 # ── F-24 所属管理 ─ DepartmentXxxView（user_count+room_count annotate）
+class DepartmentListView(StaffRequiredMixin, View):
+    template_name = 'admin_panel/department_list.html'
+
+    def get(self, request):
+        q = request.GET.get('q', '')
+        qs = Department.objects.annotate(room_count=Count('rooms'))
+        if q:
+            qs = qs.filter(name__icontains=q)
+        qs = qs.order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, self.template_name, {
+            'page_obj': page_obj, 'q': q,
+            'total': qs.count(),
+            'toast': request.session.pop('toast', None),
+        })
+
+
+class DepartmentCreateView(StaffRequiredMixin, View):
+    def post(self, request):
+        form = DepartmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '所属を追加しました'
+            return redirect('department_list')
+        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
+        qs = Department.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/department_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'add_form': form, 'show_add_modal': True,
+        })
+
+
+class DepartmentUpdateView(StaffRequiredMixin, View):
+    def post(self, request, pk):
+        department = get_object_or_404(Department, pk=pk)
+        form = DepartmentForm(request.POST, instance=department)
+        if form.is_valid():
+            form.save()
+            request.session['toast'] = '所属を更新しました'
+            return redirect('department_list')
+        qs = Department.objects.annotate(room_count=Count('rooms')).order_by('name')
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+        return render(request, 'admin_panel/department_list.html', {
+            'page_obj': page_obj, 'total': qs.count(),
+            'edit_form': form, 'edit_target': department, 'show_edit_modal': True,
+        })
+
+
 class DepartmentDeleteView(StaffRequiredMixin, View):
     def post(self, request, pk):
         dept = get_object_or_404(Department, pk=pk)
