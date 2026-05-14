@@ -706,7 +706,10 @@ class DepartmentListView(StaffRequiredMixin, View):
 
     def get(self, request):
         q = request.GET.get('q', '')
-        qs = Department.objects.annotate(room_count=Count('room'))
+        qs = Department.objects.annotate(
+            room_count=Count('room', distinct=True),
+            user_count=Count('users', distinct=True),
+        )
         if q:
             qs = qs.filter(name__icontains=q)
         qs = qs.order_by('name')
@@ -727,7 +730,10 @@ class DepartmentCreateView(StaffRequiredMixin, View):
             request.session['toast'] = '所属を追加しました'
             return redirect('department_list')
         # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
-        qs = Department.objects.annotate(room_count=Count('room')).order_by('name')
+        qs = Department.objects.annotate(
+            room_count=Count('room', distinct=True),
+            user_count=Count('users', distinct=True),
+        ).order_by('name')
         paginator = Paginator(qs, 20)
         page_obj = paginator.get_page(request.GET.get('page'))
         return render(request, 'admin_panel/department_list.html', {
@@ -744,7 +750,10 @@ class DepartmentUpdateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '所属を更新しました'
             return redirect('department_list')
-        qs = Department.objects.annotate(room_count=Count('room')).order_by('name')
+        qs = Department.objects.annotate(
+            room_count=Count('room', distinct=True),
+            user_count=Count('users', distinct=True),
+        ).order_by('name')
         paginator = Paginator(qs, 20)
         page_obj = paginator.get_page(request.GET.get('page'))
         return render(request, 'admin_panel/department_list.html', {
