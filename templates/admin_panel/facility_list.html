@@ -1,154 +1,241 @@
-{% block content %}
-<div class="admin-container">
-  <!-- ページヘッダー -->
-  <div class="admin-header">
-    <h1 class="admin-title">⚙ 設備管理</h1>
-  </div>
-
-  <!-- ツールバー -->
-  <div class="admin-toolbar">
-    <button class="btn btn-primary" onclick="openModal('add-modal')">
-      ＋ 新規追加
-    </button>
-    <form method="get" class="search-form">
-      <input
-        type="text"
-        name="q"
-        value="{{ q }}"
-        placeholder="設備名称で検索"
-        class="form-control"
-      />
-      <button type="submit" class="btn btn-secondary">検索</button>
-    </form>
-  </div>
-  <p class="count-badge">全 {{ total }} 件</p>
-
-  <!-- テーブル（SP横スクロール対応） -->
-  <div class="table-scroll">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>No.</th>
-          <th>設備名称</th>
-          <th>紐づく会議室数</th>
-          <th>作成日時</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for facility in page_obj %}
-        <tr>
-          <td>{{ forloop.counter }}</td>
-          <td>{{ facility.name }}</td>
-          <td>{{ facility.room_count }} 室</td>
-          <td>{{ facility.created_at|date:'Y/m/d' }}</td>
-          <td>
-            <button
-              class="btn btn-sm btn-primary"
-              onclick='openEditModal({{ facility.pk }}, "{{ facility.name|escapejs }}")'
-            >
-              編集
-            </button>
-            <form
-              id="del-form-{{ facility.pk }}"
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>設備管理 | 会議室予約システム</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/room_admin.css' %}">
+  </head>
+  <body>
+    <!-- ヘッダー -->
+    <div class="logo between">
+      <div class="header-logo">
+        <a href="/">
+          <img src="{% static 'image/bold-logo.webp' %}" alt="logo">
+        </a>
+        <span>社内会議室予約システム：設備管理</span>
+      </div>
+      <div class="top-links">
+        <a href="/">戻る</a>
+        <span class="sep">｜</span>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit" class="logout-btn">ログアウト</button>
+        </form>
+      </div>
+    </div>
+    <!-- メインコンテナ -->
+    <div class="calendar-container">
+      <!-- ツールバー -->
+      <div class="calendar-toolbar">
+        <div class="toolbar-left">
+          <span class="page-title">設備管理</span>
+        </div>
+        <div class="toolbar-right">
+          <button type="button"
+                  class="btn btn-primary btn-md"
+                  onclick="openFacilityModal('create')">＋ 設備を追加</button>
+        </div>
+      </div>
+      <!-- フラッシュメッセージ -->
+      {% if messages %}
+        <div style="margin-bottom:12px;">
+          {% for message in messages %}
+            {% if message.tags == 'error' %}
+              <div class="flash-error">{{ message }}</div>
+            {% else %}
+              <div class="flash-success">{{ message }}</div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      <!-- 検索フォーム -->
+      <form method="get" action="">
+        <div class="search-bar">
+          <input type="text" name="q" value="{{ q }}" placeholder="設備名称で検索">
+          <button type="submit" class="btn btn-primary btn-sm">検索</button>
+          <a href="{% url 'facility_list' %}" class="btn btn-light btn-sm">クリア</a>
+        </div>
+      </form>
+      <!-- 設備一覧テーブル -->
+      <div class="admin-card">
+        <div class="list-header">
+          全設備 {{ total }}件
+          {% if q %}（「{{ q }}」で絞り込み：{{ page_obj.paginator.count }}件）{% endif %}
+        </div>
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>設備名称</th>
+                <th class="center">紐づく会議室数</th>
+                <th>作成日時</th>
+                <th class="center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for facility in page_obj %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td><strong>{{ facility.name }}</strong></td>
+                  <td class="center">{{ facility.room_count }} 室</td>
+                  <td>{{ facility.created_at|date:"Y/m/d" }}</td>
+                  <td class="center">
+                    <div class="action-group">
+                      <button type="button"
+                              class="btn btn-secondary btn-sm"
+                              onclick="openFacilityModal('edit', this)"
+                              data-facility-id="{{ facility.pk }}"
+                              data-name="{{ facility.name|escapejs }}">編集</button>
+                      <form id="del-form-{{ facility.pk }}"
+                            method="post"
+                            action="{% url 'facility_delete' facility.pk %}"
+                            class="logout-form">
+                        {% csrf_token %}
+                      </form>
+                      <button type="button"
+                              class="btn btn-outline-danger btn-sm"
+                              data-confirm-msg="「{{ facility.name|escapejs }}」を削除すると、紐づく会議室（{{ facility.room_count }}室）の設備情報からも除去されます。削除しますか？"
+                              data-form="del-form-{{ facility.pk }}">削除</button>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr class="empty-row">
+                  <td colspan="5">設備が登録されていません</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ページネーション -->
+      {% if page_obj.has_other_pages %}
+        <div class="pagination">
+          {% if page_obj.has_previous %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}page=1">&lt;&lt;</a>
+            <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}">&lt;</a>
+          {% else %}
+            <span class="disabled">&lt;&lt;</span>
+            <span class="disabled">&lt;</span>
+          {% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+              <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-4" and num < page_obj.number|add:"4" %}
+              <a href="?{% if q %}q={{ q }}&{% endif %}page={{ num }}">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}">&gt;</a>
+            <a href="?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.paginator.num_pages }}">&gt;&gt;</a>
+          {% else %}
+            <span class="disabled">&gt;</span>
+            <span class="disabled">&gt;&gt;</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+    <!-- /.calendar-container -->
+    <!-- ==========================================================
+     設備追加・編集モーダル
+     ========================================================== -->
+    <div class="modal-overlay {% if show_add_modal or show_edit_modal %}open{% endif %}"
+         id="facilityFormModal"
+         onclick="closeFacilityModalOnOverlay(event)">
+      <div class="modal-box modal-box--form">
+        <h5 id="facilityFormTitle">
+          {% if show_edit_modal %}設備を編集{% else %}設備を追加{% endif %}
+        </h5>
+        <form id="facilityForm"
               method="post"
-              action='{% url "facility_delete" facility.pk %}'
-              style="display: none"
-            >
-              {% csrf_token %}
-            </form>
-            <button
-              type="button"
-              class="btn btn-sm btn-danger"
-              data-confirm-msg="「{{ facility.name|escapejs }}」を削除すると、紐づく会議室（{{ facility.room_count }}室）の設備情報からも除去されます。削除しますか？"
-              data-form="del-form-{{ facility.pk }}"
-            >
-              削除
+              action="{% if show_edit_modal %}{% url 'facility_edit' edit_target.pk %}{% else %}{% url 'facility_create' %}{% endif %}"
+              novalidate>
+          {% csrf_token %}
+          {% if show_edit_modal and edit_form.non_field_errors %}
+            <div class="alert-danger" style="margin-bottom:12px;">
+              {% for error in edit_form.non_field_errors %}<p style="margin:0;">{{ error }}</p>{% endfor %}
+            </div>
+          {% elif show_add_modal and add_form.non_field_errors %}
+            <div class="alert-danger" style="margin-bottom:12px;">
+              {% for error in add_form.non_field_errors %}<p style="margin:0;">{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+          <table class="form-table">
+            <tr>
+              <th>設備名称 <span class="required">*</span></th>
+              <td>
+                {% if show_edit_modal %}
+                  {{ edit_form.name }}
+                  {% for e in edit_form.name.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+                {% elif show_add_modal %}
+                  {{ add_form.name }}
+                  {% for e in add_form.name.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+                {% else %}
+                  <input type="text" name="name" id="id_modal_name" class="form-control"
+                         placeholder="設備名称を入力" maxlength="100" autocomplete="off">
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+          <div class="modal-footer" style="margin-top:20px;">
+            <button type="button" class="btn btn-light btn-md" onclick="closeFacilityModal()">キャンセル</button>
+            <button type="submit" id="facilityFormSubmit" class="btn btn-primary btn-md">
+              {% if show_edit_modal %}保存する{% else %}追加{% endif %}
             </button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- 新規追加モーダル -->
-  <div
-    id="add-modal"
-    class="modal-overlay {% if show_add_modal %}open{% endif %}"
-  >
-    <div class="modal-box">
-      <h2 class="modal-title">設備を追加</h2>
-      <form method="post" action='{% url "facility_create" %}'>
-        {% csrf_token %}
-        <div class="form-group">
-          <label>設備名称（必須）</label>
-          {{ add_form.name }} {% if add_form.name.errors %}
-          <p class="error-text">{{ add_form.name.errors.0 }}</p>
-          {% endif %}
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="closeModal('add-modal')"
-          >
-            キャンセル
-          </button>
-          <button type="submit" class="btn btn-primary">保存</button>
-        </div>
-      </form>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+    <!-- JS に渡す URL 定数 -->
+    <div id="js-facility-urls"
+         data-create-url="{% url 'facility_create' %}"
+         data-edit-url-template="{% url 'facility_edit' pk=0 %}"
+         style="display:none"></div>
+    <!-- トースト -->
+    {% if toast %}
+      <div class="toast show">{{ toast }}</div>
+    {% endif %}
+    <script src="{% static 'js/common.js' %}"></script>
+    <script>
+      const _facUrls = document.getElementById('js-facility-urls');
 
-  <!-- 編集モーダル（各行ごとに生成） -->
-  {% for facility in page_obj %}
-  <div
-    id="edit-modal-{{ facility.pk }}"
-    class="modal-overlay {% if show_edit_modal and edit_target.pk == facility.pk %}open{% endif %}"
-  >
-    <div class="modal-box">
-      <h2 class="modal-title">設備を編集</h2>
-      <form method="post" action='{% url "facility_edit" facility.pk %}'>
-        {% csrf_token %}
-        <div class="form-group">
-          <label>設備名称（必須）</label>
-          {% if show_edit_modal and edit_target.pk == facility.pk %} {{
-          edit_form.name }} {% if edit_form.name.errors %}
-          <p class="error-text">{{ edit_form.name.errors.0 }}</p>
-          {% endif %} {% else %}
-          <input
-            type="text"
-            name="name"
-            value="{{ facility.name }}"
-            class="form-control"
-          />
-          {% endif %}
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick='closeModal("edit-modal-{{ facility.pk }}")'
-          >
-            キャンセル
-          </button>
-          <button type="submit" class="btn btn-primary">保存</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  {% endfor %}
+      function openFacilityModal(mode, btn) {
+        const modal     = document.getElementById('facilityFormModal');
+        const title     = document.getElementById('facilityFormTitle');
+        const form      = document.getElementById('facilityForm');
+        const submit    = document.getElementById('facilityFormSubmit');
+        const nameInput = form.querySelector('input[name="name"]');
 
-  <!-- トースト -->
-  {% if toast %}
-  <div class="toast show">{{ toast }}</div>
-  {% endif %}
-</div>
+        if (mode === 'create') {
+          title.textContent  = '設備を追加';
+          submit.textContent = '追加';
+          form.action = _facUrls.dataset.createUrl;
+          if (nameInput) nameInput.value = '';
+        } else {
+          title.textContent  = '設備を編集';
+          submit.textContent = '保存する';
+          const pk  = btn.dataset.facilityId;
+          const tpl = _facUrls.dataset.editUrlTemplate;
+          form.action = tpl.replace('/0/', '/' + pk + '/');
+          if (nameInput) nameInput.value = btn.dataset.name;
+        }
+        modal.classList.add('open');
+        setTimeout(function () { if (nameInput) nameInput.focus(); }, 50);
+      }
 
-<script>
-  function openEditModal(pk, name) {
-    document.getElementById('edit-modal-' + pk).classList.add('open');
-  }
-</script>
-{% endblock %}
+      function closeFacilityModal() {
+        document.getElementById('facilityFormModal').classList.remove('open');
+      }
+
+      function closeFacilityModalOnOverlay(event) {
+        if (event.target === document.getElementById('facilityFormModal')) {
+          closeFacilityModal();
+        }
+      }
+    </script>
+  </body>
+</html>
