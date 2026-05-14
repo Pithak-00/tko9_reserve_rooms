@@ -7,6 +7,7 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/room_admin.css' %}">
+    <link rel="stylesheet" href="{% static 'css/facility_list.css' %}">
   </head>
   <body>
     <!-- ヘッダー -->
@@ -200,42 +201,6 @@
       <div class="toast show">{{ toast }}</div>
     {% endif %}
     <script src="{% static 'js/common.js' %}"></script>
-    <script>
-      const _facUrls = document.getElementById('js-facility-urls');
-
-      function openFacilityModal(mode, btn) {
-        const modal     = document.getElementById('facilityFormModal');
-        const title     = document.getElementById('facilityFormTitle');
-        const form      = document.getElementById('facilityForm');
-        const submit    = document.getElementById('facilityFormSubmit');
-        const nameInput = form.querySelector('input[name="name"]');
-
-        if (mode === 'create') {
-          title.textContent  = '設備を追加';
-          submit.textContent = '追加';
-          form.action = _facUrls.dataset.createUrl;
-          if (nameInput) nameInput.value = '';
-        } else {
-          title.textContent  = '設備を編集';
-          submit.textContent = '保存する';
-          const pk  = btn.dataset.facilityId;
-          const tpl = _facUrls.dataset.editUrlTemplate;
-          form.action = tpl.replace('/0/', '/' + pk + '/');
-          if (nameInput) nameInput.value = btn.dataset.name;
-        }
-        modal.classList.add('open');
-        setTimeout(function () { if (nameInput) nameInput.focus(); }, 50);
-      }
-
-      function closeFacilityModal() {
-        document.getElementById('facilityFormModal').classList.remove('open');
-      }
-
-      function closeFacilityModalOnOverlay(event) {
-        if (event.target === document.getElementById('facilityFormModal')) {
-          closeFacilityModal();
-        }
-      }
-    </script>
+    <script src="{% static 'js/facility_admin.js' %}"></script>
   </body>
 </html>

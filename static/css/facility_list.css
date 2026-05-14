@@ -1,0 +1,148 @@
+/* =====================================================
+   facility_list.css
+   設備管理 専用スタイル
+   共通スタイルは common.css / room_admin.css を参照
+   ===================================================== */
+
+/* ── 検索バー ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.search-bar input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #eef2f7;
+  font-family: "Segoe UI", sans-serif;
+  color: #333;
+  width: 220px;
+}
+
+/* ── ページネーション ── */
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.pagination a,
+.pagination span {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: #3182ce;
+  text-decoration: none;
+}
+
+.pagination span.current {
+  background-color: #3182ce;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pagination a:hover {
+  background-color: #eef2f7;
+}
+
+.pagination .disabled {
+  color: #ccc;
+  pointer-events: none;
+}
+
+/* ── フラッシュメッセージ ── */
+.flash-success {
+  background-color: #eaf7f0;
+  border: 1px solid #6cc3a0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #2a7a50;
+  margin-bottom: 8px;
+}
+
+.flash-error {
+  background-color: #fdf2f2;
+  border: 1px solid #e74c3c;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #c0392b;
+  margin-bottom: 8px;
+}
+
+/* ── SP 横スクロール対応 ── */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── スマートフォン対応（max-width: 767px）── */
+@media (max-width: 767px) {
+  /* ツールバー */
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .toolbar-right .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* 検索バー */
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar input[type="text"] {
+    width: 100%;
+    font-size: 16px; /* iOS Safari 自動ズーム防止 */
+  }
+
+  .search-bar .btn {
+    width: 100%;
+  }
+
+  /* テーブル */
+  .admin-table th,
+  .admin-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* 操作ボタン */
+  .btn-sm {
+    min-height: 44px; /* タッチターゲット最小 44px（Apple HIG） */
+  }
+
+  /* モーダル */
+  .modal-box--form {
+    width: calc(100vw - 32px) !important;
+    padding: 20px 16px 16px;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
