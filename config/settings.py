@@ -135,3 +135,21 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 # ユーザーモデル
 AUTH_USER_MODEL = "accounts.User"
+
+# Google OAuth 2.0
+GOOGLE_CLIENT_ID     = os.environ.get('GOOGLE_CLIENT_ID', '')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', '')
+GOOGLE_REDIRECT_URI  = os.environ.get(
+    'GOOGLE_REDIRECT_URI',
+    'http://localhost:8000/auth/google/callback/'  # 開発用
+)
+GOOGLE_CALENDAR_SCOPES = [
+    'https://www.googleapis.com/auth/calendar.events',
+]
+
+# django-fernet-fields（トークン暗号化）
+FERNET_KEYS = [os.environ.get('FERNET_KEY', '')]
+
+# INSTALLED_APPS 追加（DRF + fernet）
+# 'rest_framework',       # CalendarEventSerializer 用
+# 'fernet_fields',        # トークン暗号化用

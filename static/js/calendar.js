@@ -214,3 +214,63 @@ function buildRRule(pattern, days, endType, endValue) {
   }
   return rule;  // 例: FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10
 }
+
+// 輝度計算ユーティリティ（F-04-R04）
+// 参考: WCAG 2.1 相対輝度 https://www.w3.org/TR/WCAG21/#dfn-relative-luminance
+function getTextColor(hexColor) {
+  // HEX → RGB（0〜255）
+  const r = parseInt(hexColor.slice(1, 3), 16);
+  const g = parseInt(hexColor.slice(3, 5), 16);
+  const b = parseInt(hexColor.slice(5, 7), 16);
+
+  // 線形化（ガンマ補正を除去）
+  const toLinear = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+
+  // 相対輝度 L = 0.2126R + 0.7152G + 0.0722B
+  const L = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+
+  // 閾値 0.179 を境に白 or 黒を返す
+  return L > 0.179 ? '#1A1A2E' : '#FFFFFF';
+}
+
+// 使用例：FullCalendar eventDidMount で適用
+eventDidMount: (info) => {
+  const bgColor = info.event.backgroundColor;
+  info.el.style.color = getTextColor(bgColor);
+  if (!info.event.extendedProps.editable) {
+    info.el.setAttribute('draggable', 'false');
+  }
+},
+
+// Google 同期トグル・連携解除（calendar.js 追記）
+
+// 同期 ON/OFF トグル
+document.getElementById('google-sync-toggle')?.addEventListener('change', function () {
+  fetch('/auth/google/sync-toggle/', {
+    method: 'PATCH',
+    headers: {'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json'},
+    body: JSON.stringify({})
+  })
+  .then(r => r.json())
+  .then(data => {
+    const label = document.getElementById('sync-status-label');
+    if (label) label.textContent = data.sync_enabled ? '同期中' : '一時停止中';
+    showToast(data.sync_enabled ? 'Google 同期を有効にしました' : 'Google 同期を一時停止しました');
+  })
+  .catch(() => showToast('エラーが発生しました', 'error'));
+});
+
+// 連携解除
+document.getElementById('google-disconnect-btn')?.addEventListener('click', function () {
+  showConfirm('Google カレンダーとの連携を解除しますか？\n解除後は新規予約の同期が停止されます。', () => {
+    fetch('/auth/google/disconnect/', {
+      method: 'POST',
+      headers: {'X-CSRFToken': getCsrfToken()}
+    })
+    .then(r => { if (r.ok) location.reload(); })
+    .catch(() => showToast('連携解除に失敗しました', 'error'));
+  });
+});

@@ -1,12 +1,12 @@
 from django.urls import path
 from .views import (
     CalendarView,
-    CalendarEventsAPI,
     ReservationCreateView,
     MyReservationListView,
     ReservationDetailView,
     reservation_cancel,
     ReservationUpdateView,
+    CalendarEventsAPI,
     ReservationMoveView,
     google_oauth_start,
     google_oauth_callback,

@@ -14,9 +14,34 @@ from .forms import ReservationForm
 from accounts.models import Department
 from django.views.generic import DetailView
 
+from dateutil.rrule import rrulestr
+from datetime import timedelta
+
 
 def home(request):
     return HttpResponse("meeting room reservation system")
+
+
+def _generate_recurrence_instances(parent: Reservation, until=None):
+    """親予約の recurrence_rule からインスタンス予約を一括生成"""
+    duration = parent.end_at - parent.start_at
+    rule_str = f'DTSTART:{parent.start_at.strftime("%Y%m%dT%H%M%SZ")}\nRRULE:{parent.recurrence_rule}'
+    rule = rrulestr(rule_str)
+    instances = []
+    for dt in rule:
+        if until and dt.date() > until: break
+        if dt == parent.start_at: continue  # 親自身をスキップ
+        instances.append(Reservation(
+            room=parent.room,
+            user=parent.user,
+            reserved_by=parent.reserved_by,
+            title=parent.title,
+            start_at=dt,
+            end_at=dt + duration,
+            parent_reservation=parent,
+            recurrence_id=dt,
+        ))
+    Reservation.objects.bulk_create(instances)
 
 
 # F-04
@@ -135,8 +160,15 @@ class ReservationCreateView(CreateView):
         return initial
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
-        form.instance.reserved_by = self.request.user.name
+        reservation = form.save(commit=False)
+        reservation.user = self.request.user
+        recurrence_rule = form.cleaned_data.get('recurrence_rule', '')
+        reservation.recurrence_rule = recurrence_rule
+        reservation.save()
+        # 繰り返しインスタンスを一括生成
+        if recurrence_rule:
+            _generate_recurrence_instances(reservation)
+        GoogleSyncService(self.request.user).create_event(reservation)
         return super().form_valid(form)
 
     def get_success_url(self):
