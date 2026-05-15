@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang='ja'>
+  <head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>建物管理 | 会議室予約システム</title>
+    {% load static %}
+    <link rel='stylesheet' href="{% static 'css/common.css' %}">
+    <link rel='stylesheet' href="{% static 'css/room_admin.css' %}">
+    <link rel='stylesheet' href="{% static 'css/admin_panel.css' %}">
+  </head>
+  <body>
+    <!-- ヘッダー -->
+    <div class='logo between'>
+      <div class='header-logo'>
+        <a href='/'><img src="{% static 'image/bold-logo.webp' %}" alt='logo'></a>
+        <span>社内会議室予約システム：建物管理</span>
+      </div>
+      <div class='top-links'>
+        <a href='/'>戻る</a><span class='sep'>｜</span>
+        <form method='post' action="{% url 'logout' %}" class='logout-form'>
+          {% csrf_token %}<button type='submit' class='logout-btn'>ログアウト</button>
+        </form>
+      </div>
+    </div>
+    <!-- メインコンテナ -->
+    <div class='calendar-container'>
+      <!-- ツールバー -->
+      <div class='calendar-toolbar'>
+        <div class='toolbar-left'><span class='page-title'>建物管理</span></div>
+        <div class='toolbar-right'>
+          <button type='button' class='btn btn-primary btn-md'
+                  onclick="openBuildingModal('create')">＋ 建物を追加</button>
+        </div>
+      </div>
+      <!-- フラッシュメッセージ -->
+      {% if messages %}
+        <div style='margin-bottom:12px;'>
+          {% for message in messages %}
+            {% if message.tags == 'error' %}<div class='flash-error'>{{ message }}</div>
+            {% else %}<div class='flash-success'>{{ message }}</div>{% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+      <!-- 検索フォーム -->
+      <form method='get' action=''>
+        <div class='search-bar'>
+          <input type='text' name='q' value='{{ q }}' placeholder='建物名称で検索'>
+          <button type='submit' class='btn btn-primary btn-sm'>検索</button>
+          <a href="{% url 'building_list' %}" class='btn btn-light btn-sm'>クリア</a>
+        </div>
+      </form>
+      <!-- 建物一覧テーブル -->
+      <div class='admin-card'>
+        <div class='list-header'>
+          全建物 {{ total }}件
+          {% if q %}（「{{ q }}」で絞り込み：{{ page_obj.paginator.count }}件）{% endif %}
+        </div>
+        <div class='table-scroll'>
+          <table class='admin-table'>
+            <thead>
+              <tr>
+                <th>No.</th><th>建物名称</th>
+                <th class='center'>紐づく会議室数</th><th>作成日時</th><th class='center'>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for building in page_obj %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td><strong>{{ building.name }}</strong></td>
+                  <td class='center'>{{ building.room_count }} 室</td>
+                  <td>{{ building.created_at|date:'Y/m/d' }}</td>
+                  <td class='center'>
+                    <div class='action-group'>
+                      <button type='button' class='btn btn-secondary btn-sm'
+                              onclick="openBuildingModal('edit', this)"
+                              data-building-id='{{ building.pk }}'
+                              data-name='{{ building.name|escapejs }}'>編集</button>
+                      <form id='del-form-{{ building.pk }}' method='post'
+                            action="{% url 'building_delete' building.pk %}"
+                            class='logout-form'>{% csrf_token %}</form>
+                      <button type='button' class='btn btn-outline-danger btn-sm'
+                              data-confirm-msg='「{{ building.name|escapejs }}」を削除すると、紐づく会議室（{{ building.room_count }}室）の建物情報が空欄（NULL）になります。削除しますか？'
+                              data-form='del-form-{{ building.pk }}'>削除</button>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr class='empty-row'><td colspan='5'>建物が登録されていません</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ページネーション -->
+      {% if page_obj.has_other_pages %}
+        <div class='pagination'>
+          {% if page_obj.has_previous %}
+            <a href='?{% if q %}q={{ q }}&{% endif %}page=1'>&lt;&lt;</a>
+            <a href='?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.previous_page_number }}'>&lt;</a>
+          {% else %}<span class='disabled'>&lt;&lt;</span><span class='disabled'>&lt;</span>{% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}<span class='current'>{{ num }}</span>
+            {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %}
+              <a href='?{% if q %}q={{ q }}&{% endif %}page={{ num }}'>{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+            <a href='?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.next_page_number }}'>&gt;</a>
+            <a href='?{% if q %}q={{ q }}&{% endif %}page={{ page_obj.paginator.num_pages }}'>&gt;&gt;</a>
+          {% else %}<span class='disabled'>&gt;</span><span class='disabled'>&gt;&gt;</span>{% endif %}
+        </div>
+      {% endif %}
+    </div><!-- /.calendar-container -->
+    <!-- 建物追加・編集 共用モーダル -->
+    <div class='modal-overlay {% if show_add_modal or show_edit_modal %}open{% endif %}'
+          id='buildingFormModal' onclick='closeBuildingModalOnOverlay(event)'>
+      <div class='modal-box modal-box--form'>
+        <h5 id='buildingFormTitle'>
+          {% if show_edit_modal %}建物を編集{% else %}建物を追加{% endif %}
+        </h5>
+        <form id='buildingForm' method='post' novalidate
+              action='{% if show_edit_modal %}{% url "building_edit" edit_target.pk %}{% else %}{% url "building_create" %}{% endif %}'>
+          {% csrf_token %}
+          <table class='form-table'>
+            <tr>
+              <th>建物名称 <span class='required'>*</span></th>
+              <td>
+                {% if show_edit_modal %}
+                  {{ edit_form.name }}
+                  {% for e in edit_form.name.errors %}<div class='error-text'>{{ e }}</div>{% endfor %}
+                {% elif show_add_modal %}
+                  {{ add_form.name }}
+                  {% for e in add_form.name.errors %}<div class='error-text'>{{ e }}</div>{% endfor %}
+                {% else %}
+                  <input type='text' name='name' id='id_modal_name' class='form-control'
+                          placeholder='建物名称を入力' maxlength='100' autocomplete='off'>
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+          <div class='modal-footer' style='margin-top:20px;'>
+            <button type='button' class='btn btn-light btn-md'
+                    onclick='closeBuildingModal()'>キャンセル</button>
+            <button type='submit' id='buildingFormSubmit' class='btn btn-primary btn-md'>
+              {% if show_edit_modal %}保存する{% else %}追加{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- JS URL 定数 -->
+    <div id='js-building-urls'
+          data-create-url="{% url 'building_create' %}"
+          data-edit-url-template="{% url 'building_edit' pk=0 %}"
+          style='display:none'></div>
+    {% if toast %}<div class='toast show top-right'>{{ toast }}</div>{% endif %}
+    <script src="{% static 'js/common.js' %}"></script>
+    <script src="{% static 'js/building_admin.js' %}"></script>
+  </body>
+</html>
