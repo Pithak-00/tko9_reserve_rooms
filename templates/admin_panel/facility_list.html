@@ -197,9 +197,7 @@
          data-edit-url-template="{% url 'facility_edit' pk=0 %}"
          style="display:none"></div>
     <!-- トースト -->
-    {% if toast %}
-      <div class="toast show">{{ toast }}</div>
-    {% endif %}
+    {% if toast %}<div class='toast show top-right'>{{ toast }}</div>{% endif %}
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/facility_admin.js' %}"></script>
   </body>

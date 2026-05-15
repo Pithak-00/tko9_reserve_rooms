@@ -159,7 +159,7 @@
           data-create-url="{% url 'department_create' %}"
           data-edit-url-template="{% url 'department_edit' pk=0 %}"
           style='display:none'></div>
-    {% if toast %}<div class='toast show'>{{ toast }}</div>{% endif %}
+    {% if toast %}<div class='toast show top-right'>{{ toast }}</div>{% endif %}
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/department_admin.js' %}"></script>
   </body>
