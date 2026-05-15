@@ -21,130 +21,37 @@ def home(request):
 
 # F-04
 class CalendarView(LoginRequiredMixin, TemplateView):
-    template_name = "reservations/calendar.html"
+    template_name = 'reservations/calendar.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        date_str = self.request.GET.get("date")
+        ctx = super().get_context_data(**kwargs)
+        view  = self.request.GET.get('view', 'week')  # day/week/month
+        date_str = self.request.GET.get('date')
         try:
-            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            target = datetime.strptime(date_str, '%Y-%m-%d').date()
         except (TypeError, ValueError):
-            target_date = date.today()
+            target = date.today()
 
-        departments = Department.objects.all().order_by("name")
+        # 会議室一覧（JSON として埋め込み）
+        rooms = Room.objects.filter(is_active=True).order_by('name')
+        rooms_json = json.dumps([
+            {'id': r.id, 'name': r.name,
+             'color': r.color or '#3182CE',
+             'calendar_url': r.calendar_url}
+            for r in rooms
+        ], ensure_ascii=False)
 
-        user = self.request.user
-        default_filter = str(user.department_id) if user.department_id else "all"
-        filter_value = self.request.GET.get("filter", default_filter)
-
-        rooms = Room.objects.none()
-
-        room_id_str = self.request.GET.get("room_id")
-        room_id = None
-        if room_id_str:
-            try:
-                room_id = int(room_id_str)
-            except (ValueError, TypeError):
-                room_id = None
-
-        if room_id:
-            rooms = Room.objects.filter(id=room_id, is_active=True)
-            if not rooms.exists():
-                rooms = Room.objects.filter(is_active=True).order_by("name")
-            filter_value = "all"
-        else:
-            if filter_value != "all":
-                try:
-                    dept_id = int(filter_value)
-                    rooms = Room.objects.filter(
-                        is_active=True,
-                        departmentroom__department_id=dept_id,
-                    ).order_by("name")
-                except (ValueError, TypeError):
-                    filter_value = "all"
-
-            if filter_value == "all" or not rooms.exists():
-                rooms = Room.objects.filter(is_active=True).order_by("name")
-                filter_value = "all"
-
-        slots = []
-        current = datetime.combine(target_date, datetime.min.time())
-        end_of_day = current.replace(hour=23, minute=30)
-        while current <= end_of_day:
-            slots.append(current.time())
-            current += timedelta(minutes=30)
-
-        reservations = Reservation.objects.filter(
-            start_at__date=target_date,
-            is_cancelled=False,
-        ).select_related("room")
-
-        reservation_map = {}
-        for rsv in reservations:
-            local_start = localtime(rsv.start_at)
-            local_end = localtime(rsv.end_at)
-            start_time = local_start.time()
-            duration_min = int((local_end - local_start).total_seconds() / 60)
-            span = max(1, duration_min // 30)
-            reservation_map[(rsv.room_id, start_time)] = {
-                "reservation": rsv,
-                "span": span,
-            }
-
-        occupied = set()
-        for (room_id, start_time), data in reservation_map.items():
-            span = data["span"]
-            for i, slot in enumerate(slots):
-                if slot == start_time:
-                    for j in range(1, span):
-                        if i + j < len(slots):
-                            occupied.add((room_id, slots[i + j]))
-                    break
-
-        grid = []
-        for slot in slots:
-            cells = []
-            for room in rooms:
-                if (room.id, slot) in occupied:
-                    cells.append(
-                        {"room": room, "reservation": None, "span": 1, "skip": True}
-                    )
-                else:
-                    data = reservation_map.get((room.id, slot))
-                    if data:
-                        cells.append(
-                            {
-                                "room": room,
-                                "reservation": data["reservation"],
-                                "span": data["span"],
-                                "skip": False,
-                            }
-                        )
-                    else:
-                        cells.append(
-                            {
-                                "room": room,
-                                "reservation": None,
-                                "span": 1,
-                                "skip": False,
-                            }
-                        )
-            grid.append({"slot": slot, "cells": cells})
-
-        context.update(
-            {
-                "target_date": target_date,
-                "prev_date": target_date - timedelta(days=1),
-                "next_date": target_date + timedelta(days=1),
-                "rooms": rooms,
-                "grid": grid,
-                "today": date.today(),
-                "filter_value": filter_value,
-                "departments": departments,
-            }
-        )
-        return context
+        ctx.update({
+            'view': view,
+            'target_date': target.isoformat(),
+            'rooms_json': rooms_json,
+            'fc_initial_view': {
+                'day': 'timeGridDay',
+                'week': 'timeGridWeek',
+                'month': 'dayGridMonth',
+            }.get(view, 'timeGridWeek'),
+        })
+        return ctx
 
 
 # F-06
@@ -270,3 +177,81 @@ def reservation_cancel(request, pk):
     reservation.save()
 
     return redirect("calendar")
+
+
+class CalendarEventsAPI(LoginRequiredMixin, View):
+    def get(self, request):
+        start_str = request.GET.get('start')
+        end_str   = request.GET.get('end')
+        room_ids_str = request.GET.get('room_ids', '')
+
+        try:
+            start = datetime.fromisoformat(start_str)
+            end   = datetime.fromisoformat(end_str)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'invalid params'}, status=400)
+
+        qs = Reservation.objects.filter(
+            start_at__lt=end, end_at__gt=start,
+            is_cancelled=False
+        ).select_related('room', 'user')
+
+        if room_ids_str:
+            ids = [int(x) for x in room_ids_str.split(',') if x.strip().isdigit()]
+            qs = qs.filter(room_id__in=ids)
+
+        events = []
+        for res in qs:
+            color = res.room.color or '#3182CE'
+            events.append({
+                'id': res.id,
+                'title': res.title,
+                'start': localtime(res.start_at).isoformat(),
+                'end':   localtime(res.end_at).isoformat(),
+                'room_id': res.room_id,
+                'room_name': res.room.name,
+                'color': color,
+                'reserved_by': res.reserved_by,
+                'is_owner': res.user == request.user,
+                'editable': res.user == request.user or request.user.is_staff,
+            })
+        return JsonResponse(events, safe=False)
+    
+
+class ReservationMoveView(LoginRequiredMixin, View):
+    def patch(self, request, pk):
+        reservation = get_object_or_404(Reservation, pk=pk, is_cancelled=False)
+
+        # 権限チェック
+        if reservation.user != request.user and not request.user.is_staff:
+            return JsonResponse({'error': '操作権限がありません'}, status=403)
+
+        data = json.loads(request.body)
+        start_at = datetime.fromisoformat(data['start_at'])
+        end_at   = datetime.fromisoformat(data['end_at'])
+        room_id  = data.get('room_id', reservation.room_id)
+
+        # 重複チェック（自分自身を除く）
+        conflict = Reservation.objects.filter(
+            room_id=room_id,
+            start_at__lt=end_at,
+            end_at__gt=start_at,
+            is_cancelled=False,
+        ).exclude(pk=pk).exists()
+
+        if conflict:
+            return JsonResponse({'error': '競合する予約が存在します'}, status=400)
+
+        reservation.start_at = start_at
+        reservation.end_at   = end_at
+        reservation.room_id  = room_id
+        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'updated_at'])
+
+        # Google カレンダー同期
+        try:
+            GoogleSyncService(request.user).update_event(reservation)
+        except Exception as e:
+            logger.warning(f'Google sync failed: {e}')
+
+        color = reservation.room.color or '#3182CE'
+        return JsonResponse({'id': reservation.id, 'color': color}, status=200)
