@@ -30,6 +30,6 @@ urlpatterns = [
     path('<int:pk>/move/', ReservationMoveView.as_view(), name='reservation_move'),
     path('auth/google/', google_oauth_start, name='google_oauth_start'),
     path('auth/google/callback/', google_oauth_callback, name='google_oauth_callback'),
-    path('auth/google/disconnect/', google_oauth_disconnect, name='google_oauth_disconnect'),
-    path('auth/google/sync-toggle/', google_sync_toggle, name='google_sync_toggle'),
+    path('auth/google/disconnect/', google_oauth_disconnect.as_view(), name='google_oauth_disconnect'),
+    path('auth/google/sync-toggle/', google_sync_toggle.as_view(), name='google_sync_toggle'),
 ]

@@ -93,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     },
   });
+  window.calendar = calendar;
   calendar.render();
 });
 
@@ -274,3 +275,27 @@ document.getElementById('google-disconnect-btn')?.addEventListener('click', func
     .catch(() => showToast('連携解除に失敗しました', 'error'));
   });
 });
+
+/* ===== F-04 追加ユーティリティ ===== */
+
+// 全会議室 ID 一覧（data-rooms から取得）
+function getRoomIds() {
+  const el = document.getElementById('fullcalendar');
+  if (!el) return [];
+  const rooms = JSON.parse(el.dataset.rooms || '[]');
+  return rooms.map(r => r.id);
+}
+
+// 月次ビューで日付クリック → 日次ビューへ遷移
+function handleDateClick(info) {
+  const d = info.dateStr;  // 'YYYY-MM-DD'
+  location.href = `?view=day&date=${d}`;
+}
+
+// 空きスロット選択 → 予約作成画面へ遷移
+function handleSelect(info) {
+  const start = info.startStr.slice(0, 16);  // 'YYYY-MM-DDTHH:MM'
+  const end   = info.endStr.slice(0, 16);
+  // 既存の予約作成 URL に日時・会議室を渡す
+  location.href = `/reservations/create/?date=${start.slice(0,10)}&time=${start.slice(11)}&end_time=${end.slice(11)}`;
+}

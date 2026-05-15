@@ -85,3 +85,48 @@ function showConfirm(message, onOk) {
     });
   });
 }());
+
+/* ===== カレンダー共通ユーティリティ（F-04 追加分） ===== */
+
+// CSRF トークン取得
+function getCsrfToken() {
+  return document.cookie.split(';')
+    .map(c => c.trim()).find(c => c.startsWith('csrftoken='))
+    ?.split('=')[1] ?? '';
+}
+
+// 成功・エラートースト
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast show top-right';
+  t.style.backgroundColor = type === 'error' ? '#c0392b' : '#27ae60';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 500); }, 3000);
+}
+
+// 「元に戻す」付きトースト（5秒）
+function showUndoToast(msg, onUndo) {
+  const t = document.createElement('div');
+  t.className = 'toast show top-right';
+  t.style.backgroundColor = '#2563eb';
+  t.innerHTML = `${msg} <button style='margin-left:12px;background:none;border:1px solid #fff;
+    color:#fff;cursor:pointer;border-radius:4px;padding:2px 8px;'>元に戻す</button>`;
+  document.body.appendChild(t);
+  const btn = t.querySelector('button');
+  let done = false;
+  btn.addEventListener('click', () => { if (!done) { done = true; onUndo(); t.remove(); } });
+  setTimeout(() => { if (!done) { t.classList.add('hide'); setTimeout(() => t.remove(), 500); } }, 5000);
+}
+
+// 日付フォーマット（例：5月14日(水) 10:00）
+function formatDate(dt) {
+  const days = ['日','月','火','水','木','金','土'];
+  return `${dt.getMonth()+1}月${dt.getDate()}日(${days[dt.getDay()]})`;
+}
+
+// 時刻フォーマット（例：10:00）
+function formatTime(dt) {
+  if (!dt) return '';
+  return dt.toTimeString().slice(0, 5);
+}

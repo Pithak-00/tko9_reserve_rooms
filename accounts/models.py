@@ -6,6 +6,9 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 
+from config import settings
+from django.conf import settings as django_settings
+
 
 class Department(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -150,7 +153,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class UserGoogleToken(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+        django_settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='google_token',
         verbose_name='ユーザー'

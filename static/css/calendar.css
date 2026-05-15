@@ -327,3 +327,46 @@
     display:block
   }	
 }
+
+/* === ビュー切り替えタブ === */
+.view-tabs { display: flex; gap: 4px; }
+.view-tab {
+  padding: 4px 14px; border: 1px solid #CBD5E0; border-radius: 4px;
+  background: #fff; cursor: pointer; font-size: 13px;
+}
+.view-tab.active, .view-tab:hover { background: #2E75B6; color: #fff; border-color: #2E75B6; }
+
+/* === 会議室凡例バー === */
+.room-legend { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 12px; font-size: 12px; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* === サイドバー === */
+.sidebar-header { padding: 8px 12px; font-weight: bold; font-size: 13px;
+                  border-bottom: 1px solid #E2E8F0; }
+.room-label {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; font-size: 13px; cursor: pointer;
+}
+.room-label:hover { background: #EBF5FB; }
+
+/* === ポップオーバー === */
+.popover-title {
+  padding: 10px 14px; color: #fff; font-weight: bold;
+  border-radius: 8px 8px 0 0; font-size: 14px;
+}
+.popover-body { padding: 10px 14px; font-size: 13px; }
+.popover-actions {
+  padding: 8px 14px; display: flex; gap: 6px;
+  border-top: 1px solid #E2E8F0;
+}
+
+/* === FullCalendar 上書き === */
+.fc { height: 100% !important; }
+.fc-event { cursor: pointer; }
+
+/* === SP 対応（追記分）=== */
+@media (max-width: 767px) {
+  .view-tab { padding: 4px 8px; font-size: 11px; }
+  .room-legend { display: none; }  /* SP では凡例非表示 */
+}
