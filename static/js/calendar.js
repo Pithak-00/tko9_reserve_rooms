@@ -148,12 +148,27 @@ function handleEventClick(info) {
   po.querySelector('[data-field="reserver"]').textContent = ep.reserved_by;
 
   // 権限に応じてボタン表示
-  const editBtn   = po.querySelector('.btn-edit');
-  const cancelBtn = po.querySelector('.btn-cancel');
+  const editBtn    = po.querySelector('.btn-edit');
+  const cancelForm = po.querySelector('#popover-cancel-form');
+  const cancelBtn  = po.querySelector('.btn-cancel');
+  const detailBtn  = po.querySelector('.btn-detail');
+
   editBtn.hidden   = !ep.editable;
-  cancelBtn.hidden = !ep.editable;
-  editBtn.href   = `/reservations/${ev.id}/edit/`;
-  cancelBtn.href = `/reservations/${ev.id}/cancel/`;
+  cancelForm.hidden = !ep.editable;
+  editBtn.href     = `/reservations/${ev.id}/edit/`;
+  detailBtn.href   = `/reservations/${ev.id}/`;
+
+  // キャンセルフォーム：action をセットして onsubmit で確認ダイアログ
+  cancelForm.action   = `/reservations/${ev.id}/cancel/`;
+  cancelForm.onsubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const datetime = `${formatDate(ev.start)} ${formatTime(ev.start)}〜${formatTime(ev.end)}`;
+    showConfirm(
+      `「${ev.title}（${datetime}）」をキャンセルしますか？\nこの操作は取り消せません`,
+      () => { cancelForm.submit(); }
+    );
+  };
 
   // 位置を調整して表示
   po.style.left = `${info.jsEvent.pageX + 10}px`;

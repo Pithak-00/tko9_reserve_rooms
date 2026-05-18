@@ -121,8 +121,11 @@
     </div>
     <div class="popover-actions">
       <a class="btn btn-primary btn-sm btn-edit" href="#">編集</a>
-      <a class="btn btn-danger  btn-sm btn-cancel" href="#">キャンセル</a>
-      <a class="btn btn-light   btn-sm btn-detail" href="#">詳細を見る</a>
+      <form id="popover-cancel-form" method="post" action="#" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm btn-cancel">キャンセル</button>
+      </form>
+      <a class="btn btn-light btn-sm btn-detail" href="#">詳細を見る</a>
     </div>
   </div>
 
