@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
     eventResize: handleEventDrop,  // 同ロジック
     dateClick: handleDateClick,
     select: handleSelect,
+    datesSet: handleDatesSet,
     eventDidMount: (info) => {
       // is_owner=false の場合は DnD を無効化
       if (!info.event.extendedProps.editable) {
@@ -299,6 +300,38 @@ function getRoomIds() {
   if (!el) return [];
   const rooms = JSON.parse(el.dataset.rooms || '[]');
   return rooms.map(r => r.id);
+}
+
+// ツールバータイトル更新（ビュー変更・日付移動のたびに呼ばれる）
+function handleDatesSet(info) {
+  const view  = info.view.type;
+  const start = info.start;                        // 表示開始日（グリッド上の最初のセル）
+  const end   = new Date(info.end.getTime() - 1); // 表示終了日（exclusive を inclusive に）
+
+  // 月表示では currentStart を使う。
+  // info.start はグリッド先頭（前月末の日付になる場合がある）のため、
+  // currentStart（当月1日）を使うことで正しい年月を取得できる。
+  const cur = info.view.currentStart;
+
+  // M月D日 形式
+  const fmt = (dt) => `${dt.getMonth() + 1}月${dt.getDate()}日`;
+
+  let title = '';
+  if (view === 'timeGridDay') {
+    // 日表示：「2026年5月18日」
+    title = `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日`;
+  } else if (view === 'timeGridWeek') {
+    // 週表示：「2026年 5月18日 - 5月24日」
+    title = `${start.getFullYear()}年 ${fmt(start)} - ${fmt(end)}`;
+  } else if (view === 'dayGridMonth') {
+    // 月表示：「2026年5月」（currentStart で当月を正確に取得）
+    title = `${cur.getFullYear()}年${cur.getMonth() + 1}月`;
+  } else {
+    title = info.view.title;
+  }
+
+  const calTitle = document.getElementById('calTitle');
+  if (calTitle) calTitle.textContent = title;
 }
 
 // 月次ビューで日付クリック → 日次ビューへ遷移
