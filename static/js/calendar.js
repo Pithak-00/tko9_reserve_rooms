@@ -134,8 +134,14 @@ function handleEventDrop(info) {
   });
 }
 
+// 月ビューでは eventClick と dateClick が同時発火するため、
+// eventClick が先に走ったことをフラグで記録して dateClick 側でガードする
+let _eventJustClicked = false;
+
 // eventClick コールバック — ポップオーバー表示
 function handleEventClick(info) {
+  _eventJustClicked = true;
+  setTimeout(() => { _eventJustClicked = false; }, 0);
   const ev = info.event;
   const ep = ev.extendedProps;
   const po = document.querySelector('.reservation-popover');
@@ -335,9 +341,11 @@ function handleDatesSet(info) {
 }
 
 // 月次ビューで日付クリック → 日次ビューへ遷移
+// ※ イベントブロッククリック時は _eventJustClicked フラグでスキップ
 function handleDateClick(info) {
-  const d = info.dateStr;  // 'YYYY-MM-DD'
-  location.href = `?view=day&date=${d}`;
+  if (_eventJustClicked) return;                    // イベントクリックと同時発火を無視
+  if (info.view.type !== 'dayGridMonth') return;    // 月ビュー以外では何もしない
+  location.href = `?view=day&date=${info.dateStr}`;
 }
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
