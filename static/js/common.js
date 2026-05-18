@@ -26,10 +26,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /**
  * カスタム確認ダイアログを表示する
- * @param {string}   message - ダイアログに表示するメッセージ
- * @param {Function} onOk    - OK ボタン押下時に呼ばれるコールバック
+ * @param {string}   message          - ダイアログに表示するメッセージ
+ * @param {Function} onOk             - OK ボタン押下時に呼ばれるコールバック
+ * @param {Function} [onCancel]       - キャンセル時に呼ばれるコールバック（省略可）
+ * @param {string}   [okLabel='確認'] - OK ボタンのラベル（省略可）
  */
-function showConfirm(message, onOk) {
+function showConfirm(message, onOk, onCancel, okLabel) {
+  const btnLabel = okLabel || '確認';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '9999';
@@ -40,25 +43,27 @@ function showConfirm(message, onOk) {
       "</p>" +
       "<div class='modal-footer'>" +
         "<button id='_cfm_cancel' class='btn btn-light btn-md'>キャンセル</button>" +
-        "<button id='_cfm_ok'     class='btn btn-danger btn-md'>削除する</button>" +
+        "<button id='_cfm_ok'     class='btn btn-danger btn-md'>" + btnLabel + "</button>" +
       "</div>" +
     "</div>";
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
 
-  function close() {
+  function close(cancelled) {
     document.body.removeChild(overlay);
     document.body.style.overflow = '';
+    if (cancelled && typeof onCancel === 'function') onCancel();
   }
 
   overlay.querySelector('#_cfm_ok').addEventListener('click', function () {
-    close();
+    document.body.removeChild(overlay);
+    document.body.style.overflow = '';
     onOk();
   });
-  overlay.querySelector('#_cfm_cancel').addEventListener('click', close);
+  overlay.querySelector('#_cfm_cancel').addEventListener('click', function () { close(true); });
   overlay.addEventListener('click', function (e) {
-    if (e.target === overlay) close();
+    if (e.target === overlay) close(true);
   });
 }
 

@@ -103,35 +103,34 @@ function handleEventDrop(info) {
   const res = info.event;
   const newStart = res.start.toISOString();
   const newEnd   = res.end   ? res.end.toISOString() : null;
-  const msg = `${formatDate(res.start)} に移動しますか？`;
+  const msg = `${formatDate(res.start)} ${formatTime(res.start)}〜${formatTime(res.end)}\nに変更しますか？`;
 
-  showConfirm(msg, () => {  // 確認 OK
-    fetch(`/reservations/${res.id}/move/`, {
-      method: 'PATCH',
-      headers: {'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()},
-      body: JSON.stringify({
-        start_at: newStart, end_at: newEnd,
-        room_id: res.extendedProps.room_id
+  showConfirm(
+    msg,
+    () => {  // OK：API 呼び出し
+      fetch(`/reservations/${res.id}/move/`, {
+        method: 'PATCH',
+        headers: {'Content-Type': 'application/json',
+                  'X-CSRFToken': getCsrfToken()},
+        body: JSON.stringify({
+          start_at: newStart, end_at: newEnd,
+          room_id: res.extendedProps.room_id
+        })
       })
-    })
-    .then(r => {
-      if (!r.ok) {
-        return r.json().then(d => { throw new Error(d.error); });
-      }
-      // 成功：「元に戻す」トーストを5秒表示
-      showUndoToast('予約を移動しました', () => {
-        // 元に戻す：info.revert() + PATCH で元の値を送信
+      .then(r => {
+        if (!r.ok) {
+          return r.json().then(d => { throw new Error(d.error); });
+        }
+        showUndoToast('予約を変更しました', () => { info.revert(); });
+      })
+      .catch(err => {
+        showToast(err.message || '変更に失敗しました', 'error');
         info.revert();
       });
-    })
-    .catch(err => {
-      showToast(err.message || '移動に失敗しました', 'error');
-      info.revert();
-    });
-  }, () => {  // キャンセル
-    info.revert();
-  });
+    },
+    () => { info.revert(); },  // キャンセル：元の位置に戻す
+    '変更する'                 // OK ボタンのラベル
+  );
 }
 
 // 月ビューでは eventClick と dateClick が同時発火するため、
