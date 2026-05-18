@@ -177,14 +177,24 @@ class ReservationCreateView(CreateView):
         if room_id:
             initial["room"] = room_id
 
-        date_str = self.request.GET.get("date")
-        time_str = self.request.GET.get("time")
+        date_str     = self.request.GET.get("date")
+        time_str     = self.request.GET.get("time")
+        end_time_str = self.request.GET.get("end_time")
         if date_str and time_str:
             try:
                 start_at = datetime.strptime(
                     date_str + " " + time_str, "%Y-%m-%d %H:%M"
                 )
-                end_at = start_at + timedelta(minutes=30)
+                # end_time が渡されていればそれを使う。なければ開始+30分
+                if end_time_str:
+                    end_at = datetime.strptime(
+                        date_str + " " + end_time_str, "%Y-%m-%d %H:%M"
+                    )
+                    # 日をまたぐ場合（例：23:30〜00:00）は翌日に補正
+                    if end_at <= start_at:
+                        end_at += timedelta(days=1)
+                else:
+                    end_at = start_at + timedelta(minutes=30)
                 initial["start_at"] = start_at
                 initial["end_at"] = end_at
             except ValueError:

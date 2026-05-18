@@ -350,9 +350,10 @@ function handleDateClick(info) {
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
 function handleSelect(info) {
-  const dateStr = info.startStr.slice(0, 10);   // 'YYYY-MM-DD'
-  const timeStr = info.startStr.slice(11, 16);  // 'HH:MM'（時刻ビューのみ）
-  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  const dateStr    = info.startStr.slice(0, 10);   // 'YYYY-MM-DD'
+  const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
+  const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
+  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
   // サイドバーで1室のみ選択中なら room を自動補完
   const selectedIds = getSelectedRoomIds();
   if (selectedIds.length === 1) {
