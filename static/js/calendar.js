@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const calendar = new FullCalendar.Calendar(el, {
     locale: 'ja',
+    allDayText: '終日',
     initialView: fcView,
     initialDate: initialDate,
     firstDay: 1,  // 月曜始まり
@@ -349,10 +350,20 @@ function handleDateClick(info) {
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
 function handleSelect(info) {
-  const dateStr    = info.startStr.slice(0, 10);   // 'YYYY-MM-DD'
-  const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
-  const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
+  const dateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+
+  let timeStr, endTimeStr;
+  if (info.allDay) {
+    // 終日スロット選択：フォームの選択肢の全範囲（00:00〜23:30）を初期設定
+    timeStr    = '00:00';
+    endTimeStr = '23:30';
+  } else {
+    timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
+    endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
+  }
+
   let url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
+
   // サイドバーで1室のみ選択中なら room を自動補完
   const selectedIds = getSelectedRoomIds();
   if (selectedIds.length === 1) {
