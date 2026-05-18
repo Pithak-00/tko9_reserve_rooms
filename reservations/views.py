@@ -18,6 +18,17 @@ from django.conf import settings
 from .models import Room, Reservation
 from .forms import ReservationForm
 from accounts.models import Department, UserGoogleToken
+try:
+    from .services.google_sync import GoogleSyncService
+    GOOGLE_SYNC_AVAILABLE = True
+except ImportError:
+    GOOGLE_SYNC_AVAILABLE = False
+    class GoogleSyncService:
+        """google-api-python-client 未インストール時のダミー"""
+        def __init__(self, user): pass
+        def create_event(self, r): pass
+        def update_event(self, r): pass
+        def delete_event(self, r): pass
 
 logger = logging.getLogger(__name__)
 

@@ -46,6 +46,8 @@
           <button class="nav-btn" id="btnPrev">←</button>
           <button class="nav-btn" id="btnToday">今日</button>
           <button class="nav-btn" id="btnNext">→</button>
+          <!-- 予約登録ボタン（F-09連携） -->
+          <a href="{% url 'reservation_create' %}" class="btn-create-reservation">＋ 予約を登録する</a>
         </div>
         <div class="toolbar-center">
           <span class="current-date" id="calTitle"></span>

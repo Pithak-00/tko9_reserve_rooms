@@ -292,10 +292,15 @@ function handleDateClick(info) {
   location.href = `?view=day&date=${d}`;
 }
 
-// 空きスロット選択 → 予約作成画面へ遷移
+// 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
 function handleSelect(info) {
-  const start = info.startStr.slice(0, 16);  // 'YYYY-MM-DDTHH:MM'
-  const end   = info.endStr.slice(0, 16);
-  // 既存の予約作成 URL に日時・会議室を渡す
-  location.href = `/reservations/create/?date=${start.slice(0,10)}&time=${start.slice(11)}&end_time=${end.slice(11)}`;
+  const dateStr = info.startStr.slice(0, 10);   // 'YYYY-MM-DD'
+  const timeStr = info.startStr.slice(11, 16);  // 'HH:MM'（時刻ビューのみ）
+  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  // サイドバーで1室のみ選択中なら room を自動補完
+  const selectedIds = getSelectedRoomIds();
+  if (selectedIds.length === 1) {
+    url += `&room=${selectedIds[0]}`;
+  }
+  location.href = url;
 }
