@@ -159,6 +159,16 @@ class MyReservationListView(LoginRequiredMixin, ListView):
         context["past_count"] = Reservation.objects.filter(
             user=self.request.user, start_at__lt=now
         ).count()
+
+        # Google カレンダー連携状態
+        try:
+            token = self.request.user.google_token
+            context["google_connected"]    = True
+            context["google_sync_enabled"] = token.sync_enabled
+        except UserGoogleToken.DoesNotExist:
+            context["google_connected"]    = False
+            context["google_sync_enabled"] = False
+
         return context
 
 
@@ -252,6 +262,14 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
         form.fields["room"].disabled = True
         return form
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            GoogleSyncService(self.request.user).update_event(self.object)
+        except Exception as e:
+            logger.warning(f'Google sync on update failed: {e}')
+        return response
+
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
 
@@ -266,6 +284,12 @@ def reservation_cancel(request, pk):
 
     reservation.is_cancelled = True
     reservation.save()
+
+    # Google カレンダーのイベントも削除
+    try:
+        GoogleSyncService(request.user).delete_event(reservation)
+    except Exception as e:
+        logger.warning(f'Google sync on cancel failed: {e}')
 
     return redirect("calendar")
 

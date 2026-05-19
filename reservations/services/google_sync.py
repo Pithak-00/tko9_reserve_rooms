@@ -63,17 +63,36 @@ class GoogleSyncService:
         return build('calendar', 'v3', credentials=creds)
 
     def _build_body(self, reservation):
-        body = {
-            'summary': reservation.title,
-            'location': reservation.room.name,
-            'description': reservation.notes or '',
-            'start': {'dateTime': reservation.start_at.isoformat(),
-                      'timeZone': 'Asia/Tokyo'},
-            'end':   {'dateTime': reservation.end_at.isoformat(),
-                      'timeZone': 'Asia/Tokyo'},
-        }
+        from django.utils.timezone import localtime
+
+        # 終日イベントは Google Calendar の仕様に合わせて date 形式で送る
+        if reservation.is_all_day:
+            date_str = localtime(reservation.start_at).strftime('%Y-%m-%d')
+            body = {
+                'summary':     reservation.title,
+                'location':    reservation.room.name,
+                'description': reservation.notes or '',
+                'start': {'date': date_str},
+                'end':   {'date': date_str},  # 終日 = 同日
+            }
+        else:
+            body = {
+                'summary':     reservation.title,
+                'location':    reservation.room.name,
+                'description': reservation.notes or '',
+                'start': {'dateTime': localtime(reservation.start_at).isoformat(),
+                          'timeZone': 'Asia/Tokyo'},
+                'end':   {'dateTime': localtime(reservation.end_at).isoformat(),
+                          'timeZone': 'Asia/Tokyo'},
+            }
+
         if reservation.recurrence_rule:
             body['recurrence'] = ['RRULE:' + reservation.recurrence_rule]
+
+        # 参加者メモを description に追記
+        if reservation.participants:
+            body['description'] += f'\n\n【参加者】\n{reservation.participants}'
+
         return body
 
     def create_event(self, reservation):
