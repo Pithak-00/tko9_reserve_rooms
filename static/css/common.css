@@ -215,7 +215,7 @@ body {
 /* ===== トースト ===== */
 .toast {
   position: fixed;
-  background-color: #d9534f;
+  background-color: #28a745;
   color: white;
   padding: 20px 30px;
   border-radius: 10px;
@@ -239,6 +239,10 @@ body {
 
 .toast.hide {
   opacity: 0;
+}
+
+.toast.error {
+  background-color: #d9534f;
 }
 
 /* ===== ツールバー ===== */

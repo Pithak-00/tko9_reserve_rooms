@@ -187,3 +187,58 @@ class CSVUploadForm(forms.Form):
             raise forms.ValidationError("ファイルサイズが上限（5MB）を超えています。")
 
         return f
+
+
+class FacilityForm(forms.ModelForm):
+    class Meta:
+        model = Facility
+        fields = ['name']
+        labels = {'name': '設備名称'}
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '設備名称を入力',
+                'maxlength': 100,
+            })
+        }
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        qs = Facility.objects.filter(name=name)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('この設備名称はすでに登録されています')
+        return name
+
+
+class BuildingForm(forms.ModelForm):  # FacilityForm と同パターン
+    class Meta:
+        model = Building
+        fields = ['name']
+        labels = {'name': '建物名称'}
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        qs = Building.objects.filter(name=name)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('この建物名称はすでに登録されています')
+        return name
+
+
+class DepartmentForm(forms.ModelForm):  # FacilityForm と同パターン
+    class Meta:
+        model = Department
+        fields = ['name']
+        labels = {'name': '所属名称'}
+
+    def clean_name(self):
+        name = self.cleaned_data['name']
+        qs = Department.objects.filter(name=name)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError('この所属名称はすでに登録されています')
+        return name
