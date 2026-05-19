@@ -42,7 +42,9 @@
       <!-- 会議室一覧テーブル -->
       <div class="admin-card">
         <div class="list-header">会議室一覧（{{ rooms|length }}室登録済み）</div>
+        <div class="table-scroll">
         <table class="admin-table">
+        </div>
           <thead>
             <tr>
               <th>会議室名</th>
@@ -99,18 +101,22 @@
                             data-floor="{{ room.floor|default:'' }}"
                             data-facility-ids="{{ room.facility_ids }}"
                             data-department-ids="{{ room.department_ids }}">編集</button>
-                    <form method="post"
+                    <form id="stop-form-{{ room.id }}" method="post"
                           action="{% url 'room_toggle_active' room.pk %}"
                           class="logout-form">
                       {% csrf_token %}
                       {% if room.is_active %}
-                        <button type="submit"
-                                class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('「{{ room.name }}」を利用停止にしますか？\n既存の予約はそのまま残ります。')">利用停止</button>
+                        <button type="button"
+                                data-confirm-msg="「{{ room.name }}」を利用停止にしますか？"
+                                data-form="stop-form-{{ room.id }}"
+                                class="btn btn-sm btn-outline-danger">
+                                利用停止</button>
                       {% else %}
-                        <button type="submit"
-                                class="btn btn-outline-primary btn-sm"
-                                onclick="return confirm('「{{ room.name }}」の利用を再開しますか？')">再開</button>
+                        <button type="button"
+                                data-confirm-msg="「{{ room.name }}」の利用を再開しますか？"
+                                data-form="resume-form-{{ room.id }}"
+                                class="btn btn-sm btn-primary">
+                                再開</button>
                       {% endif %}
                     </form>
                     <button type="button"
@@ -283,5 +289,7 @@
          data-edit-url-template="{% url 'room_edit' pk=0 %}"
          style="display:none"></div>
     <script src="{% static 'js/room_admin.js' %}"></script>
+    <script src="{% static 'js/common.js' %}"></script>
   </body>
 </html>
+

@@ -44,6 +44,7 @@
         </a>
       </div>
       <div class="admin-card">
+        <div class="table-scroll"> 
         <table class="admin-table">
           <thead>
             <tr>
@@ -98,10 +99,12 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
       </div>
       <div class="action-bar">
         <a href="{% url 'reservation_create' %}" class="btn btn-primary btn-md">＋ 新しい予約を作成する</a>
       </div>
     </div>
+    <script src="{% static 'js/common.js' %}"></script>
   </body>
 </html>

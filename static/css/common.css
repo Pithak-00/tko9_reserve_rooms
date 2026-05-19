@@ -3,6 +3,12 @@
    全ページ共通スタイル
    ===================================================== */
 
+   /* ===== 機種ごとの差異吸収 ===== */
+   *, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 /* ===== 全体 ===== */
 body {
   font-family: "Segoe UI", sans-serif;
@@ -377,3 +383,63 @@ body {
 .btn-outline-danger:hover {
   background-color: #fdf2f2;
 }
+
+  /* ── モバイル（max-width: 767px） — ロゴ・ヘッダー ── */							
+  @media (max-width: 767px) {							
+    .logo {							
+      padding: 12px 16px 8px;							
+    }							
+    .logo span {							
+      font-size: 14px;							
+      display: none;							
+    }							
+    .header-logo img {							
+      height: 32px;							
+    }							
+  }							
+
+    /* ── モバイル（max-width: 767px） — カレンダーコンテナ・モーダル・ボタン ── */							
+  @media (max-width: 767px) {							
+    .calendar-container {							
+      padding: 0 8px 24px;							
+    }							
+    .modal-box {							
+      width: calc(100vw - 32px) !important;							
+      padding: 24px 16px;							
+      border-radius: 8px;							
+    }							
+    .modal-footer {							
+      flex-direction: column;							
+      gap: 8px;							
+    }							
+    .modal-footer .btn {							
+      width: 100%;							
+    }							
+    .btn-sm {							
+      min-height: 44px;							
+      padding: 10px 16px;							
+    }							
+  }							
+
+    /* ── モバイル（max-width: 767px） — 管理テーブル ── */							
+  @media (max-width: 767px) {							
+    .admin-table th,							
+    .admin-table td {							
+      padding: 8px 10px;							
+      font-size: 13px;							
+      white-space: nowrap;							
+    }							
+  }							
+							
+  /* ── タブレット（max-width: 1023px） — カレンダーコンテナ ── */							
+  @media (max-width: 1023px) {							
+    .calendar-container {							
+      padding: 0 20px 32px;							
+    }							
+  }							
+							
+  /* ── 全幅（table-scroll ラッパー） ── */							
+  .table-scroll {							
+    overflow-x: auto;							
+    -webkit-overflow-scrolling: touch;							
+  }							
