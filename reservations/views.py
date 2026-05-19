@@ -210,6 +210,7 @@ class ReservationCreateView(CreateView):
     def form_valid(self, form):
         reservation = form.save(commit=False)
         reservation.user = self.request.user
+        reservation.reserved_by = self.request.user.name
         recurrence_rule = form.cleaned_data.get('recurrence_rule', '')
         reservation.recurrence_rule = recurrence_rule
         reservation.save()

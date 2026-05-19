@@ -26,18 +26,22 @@ class RoomForm(forms.ModelForm):
     class Meta:
         model = Room
         # is_active は一覧の「利用停止/再開」ボタンで管理するためフォームに含めない
-        fields = ["name", "capacity", "facilities", "building", "floor", "departments"]
+        fields = ["name", "capacity", "facilities", "building", "floor", "departments", "color", "calendar_url"]
         labels = {
             "name": "室名",
             "capacity": "収容人数",
             "building": "建物",
             "floor": "階数",
+            "color": "カラー",
+            "calendar_url": "Google カレンダー URL",
         }
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "ex: 104"}),
             "capacity": forms.NumberInput(attrs={"min": 1, "placeholder": "ex: 10"}),
             "building": forms.Select(),
             "floor": forms.NumberInput(attrs={"placeholder": "ex: 3"}),
+            "color": forms.TextInput(attrs={"type": "color", "style": "width:60px;height:36px;padding:2px;border-radius:6px;cursor:pointer;"}),
+            "calendar_url": forms.URLInput(attrs={"placeholder": "https://calendar.google.com/..."}),
         }
 
     def __init__(self, *args, **kwargs):

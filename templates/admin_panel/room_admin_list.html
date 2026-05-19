@@ -98,7 +98,9 @@
                             data-building-id="{{ room.building_id|default:'' }}"
                             data-floor="{{ room.floor|default:'' }}"
                             data-facility-ids="{{ room.facility_ids }}"
-                            data-department-ids="{{ room.department_ids }}">編集</button>
+                            data-department-ids="{{ room.department_ids }}"
+                            data-color="{{ room.color|default:'#3182CE' }}"
+                            data-calendar-url="{{ room.calendar_url|default:'' }}">編集</button>
                     <form method="post"
                           action="{% url 'room_toggle_active' room.pk %}"
                           class="logout-form">
@@ -229,6 +231,20 @@
                     </label>
                   {% endfor %}
                 </div>
+              </td>
+            </tr>
+            <tr>
+              <th>カラー</th>
+              <td>
+                {{ form.color }}
+                {% for e in form.color.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
+              </td>
+            </tr>
+            <tr>
+              <th>Google カレンダー URL</th>
+              <td>
+                {{ form.calendar_url }}
+                {% for e in form.calendar_url.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
               </td>
             </tr>
           </table>

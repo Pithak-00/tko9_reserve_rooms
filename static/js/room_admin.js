@@ -85,6 +85,14 @@ function openRoomModal(mode, editBtn) {
     modal.querySelectorAll('input[name="departments"]').forEach((cb) => {
       cb.checked = deptIds.includes(cb.value);
     });
+
+    // カラーの復元
+    const colorInput = document.getElementById("id_color");
+    if (colorInput) colorInput.value = editBtn.dataset.color || "#3182CE";
+
+    // Google カレンダー URL の復元
+    const calUrlInput = document.getElementById("id_calendar_url");
+    if (calUrlInput) calUrlInput.value = editBtn.dataset.calendarUrl || "";
   }
 
   modal.classList.add("open");
