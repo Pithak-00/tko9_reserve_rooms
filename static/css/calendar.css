@@ -318,12 +318,15 @@
 }
 
 .reservation-popover {
-  position:fixed;
-  z-index:1000;
-  background:#fff;
-  border-radius:8px;
-  box-shadow:0 4px 20px rgba(0,0,0,.15);
-  min-width:280px;	
+  position: fixed;
+  z-index: 1000;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  min-width: 280px;
+  max-width: 340px;
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
 }
 
 .room-legend {

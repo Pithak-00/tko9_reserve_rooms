@@ -223,10 +223,28 @@ function handleEventClick(info) {
     );
   };
 
-  // 位置を調整して表示
-  po.style.left = `${info.jsEvent.pageX + 10}px`;
-  po.style.top  = `${info.jsEvent.pageY + 10}px`;
+  // 位置を調整して表示（画面端からはみ出ないよう補正）
   po.hidden = false;
+  const margin = 10;
+  const poW = po.offsetWidth  || 280;
+  const poH = po.offsetHeight || 200;
+  const vw  = window.innerWidth;
+  const vh  = window.innerHeight;
+  const cx  = info.jsEvent.clientX;
+  const cy  = info.jsEvent.clientY;
+
+  // 左右：右に出しきれない場合は左側に表示
+  let left = cx + margin;
+  if (left + poW > vw - margin) left = cx - poW - margin;
+  if (left < margin) left = margin;
+
+  // 上下：下に出しきれない場合は上側に表示
+  let top = cy + margin;
+  if (top + poH > vh - margin) top = cy - poH - margin;
+  if (top < margin) top = margin;
+
+  po.style.left = `${left}px`;
+  po.style.top  = `${top}px`;
 
   info.jsEvent.stopPropagation();
 }
