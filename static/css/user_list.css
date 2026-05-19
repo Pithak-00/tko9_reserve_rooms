@@ -128,7 +128,6 @@ tr.row-inactive td strong {
   /* 氏名入力ボックス：ここが重要！ */
   .search-bar input[type="text"] {
     width: 100% !important;
-    /* 高さをボタン（通常40〜44px）と厳密に合わせる */
     height: 40px !important; 
     
     /* 余計な余白をリセットして、高さを固定化する */

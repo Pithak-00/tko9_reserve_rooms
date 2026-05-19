@@ -271,6 +271,8 @@
     display: flex;
     gap: 8px;
     justify-content: center;
+    flex-direction: column !important;
+    align-items: center !important; /* 中央揃えを強制 */
   }
 
   .btn-sm {
