@@ -127,6 +127,7 @@
     max-width: 300px !important; /* 横に広がりすぎないよう制限 */
     text-align: left !important; /* 文字自体は左寄せが見やすい */
     padding: 0 10px !important;
+    box-sizing: border-box !important;
   }
 
   /* ③ ラベルの微調整 */
@@ -153,7 +154,7 @@
     font-size: 16px !important; /* iPhoneのズーム防止 */
     width: 100% !important;
     height: 40px !important;
-    padding: 0 0 0 10px !important;
+    padding: 0 0 0 0px !important;
   }
 
   /* ⑤ 検索・クリアボタンを中央寄せにする */
@@ -199,10 +200,5 @@
   .admin-table td {
     white-space: nowrap !important; /* 文字を絶対に改行させない */
     padding: 12px 10px !important;
-  }
-
-  input[type="date"] {
-     width: 96% !important;
-     height: 40px !important;
   }
 }

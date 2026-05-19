@@ -86,10 +86,6 @@
     overflow-y: auto !important;
     }
 
-    .table-scroll::-webkit-scrollbar-thumb {
-      background-color: #2c7a9b; /* つまみの色（サイトの青に合わせた） */
-      border-radius: 4px;
-    }
     .reservation-row {							
       flex-direction: column;							
       gap: 6px;							
