@@ -74,3 +74,28 @@
   justify-content: center;
   margin-top: 28px;
 }
+
+  /* ── モバイル（max-width: 767px） ── */							
+  @media (max-width: 767px) {							
+    .tab-btn {							
+      padding: 8px 16px;							
+      font-size: 13px;							
+    }							
+    .table-scroll {
+    max-height: 55vh;
+    overflow-y: auto !important;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+      background-color: #2c7a9b; /* つまみの色（サイトの青に合わせた） */
+      border-radius: 4px;
+    }
+    .reservation-row {							
+      flex-direction: column;							
+      gap: 6px;							
+    }							
+    .reservation-actions {							
+      justify-content: flex-start;							
+    }							
+  }							
+

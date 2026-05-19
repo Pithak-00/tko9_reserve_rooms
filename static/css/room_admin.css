@@ -231,3 +231,74 @@
   font-family: "Segoe UI", sans-serif;
   display: inline-block;
 }
+  /* ── room_admin.css — モバイル（max-width: 767px） ── */							
+@media (max-width: 767px) {
+  /* 1. 検索バーを縦に並べて全幅にする */
+  .search-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+
+  .search-bar input[type="text"] {
+    width: 100% !important;
+    height: 44px; /* 指でタップしやすい高さ */
+    font-size: 16px; /* iOSでズームされないためのサイズ */
+  }
+
+  .search-bar .btn {
+    width: 100% !important;
+    height: 44px;
+    margin-left: 0 !important;
+  }
+
+  /* 2. テーブルの横スクロール設定 */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #eee;
+  }
+
+  .admin-table {
+    min-width: 600px; /* テーブルが潰れすぎないよう最小幅を確保 */
+  }
+
+  /* 3. 操作ボタンを大きくする */
+  .action-group {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .btn-sm {
+    padding: 10px 15px !important;
+    min-width: 80px;
+  }
+
+  .table-scroll {
+    max-height: 55vh;
+    overflow-y: auto !important;
+    }
+
+  /* 4. ヘッダー周りの調整 */
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+
+  .toolbar-right {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toolbar-right .btn {
+    width: 100%;
+    margin-right: 0 !important;
+  }
+}

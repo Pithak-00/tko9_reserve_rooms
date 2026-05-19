@@ -21,7 +21,7 @@
       <div class="top-links">
         <a href="/">戻る</a>
         <span class="sep">｜</span>
-        <form method="post" action="{% url 'logout' %}" class="logout-form">
+        <form id="disable-form-{{ user.id }}"form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
           <button type="submit" class="logout-btn">ログアウト</button>
         </form>
@@ -69,7 +69,9 @@
           全ユーザー {{ total_count }}名
           {% if q %}（「{{ q }}」で絞り込み：{{ page_obj.paginator.count }}件）{% endif %}
         </div>
+        <div class="table-scroll">
         <table class="admin-table">
+        </div>
           <thead>
             <tr>
               <th>ユーザーID</th>
@@ -147,9 +149,11 @@
                             class="logout-form">
                         {% csrf_token %}
                         {% if user.is_active %}
-                          <button type="submit"
-                                  class="btn btn-outline-danger btn-sm"
-                                  onclick="return confirm('「{{ user.name|escapejs }}」を無効化しますか？')">無効化</button>
+                          <button type="button"
+                              data-confirm-msg="「{{ user.name|escapejs }}」を無効化しますか？"
+                              data-form="disable-form-{{ user.id }}"
+                              class="btn btn-sm btn-outline-danger">
+                              無効化</button>
                         {% else %}
                           <button type="submit" class="btn btn-outline-primary btn-sm">有効化</button>
                         {% endif %}
@@ -293,5 +297,7 @@
          data-edit-url-template="{% url 'user_edit' pk=0 %}"
          style="display:none"></div>
     <script src="{% static 'js/user_admin.js' %}"></script>
+    <script src="{% static 'js/common.js' %}"></script>
   </body>
 </html>
+
