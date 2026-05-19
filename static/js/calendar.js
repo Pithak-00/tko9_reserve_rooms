@@ -323,6 +323,16 @@ document.getElementById('google-disconnect-btn')?.addEventListener('click', func
 
 /* ===== F-04 追加ユーティリティ ===== */
 
+// FullCalendar の現在日付をローカルタイムゾーンで 'YYYY-MM-DD' 形式で返す
+// （toISOString() は UTC 変換のため日本時間では日付がずれる場合がある）
+function getCalDateStr() {
+  const d    = window.calendar.getDate();
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // 全会議室 ID 一覧（data-rooms から取得）
 function getRoomIds() {
   const el = document.getElementById('fullcalendar');

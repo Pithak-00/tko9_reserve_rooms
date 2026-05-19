@@ -57,13 +57,13 @@
           <div class="view-tabs" role="tablist">
             <button class="view-tab {% if view == 'day' %}active{% endif %}"
                     role="tab" aria-selected="{% if view == 'day' %}true{% else %}false{% endif %}"
-                    onclick="location.href='?view=day&date='+calendar.getDate().toISOString().slice(0,10)">日</button>
+                    onclick="location.href='?view=day&date='+getCalDateStr()">日</button>
             <button class="view-tab {% if view == 'week' or not view %}active{% endif %}"
                     role="tab" aria-selected="{% if view == 'week' or not view %}true{% else %}false{% endif %}"
-                    onclick="location.href='?view=week&date='+calendar.getDate().toISOString().slice(0,10)">週</button>
+                    onclick="location.href='?view=week&date='+getCalDateStr()">週</button>
             <button class="view-tab {% if view == 'month' %}active{% endif %}"
                     role="tab" aria-selected="{% if view == 'month' %}true{% else %}false{% endif %}"
-                    onclick="location.href='?view=month&date='+calendar.getDate().toISOString().slice(0,10)">月</button>
+                    onclick="location.href='?view=month&date='+getCalDateStr()">月</button>
           </div>
           <!-- ナビメニュー -->
           <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
