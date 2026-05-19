@@ -49,6 +49,8 @@
               <th class="center">収容人数</th>
               <th>設備</th>
               <th>建物／階</th>
+              <th class="center">カラー</th>
+              <th>Google カレンダー URL</th>
               <th class="center">利用状況</th>
               <th class="center">今後の予約</th>
               <th class="center">操作</th>
@@ -72,6 +74,22 @@
                   {% if room.building %}{{ room.building.name }}{% endif %}
                   {% if room.floor %}{{ room.floor }}階{% endif %}
                   {% if not room.building and not room.floor %}―{% endif %}
+                </td>
+                <td class="center">
+                  <span class="color-swatch"
+                        style="background:{{ room.color|default:'#3182CE' }};"
+                        title="{{ room.color|default:'#3182CE' }}"></span>
+                  <span class="color-code">{{ room.color|default:'#3182CE' }}</span>
+                </td>
+                <td class="cal-url-cell">
+                  {% if room.calendar_url %}
+                    <a href="{{ room.calendar_url }}" target="_blank" rel="noopener"
+                       class="cal-url-link" title="{{ room.calendar_url }}">
+                      リンク
+                    </a>
+                  {% else %}
+                    <span style="color:#bbb;">―</span>
+                  {% endif %}
                 </td>
                 <td class="center">
                   {% if room.is_active %}
@@ -133,7 +151,7 @@
               </tr>
             {% empty %}
               <tr class="empty-row">
-                <td colspan="8">会議室が登録されていません</td>
+                <td colspan="10">会議室が登録されていません</td>
               </tr>
             {% endfor %}
           </tbody>

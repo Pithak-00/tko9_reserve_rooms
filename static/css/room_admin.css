@@ -116,6 +116,7 @@
 
 .form-table input[type="text"],
 .form-table input[type="number"],
+.form-table input[type="url"],
 .form-table select {
   width: 100%;
   padding: 7px 10px;
@@ -218,6 +219,48 @@
   display: flex;
   gap: 10px;
   margin-top: 28px;
+}
+
+/* ===== カラースウォッチ（会議室一覧） ===== */
+.color-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.15);
+  vertical-align: middle;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.color-code {
+  font-size: 12px;
+  font-family: "Courier New", monospace;
+  color: #555;
+  vertical-align: middle;
+}
+
+/* ===== Google カレンダー URL 列 ===== */
+.cal-url-cell {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-url-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #2E75B6;
+  text-decoration: none;
+  padding: 2px 8px;
+  border: 1px solid #2E75B6;
+  border-radius: 10px;
+}
+.cal-url-link:hover {
+  background: #eef4fb;
 }
 
 /* ===== ユーザー管理フォーム用 ===== */
