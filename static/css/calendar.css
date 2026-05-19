@@ -470,13 +470,23 @@
 /* === 予約登録ボタン（F-09連携）=== */
 .btn-create-reservation {
   display: inline-flex; align-items: center;
-  padding: 6px 16px; margin-left: 8px;
+  padding: 6px 16px;
   background: #2E75B6; color: #fff;
   border-radius: 4px; font-size: 13px; font-weight: bold;
   text-decoration: none; white-space: nowrap;
   transition: background 0.15s;
 }
 .btn-create-reservation:hover { background: #1F5A9E; color: #fff; }
+
+/* サイドバー内の予約登録ボタン */
+.sidebar-create-btn {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 12px;
+  padding: 8px 0;
+  font-size: 14px;
+  border-radius: 6px;
+}
 
 /* === SP 対応（追記分）=== */
 @media (max-width: 767px) {

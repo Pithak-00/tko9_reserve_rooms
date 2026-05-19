@@ -23,6 +23,8 @@
 
     <!-- ① フィルターサイドバー -->
     <div class="room-selector-sidebar" id="roomSidebar">
+      <!-- 予約登録ボタン -->
+      <a href="{% url 'reservation_create' %}" class="btn-create-reservation sidebar-create-btn">＋ 予約を登録する</a>
 
       <!-- ── 会議室 ── -->
       <div class="filter-section">
@@ -146,8 +148,6 @@
           <button class="nav-btn" id="btnPrev">←</button>
           <button class="nav-btn" id="btnToday">今日</button>
           <button class="nav-btn" id="btnNext">→</button>
-          <!-- 予約登録ボタン（F-09連携） -->
-          <a href="{% url 'reservation_create' %}" class="btn-create-reservation">＋ 予約を登録する</a>
         </div>
         <div class="toolbar-center">
           <span class="current-date" id="calTitle"></span>
@@ -170,7 +170,6 @@
           <div class="nav-dropdown" id="navMenu">
             <a href="{% url 'rooms:room_list' %}">会議室一覧</a>
             <a href="{% url 'my_reservations' %}">自分の予約</a>
-            <a href="{% url 'my_reservations' %}#google-sync" style="color:#2563eb;">
               🔗 Google カレンダー連携
             </a>
             {% if request.user.is_staff %}
