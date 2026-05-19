@@ -454,6 +454,13 @@ def google_oauth_start(request):
     """Google OAuth 認証画面へリダイレクト"""
     if not GOOGLE_OAUTH_AVAILABLE:
         return HttpResponse('google-auth-oauthlib が未インストールです。pip install google-auth-oauthlib を実行してください。', status=501)
+
+    import secrets, hashlib, base64
+    code_verifier = secrets.token_urlsafe(64)
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode('ascii')).digest()
+    ).rstrip(b'=').decode('ascii')
+
     flow = Flow.from_client_config(
         {
             'web': {
@@ -471,8 +478,11 @@ def google_oauth_start(request):
         access_type='offline',
         include_granted_scopes='true',
         prompt='consent',
+        code_challenge=code_challenge,
+        code_challenge_method='S256',
     )
     request.session['google_oauth_state'] = state
+    request.session['google_code_verifier'] = code_verifier
     return redirect(auth_url)
 
 
@@ -499,7 +509,8 @@ def google_oauth_callback(request):
         state=state,
     )
     flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
-    flow.fetch_token(code=request.GET.get('code'))
+    code_verifier = request.session.pop('google_code_verifier', '')
+    flow.fetch_token(code=request.GET.get('code'), code_verifier=code_verifier)
     creds = flow.credentials
 
     # UserGoogleToken に保存（or 更新）
