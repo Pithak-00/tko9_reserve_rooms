@@ -82,11 +82,6 @@ class Room(models.Model):
         max_length=7, default='#3182CE', blank=True,
         verbose_name='カラーコード'
     )
-    # 【追加 F-04-R09】Google カレンダー URL
-    calendar_url = models.URLField(
-        blank=True, default='',
-        verbose_name='Google カレンダー URL'
-    )
 
     class Meta:
         db_table = "rooms"

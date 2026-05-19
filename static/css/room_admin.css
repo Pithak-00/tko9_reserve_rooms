@@ -116,7 +116,6 @@
 
 .form-table input[type="text"],
 .form-table input[type="number"],
-.form-table input[type="url"],
 .form-table select {
   width: 100%;
   padding: 7px 10px;
@@ -240,28 +239,6 @@
   vertical-align: middle;
 }
 
-/* ===== Google カレンダー URL 列 ===== */
-.cal-url-cell {
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cal-url-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #2E75B6;
-  text-decoration: none;
-  padding: 2px 8px;
-  border: 1px solid #2E75B6;
-  border-radius: 10px;
-}
-.cal-url-link:hover {
-  background: #eef4fb;
-}
 
 /* ===== ユーザー管理フォーム用 ===== */
 .login-id-display {

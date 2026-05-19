@@ -50,7 +50,6 @@
               <th>設備</th>
               <th>建物／階</th>
               <th class="center">カラー</th>
-              <th>Google カレンダー URL</th>
               <th class="center">利用状況</th>
               <th class="center">今後の予約</th>
               <th class="center">操作</th>
@@ -81,16 +80,6 @@
                         title="{{ room.color|default:'#3182CE' }}"></span>
                   <span class="color-code">{{ room.color|default:'#3182CE' }}</span>
                 </td>
-                <td class="cal-url-cell">
-                  {% if room.calendar_url %}
-                    <a href="{{ room.calendar_url }}" target="_blank" rel="noopener"
-                       class="cal-url-link" title="{{ room.calendar_url }}">
-                      リンク
-                    </a>
-                  {% else %}
-                    <span style="color:#bbb;">―</span>
-                  {% endif %}
-                </td>
                 <td class="center">
                   {% if room.is_active %}
                     <span class="badge badge-active">利用可</span>
@@ -117,8 +106,7 @@
                             data-floor="{{ room.floor|default:'' }}"
                             data-facility-ids="{{ room.facility_ids }}"
                             data-department-ids="{{ room.department_ids }}"
-                            data-color="{{ room.color|default:'#3182CE' }}"
-                            data-calendar-url="{{ room.calendar_url|default:'' }}">編集</button>
+                            data-color="{{ room.color|default:'#3182CE' }}">編集</button>
                     <form method="post"
                           action="{% url 'room_toggle_active' room.pk %}"
                           class="logout-form">
@@ -151,7 +139,7 @@
               </tr>
             {% empty %}
               <tr class="empty-row">
-                <td colspan="10">会議室が登録されていません</td>
+                <td colspan="9">会議室が登録されていません</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -256,13 +244,6 @@
               <td>
                 {{ form.color }}
                 {% for e in form.color.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
-              </td>
-            </tr>
-            <tr>
-              <th>Google カレンダー URL</th>
-              <td>
-                {{ form.calendar_url }}
-                {% for e in form.calendar_url.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
               </td>
             </tr>
           </table>

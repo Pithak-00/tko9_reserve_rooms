@@ -1,4 +1,3 @@
-import uuid
 import json
 import logging
 
@@ -93,8 +92,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         rooms = Room.objects.filter(is_active=True).order_by('name')
         rooms_json = json.dumps([
             {'id': r.id, 'name': r.name,
-             'color': r.color or '#3182CE',
-             'calendar_url': r.calendar_url}
+             'color': r.color or '#3182CE'}
             for r in rooms
         ], ensure_ascii=False)
 
