@@ -263,7 +263,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
     def get(self, request):
         start_str = request.GET.get('start')
         end_str   = request.GET.get('end')
-        room_ids_str = request.GET.get('room_ids', '')
+        room_ids_str = request.GET.get('room_ids')  # None = パラメータ未送信、'' = 全チェックOFF
 
         try:
             start = datetime.fromisoformat(start_str)
@@ -276,7 +276,11 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
             is_cancelled=False
         ).select_related('room', 'user')
 
-        if room_ids_str:
+        if room_ids_str is not None:
+            # room_ids パラメータが存在する場合は必ずフィルターを適用する
+            # 空文字（全チェックOFF）の場合は 0件を返す
+            if room_ids_str == '':
+                return JsonResponse([], safe=False)
             ids = [int(x) for x in room_ids_str.split(',') if x.strip().isdigit()]
             qs = qs.filter(room_id__in=ids)
 

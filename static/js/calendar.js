@@ -233,7 +233,22 @@ function saveSelectedRoomIds(ids) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
 }
 
-// チェックボックス変更時
+// ページロード時：localStorage の選択状態をチェックボックス UI に反映
+(function restoreCheckboxState() {
+  const savedIds = getSelectedRoomIds();
+  const allIds   = getRoomIds();
+  // 保存済みと全室が一致していれば「全会議室」チェックを維持
+  const isAll = savedIds.length === allIds.length;
+
+  document.querySelectorAll('.room-checkbox').forEach(cb => {
+    cb.checked = savedIds.includes(parseInt(cb.value));
+  });
+
+  const selectAllCb = document.getElementById('selectAllRooms');
+  if (selectAllCb) selectAllCb.checked = isAll;
+}());
+
+// 個別会議室チェックボックス変更時
 document.querySelectorAll('.room-checkbox').forEach(cb => {
   cb.addEventListener('change', () => {
     const ids = Array.from(
@@ -241,8 +256,22 @@ document.querySelectorAll('.room-checkbox').forEach(cb => {
       el => parseInt(el.value)
     );
     saveSelectedRoomIds(ids);
-    calendar.refetchEvents();  // FullCalendar に反映
+
+    // 「全会議室」チェックボックスの状態を同期
+    const selectAllCb = document.getElementById('selectAllRooms');
+    if (selectAllCb) selectAllCb.checked = ids.length === getRoomIds().length;
+
+    window.calendar?.refetchEvents();  // window.calendar を参照（DOMContentLoaded 外のため）
   });
+});
+
+// 「全会議室」チェックボックス変更時
+document.getElementById('selectAllRooms')?.addEventListener('change', function () {
+  const checked = this.checked;
+  document.querySelectorAll('.room-checkbox').forEach(cb => { cb.checked = checked; });
+  const ids = checked ? getRoomIds() : [];
+  saveSelectedRoomIds(ids);
+  window.calendar?.refetchEvents();
 });
 
 // RRULE 生成ユーティリティ
