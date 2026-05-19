@@ -36,7 +36,7 @@ RUN ssh-keygen -A
 COPY requirements.txt /tmp/requirements.txt
 RUN python -m pip install --upgrade pip && \
     python -m pip install -r /tmp/requirements.txt
-
+COPY . /workspace
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
