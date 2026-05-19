@@ -362,8 +362,20 @@
 }
 
 /* === FullCalendar 上書き === */
+
+/* #fullcalendar が flex 列の残り高さをすべて占有し、
+   FullCalendar が正確な高さを計算できるようにする */
+#fullcalendar {
+  flex: 1;
+  min-height: 0;   /* flex 子要素がコンテンツサイズ以下に縮めるよう許可 */
+}
+
 .fc { height: 100% !important; }
 .fc-event { cursor: pointer; }
+
+/* 時間スロットの高さを縮小して0〜24時を表示 */
+.fc .fc-timegrid-slot { height: 16px !important; }
+.fc .fc-timegrid-slot-label { font-size: 11px; }
 
 /* === 予約登録ボタン（F-09連携）=== */
 .btn-create-reservation {

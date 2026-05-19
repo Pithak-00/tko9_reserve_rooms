@@ -58,7 +58,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const el = document.getElementById('fullcalendar');
   const rooms = JSON.parse(el.dataset.rooms || '[]');
   const fcView = el.dataset.fcView || 'timeGridWeek';
-  const initialDate = el.dataset.date || new Date().toISOString().slice(0,10);
+  const _now = new Date();
+  const initialDate = el.dataset.date ||
+    `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
 
   // 会議室フィルタ（localStorage から復元）
   const selectedIds = getSelectedRoomIds();
@@ -70,9 +72,9 @@ document.addEventListener('DOMContentLoaded', function () {
     initialDate: initialDate,
     firstDay: 1,  // 月曜始まり
     slotMinTime: '00:00:00',
-    slotMaxTime: '24:00:00',
+    slotMaxTime: { hours: 24 },
     slotDuration: '00:30:00',
-    scrollTime: '08:00:00',
+    scrollTime: '09:00:00',
     nowIndicator: true,
     dayMaxEvents: 2,
     editable: true,
