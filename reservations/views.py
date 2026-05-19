@@ -9,7 +9,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.views import View
 from django.views.generic import TemplateView, CreateView, ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time as dt_time
 from django.utils import timezone
 from django.utils.timezone import localtime
 from django.urls import reverse
@@ -180,6 +180,11 @@ class ReservationCreateView(CreateView):
         date_str     = self.request.GET.get("date")
         time_str     = self.request.GET.get("time")
         end_time_str = self.request.GET.get("end_time")
+        all_day      = self.request.GET.get("all_day")
+
+        if all_day == "1":
+            initial["is_all_day"] = True
+
         if date_str and time_str:
             try:
                 start_at = datetime.strptime(
@@ -289,6 +294,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
                 'reserved_by': res.reserved_by,
                 'is_owner': res.user == request.user,
                 'editable': res.user == request.user or request.user.is_staff,
+                'allDay': res.is_all_day,
             })
         return JsonResponse(events, safe=False)
     
@@ -301,10 +307,28 @@ class ReservationMoveView(LoginRequiredMixin, View):
         if reservation.user != request.user and not request.user.is_staff:
             return JsonResponse({'error': '操作権限がありません'}, status=403)
 
-        data = json.loads(request.body)
-        start_at = datetime.fromisoformat(data['start_at'])
-        end_at   = datetime.fromisoformat(data['end_at'])
-        room_id  = data.get('room_id', reservation.room_id)
+        data      = json.loads(request.body)
+        room_id   = data.get('room_id', reservation.room_id)
+        is_all_day = data.get('is_all_day', False)
+
+        tz = timezone.get_current_timezone()
+
+        if is_all_day:
+            # 終日ドロップ：JS から 'YYYY-MM-DD' の date フィールドを受け取る
+            date_str   = data.get('date', '')
+            local_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            start_at   = timezone.make_aware(
+                datetime.combine(local_date, dt_time(0, 0)), tz
+            )
+            end_at = start_at + timedelta(minutes=30)
+        else:
+            start_at   = datetime.fromisoformat(data['start_at'])
+            end_at_str = data.get('end_at')
+            end_at     = (
+                datetime.fromisoformat(end_at_str)
+                if end_at_str
+                else start_at + timedelta(minutes=30)  # フォールバック：30分後
+            )
 
         # 重複チェック（自分自身を除く）
         conflict = Reservation.objects.filter(
@@ -317,10 +341,11 @@ class ReservationMoveView(LoginRequiredMixin, View):
         if conflict:
             return JsonResponse({'error': '競合する予約が存在します'}, status=400)
 
-        reservation.start_at = start_at
-        reservation.end_at   = end_at
-        reservation.room_id  = room_id
-        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'updated_at'])
+        reservation.start_at   = start_at
+        reservation.end_at     = end_at
+        reservation.room_id    = room_id
+        reservation.is_all_day = is_all_day
+        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
 
         # Google カレンダー同期
         try:

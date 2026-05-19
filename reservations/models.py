@@ -180,6 +180,7 @@ class Reservation(models.Model):
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
 
+    is_all_day = models.BooleanField(default=False, verbose_name='終日')
     is_cancelled = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(default=timezone.now)

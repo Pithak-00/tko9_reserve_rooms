@@ -74,7 +74,16 @@
                 </div>
               </div>
             </div>
-            <div class="form-row double">
+            <div class="form-row">
+              <div class="label">終日</div>
+              <div class="field-block short">
+                <div class="form-check form-switch">
+                  {{ form.is_all_day }}
+                  <label class="form-check-label" for="isAllDay">終日予約にする</label>
+                </div>
+              </div>
+            </div>
+            <div id="timeFields" class="form-row double">
               <div class="pair">
                 <div class="label">開始時刻</div>
                 <div class="input short">{{ form.start_time }}</div>
@@ -122,5 +131,18 @@
     </div>
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
+    <script>
+      (function () {
+        const allDayChk  = document.getElementById('isAllDay');
+        const timeFields = document.getElementById('timeFields');
+
+        function toggleTimeFields() {
+          timeFields.style.display = allDayChk.checked ? 'none' : '';
+        }
+
+        allDayChk.addEventListener('change', toggleTimeFields);
+        toggleTimeFields();  // 初期表示に適用
+      }());
+    </script>
   </body>
 </html>

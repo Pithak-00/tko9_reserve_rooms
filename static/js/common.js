@@ -26,13 +26,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /**
  * カスタム確認ダイアログを表示する
- * @param {string}   message          - ダイアログに表示するメッセージ
- * @param {Function} onOk             - OK ボタン押下時に呼ばれるコールバック
- * @param {Function} [onCancel]       - キャンセル時に呼ばれるコールバック（省略可）
- * @param {string}   [okLabel='確認'] - OK ボタンのラベル（省略可）
+ * @param {string}   message                - ダイアログに表示するメッセージ
+ * @param {Function} onOk                   - OK ボタン押下時に呼ばれるコールバック
+ * @param {Function} [onCancel]             - キャンセル時に呼ばれるコールバック（省略可）
+ * @param {string}   [okLabel='確認']       - OK ボタンのラベル（省略可）
+ * @param {string}   [okClass='btn-danger'] - OK ボタンの CSS クラス（省略可）
  */
-function showConfirm(message, onOk, onCancel, okLabel) {
+function showConfirm(message, onOk, onCancel, okLabel, okClass) {
   const btnLabel = okLabel || '確認';
+  const btnClass = okClass  || 'btn-danger';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '9999';
@@ -43,7 +45,7 @@ function showConfirm(message, onOk, onCancel, okLabel) {
       "</p>" +
       "<div class='modal-footer'>" +
         "<button id='_cfm_cancel' class='btn btn-light btn-md'>キャンセル</button>" +
-        "<button id='_cfm_ok'     class='btn btn-danger btn-md'>" + btnLabel + "</button>" +
+        "<button id='_cfm_ok'     class='btn " + btnClass + " btn-md'>" + btnLabel + "</button>" +
       "</div>" +
     "</div>";
 

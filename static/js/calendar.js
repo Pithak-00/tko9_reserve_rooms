@@ -101,10 +101,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // DnD コールバック（eventDrop / eventResize 共通）
 function handleEventDrop(info) {
-  const res = info.event;
-  const newStart = res.start.toISOString();
-  const newEnd   = res.end   ? res.end.toISOString() : null;
-  const msg = `${formatDate(res.start)} ${formatTime(res.start)}〜${formatTime(res.end)}\nに変更しますか？`;
+  const res     = info.event;
+  const isAllDay = res.allDay;
+
+  // 確認メッセージ
+  const msg = isAllDay
+    ? `${formatDate(res.start)} 終日\nに変更しますか？`
+    : `${formatDate(res.start)} ${formatTime(res.start)}〜${formatTime(res.end)}\nに変更しますか？`;
+
+  // API へ送るペイロード
+  const payload = {
+    room_id:    res.extendedProps.room_id,
+    is_all_day: isAllDay,
+  };
+  if (isAllDay) {
+    // 終日の場合は日付文字列だけ送る（toISOString() はタイムゾーンで日付がずれる場合があるため）
+    payload.date = res.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+  } else {
+    payload.start_at = res.start.toISOString();
+    // 終日→通常への切り替え時に res.end が null になる場合があるため、
+    // その場合は開始時刻の30分後をデフォルトとする
+    const endDate = res.end || new Date(res.start.getTime() + 30 * 60 * 1000);
+    payload.end_at = endDate.toISOString();
+  }
 
   showConfirm(
     msg,
@@ -113,14 +132,17 @@ function handleEventDrop(info) {
         method: 'PATCH',
         headers: {'Content-Type': 'application/json',
                   'X-CSRFToken': getCsrfToken()},
-        body: JSON.stringify({
-          start_at: newStart, end_at: newEnd,
-          room_id: res.extendedProps.room_id
-        })
+        body: JSON.stringify(payload)
       })
       .then(r => {
         if (!r.ok) {
           return r.json().then(d => { throw new Error(d.error); });
+        }
+        // 終日→通常への切り替え時に res.end が null の場合、
+        // FullCalendar のイベントオブジェクトを更新してブロックを正しく描画する
+        if (!isAllDay && !res.end) {
+          const fixedEnd = new Date(res.start.getTime() + 30 * 60 * 1000);
+          info.event.setEnd(fixedEnd);
         }
         showUndoToast('予約を変更しました', () => { info.revert(); });
       })
@@ -130,7 +152,8 @@ function handleEventDrop(info) {
       });
     },
     () => { info.revert(); },  // キャンセル：元の位置に戻す
-    '変更する'                 // OK ボタンのラベル
+    '変更する',                // OK ボタンのラベル
+    'btn-primary'              // OK ボタンの色（青）
   );
 }
 
@@ -352,17 +375,15 @@ function handleDateClick(info) {
 function handleSelect(info) {
   const dateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
 
-  let timeStr, endTimeStr;
+  let url;
   if (info.allDay) {
-    // 終日スロット選択：フォームの選択肢の全範囲（00:00〜23:30）を初期設定
-    timeStr    = '00:00';
-    endTimeStr = '23:30';
+    // 終日スロット選択：all_day=1 を渡してフォームを終日モードで開く
+    url = `/reservations/create/?date=${dateStr}&all_day=1`;
   } else {
-    timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
-    endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
+    const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
+    const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
+    url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
   }
-
-  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
 
   // サイドバーで1室のみ選択中なら room を自動補完
   const selectedIds = getSelectedRoomIds();
