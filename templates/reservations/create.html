@@ -72,33 +72,30 @@
                 </div>
               </div>
             </div>
-            <div class="form-row-errorable">
-              <div class="label">日付</div>
-              <div class="field-block short">
-                {{ form.reserve_date }}
-                <div class="field-error-area">
-                  {% for error in form.reserve_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            <!-- 日時行：日付・開始時刻・終了時刻を横一列 -->
+            <div class="form-row datetime-row">
+              <div class="label">日時</div>
+              <div class="datetime-fields">
+                <div class="datetime-date">
+                  {{ form.reserve_date }}
+                  {% for error in form.reserve_date.errors %}
+                    <div class="field-error">{{ error }}</div>
+                  {% endfor %}
+                </div>
+                <div id="timeFields" class="datetime-times">
+                  {{ form.start_time }}
+                  <span class="time-sep">〜</span>
+                  {{ form.end_time }}
                 </div>
               </div>
             </div>
-            <div class="form-row">
-              <div class="label">終日</div>
-              <div class="field-block short">
-                <div class="form-check form-switch">
-                  {{ form.is_all_day }}
-                  <label class="form-check-label" for="isAllDay">終日予約にする</label>
-                </div>
-              </div>
-            </div>
-            <div id="timeFields" class="form-row double">
-              <div class="pair">
-                <div class="label">開始時刻</div>
-                <div class="input short">{{ form.start_time }}</div>
-              </div>
-              <div class="pair">
-                <div class="label">終了時刻</div>
-                <div class="input short">{{ form.end_time }}</div>
-              </div>
+            <!-- 終日チェック行（日時行の直下・インデント揃え） -->
+            <div class="form-row allday-check-row">
+              <div class="label"></div>
+              <label class="allday-check-label" for="isAllDay">
+                {{ form.is_all_day }}
+                <span class="allday-check-text">終日</span>
+              </label>
             </div>
           </div>
         </div>
@@ -143,7 +140,7 @@
         const timeFields = document.getElementById('timeFields');
 
         function toggleTimeFields() {
-          timeFields.style.display = allDayChk.checked ? 'none' : '';
+          timeFields.style.display = allDayChk.checked ? 'none' : 'flex';
         }
 
         allDayChk.addEventListener('change', toggleTimeFields);

@@ -64,28 +64,33 @@
         <div class="section">
           <div class="section-title">予約日時</div>
           <div class="section-body">
-            <div class="form-row">
-              <div class="label">日付</div>
-              <div class="input short">
-                <input type="text"
-                       value="{{ reservation.start_at|date:'Y年n月j日(D) ' }}"
-                       disabled />
+            <!-- 日時行：日付・開始時刻・終了時刻を横一列 -->
+            <div class="form-row datetime-row">
+              <div class="label">日時</div>
+              <div class="datetime-fields">
+                <div class="datetime-date">
+                  <input type="text"
+                         value="{{ reservation.start_at|date:'Y年n月j日(D)' }}"
+                         class="detail-date-input" disabled />
+                </div>
+                {% if not reservation.is_all_day %}
+                <div class="datetime-times">
+                  <input type="text" value="{{ reservation.start_at|time:'H:i' }}"
+                         class="detail-time-input" disabled />
+                  <span class="time-sep">〜</span>
+                  <input type="text" value="{{ reservation.end_at|time:'H:i' }}"
+                         class="detail-time-input" disabled />
+                </div>
+                {% endif %}
               </div>
             </div>
-            <div class="form-row double">
-              <div class="pair">
-                <div class="label">開始時刻</div>
-                <div class="input short">
-                  <input type="text" value="{{ reservation.start_at|time:'H:i' }}" disabled />
-                </div>
-              </div>
-              <div class="pair">
-                <div class="label">終了時刻</div>
-                <div class="input short">
-                  <input type="text" value="{{ reservation.end_at|time:'H:i' }}" disabled />
-                </div>
-              </div>
+            <!-- 終日バッジ -->
+            {% if reservation.is_all_day %}
+            <div class="form-row allday-check-row">
+              <div class="label"></div>
+              <span class="allday-badge">終日</span>
             </div>
+            {% endif %}
           </div>
         </div>
         <div class="section">
