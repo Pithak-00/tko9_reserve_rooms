@@ -21,17 +21,117 @@
 
   <div class="calendar-container">
 
-    <!-- ① 会議室サイドバー -->
+    <!-- ① フィルターサイドバー -->
     <div class="room-selector-sidebar" id="roomSidebar">
-      <div class="sidebar-header">
-        <label><input type="checkbox" id="selectAllRooms" checked> 全会議室</label>
+
+      <!-- ── 会議室 ── -->
+      <div class="filter-section">
+        <button class="filter-section-header" type="button" onclick="toggleFilterSection(this)">
+          <span>会議室</span>
+          <span class="fsh-arrow expanded">▾</span>
+        </button>
+        <div class="filter-section-body">
+          <label class="filter-item-label all-filter-label">
+            <input type="checkbox" id="selectAllRooms" checked>
+            <span>すべて</span>
+          </label>
+          {% for room in rooms_list %}
+          <label class="room-label filter-item-label" style="border-left:3px solid {{ room.color|default:'#3182CE' }}">
+            <input type="checkbox" class="room-checkbox" value="{{ room.id }}" checked>
+            <span>{{ room.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
       </div>
-      {% for room in rooms_list %}
-      <label class="room-label" style="border-left:4px solid {{ room.color|default:'#3182CE' }}">
-        <input type="checkbox" class="room-checkbox" value="{{ room.id }}" checked>
-        {{ room.name }}
-      </label>
-      {% endfor %}
+
+      <!-- ── 建物 ── -->
+      {% if buildings_list %}
+      <div class="filter-section">
+        <button class="filter-section-header" type="button" onclick="toggleFilterSection(this)">
+          <span>建物</span>
+          <span class="fsh-arrow">▾</span>
+        </button>
+        <div class="filter-section-body" hidden>
+          <label class="filter-item-label all-filter-label">
+            <input type="checkbox" class="filter-all-cb" data-group="building" checked>
+            <span>すべて</span>
+          </label>
+          {% for b in buildings_list %}
+          <label class="filter-item-label">
+            <input type="checkbox" class="building-checkbox" value="{{ b.id }}" checked>
+            <span>{{ b.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── 設備 ── -->
+      {% if facilities_list %}
+      <div class="filter-section">
+        <button class="filter-section-header" type="button" onclick="toggleFilterSection(this)">
+          <span>設備</span>
+          <span class="fsh-arrow">▾</span>
+        </button>
+        <div class="filter-section-body" hidden>
+          <label class="filter-item-label all-filter-label">
+            <input type="checkbox" class="filter-all-cb" data-group="facility" checked>
+            <span>すべて</span>
+          </label>
+          {% for f in facilities_list %}
+          <label class="filter-item-label">
+            <input type="checkbox" class="facility-checkbox" value="{{ f.id }}" checked>
+            <span>{{ f.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── 所属 ── -->
+      {% if departments_list %}
+      <div class="filter-section">
+        <button class="filter-section-header" type="button" onclick="toggleFilterSection(this)">
+          <span>所属</span>
+          <span class="fsh-arrow">▾</span>
+        </button>
+        <div class="filter-section-body" hidden>
+          <label class="filter-item-label all-filter-label">
+            <input type="checkbox" class="filter-all-cb" data-group="department" checked>
+            <span>すべて</span>
+          </label>
+          {% for d in departments_list %}
+          <label class="filter-item-label">
+            <input type="checkbox" class="department-checkbox" value="{{ d.id }}" checked>
+            <span>{{ d.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- ── 予約者 ── -->
+      {% if users_list %}
+      <div class="filter-section">
+        <button class="filter-section-header" type="button" onclick="toggleFilterSection(this)">
+          <span>予約者</span>
+          <span class="fsh-arrow">▾</span>
+        </button>
+        <div class="filter-section-body" hidden>
+          <label class="filter-item-label all-filter-label">
+            <input type="checkbox" class="filter-all-cb" data-group="user" checked>
+            <span>すべて</span>
+          </label>
+          {% for u in users_list %}
+          <label class="filter-item-label">
+            <input type="checkbox" class="user-checkbox" value="{{ u.id }}" checked>
+            <span>{{ u.name }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
     </div>
 
     <!-- ② メインエリア -->

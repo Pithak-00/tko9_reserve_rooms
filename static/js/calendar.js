@@ -34,6 +34,15 @@ document.addEventListener("click", function (e) {
   if (arrow) arrow.classList.remove("open");
 });
 
+/* ===== フィルターセクション アコーディオン ===== */
+function toggleFilterSection(headerEl) {
+  const body  = headerEl.nextElementSibling;
+  const arrow = headerEl.querySelector('.fsh-arrow');
+  const willExpand = body.hidden;
+  body.hidden = !willExpand;
+  if (arrow) arrow.classList.toggle('expanded', willExpand);
+}
+
 /* ===== 予約詳細モーダル ===== */
 function showReservationModal(el) {
   document.getElementById("modal-title").textContent = el.dataset.title;
@@ -81,8 +90,20 @@ document.addEventListener('DOMContentLoaded', function () {
     selectable: true,
     headerToolbar: false,  // カスタムツールバー使用
     eventSources: [{ url: '/reservations/events/',
-      extraParams: () => ({
-        room_ids: getSelectedRoomIds().join(',') }),
+      extraParams: () => {
+        const params = { room_ids: getSelectedRoomIds().join(',') };
+        // 各フィルターが「全選択」でない場合のみパラメータを追加する
+        // 全選択時はパラメータ自体を送らない（バックエンドでフィルターなし扱い）
+        const addFilter = (paramName, cls) => {
+          const v = getFilterParam(cls);
+          if (v !== 'all') params[paramName] = v;
+        };
+        addFilter('building_ids',   'building-checkbox');
+        addFilter('facility_ids',   'facility-checkbox');
+        addFilter('department_ids', 'department-checkbox');
+        addFilter('user_ids',       'user-checkbox');
+        return params;
+      },
     }],
     eventClick: handleEventClick,
     eventDrop: handleEventDrop,
@@ -274,6 +295,49 @@ document.getElementById('selectAllRooms')?.addEventListener('change', function (
   window.calendar?.refetchEvents();
 });
 
+// ======== 追加フィルター（建物・設備・所属・予約者）========
+
+const EXTRA_FILTER_GROUPS = [
+  { checkboxClass: 'building-checkbox',   group: 'building',   storageKey: 'calendar_filter_building'   },
+  { checkboxClass: 'facility-checkbox',   group: 'facility',   storageKey: 'calendar_filter_facility'   },
+  { checkboxClass: 'department-checkbox', group: 'department', storageKey: 'calendar_filter_department' },
+  { checkboxClass: 'user-checkbox',       group: 'user',       storageKey: 'calendar_filter_user'       },
+];
+
+EXTRA_FILTER_GROUPS.forEach(({ checkboxClass, group, storageKey }) => {
+  const allCbs     = document.querySelectorAll(`.${checkboxClass}`);
+  if (!allCbs.length) return;
+  const selectAllCb = document.querySelector(`.filter-all-cb[data-group="${group}"]`);
+
+  // ── localStorage から選択状態を復元 ──────────────────────
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved !== null) {
+      const savedIds = JSON.parse(saved).map(String);
+      allCbs.forEach(cb => { cb.checked = savedIds.includes(cb.value); });
+      if (selectAllCb) selectAllCb.checked = savedIds.length === allCbs.length;
+    }
+  } catch { /* 復元失敗時はデフォルト（全選択）のまま */ }
+
+  // ── 個別チェックボックス変更時 ────────────────────────────
+  allCbs.forEach(cb => {
+    cb.addEventListener('change', () => {
+      const checkedIds = Array.from(allCbs).filter(c => c.checked).map(c => parseInt(c.value));
+      localStorage.setItem(storageKey, JSON.stringify(checkedIds));
+      if (selectAllCb) selectAllCb.checked = checkedIds.length === allCbs.length;
+      window.calendar?.refetchEvents();
+    });
+  });
+
+  // ── 「すべて」チェックボックス変更時 ─────────────────────
+  selectAllCb?.addEventListener('change', function () {
+    allCbs.forEach(cb => { cb.checked = this.checked; });
+    const ids = this.checked ? Array.from(allCbs, cb => parseInt(cb.value)) : [];
+    localStorage.setItem(storageKey, JSON.stringify(ids));
+    window.calendar?.refetchEvents();
+  });
+});
+
 // RRULE 生成ユーティリティ
 function buildRRule(pattern, days, endType, endValue) {
   const DAY_MAP = {mon:'MO',tue:'TU',wed:'WE',thu:'TH',fri:'FR',sat:'SA',sun:'SU'};
@@ -362,6 +426,20 @@ function getCalDateStr() {
   const mm   = String(d.getMonth() + 1).padStart(2, '0');
   const dd   = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * 指定クラスのチェックボックス群からフィルターパラメータ値を生成する
+ * - 全選択（または0件）: 'all'  → パラメータ自体を送らない
+ * - 一部選択: '1,2,3'
+ * - 全未選択: ''  → バックエンドで0件を返す
+ */
+function getFilterParam(checkboxClass) {
+  const allCbs     = document.querySelectorAll(`.${checkboxClass}`);
+  if (!allCbs.length) return 'all';
+  const checkedVals = Array.from(allCbs).filter(cb => cb.checked).map(cb => cb.value);
+  if (checkedVals.length === allCbs.length) return 'all';
+  return checkedVals.join(',');
 }
 
 // 全会議室 ID 一覧（data-rooms から取得）

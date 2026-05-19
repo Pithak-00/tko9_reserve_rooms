@@ -363,14 +363,79 @@
 .legend-item { display: flex; align-items: center; gap: 4px; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-/* === サイドバー === */
-.sidebar-header { padding: 8px 12px; font-weight: bold; font-size: 13px;
-                  border-bottom: 1px solid #E2E8F0; }
+/* === サイドバー（互換維持） === */
 .room-label {
   display: flex; align-items: center; gap: 8px;
   padding: 6px 12px; font-size: 13px; cursor: pointer;
 }
 .room-label:hover { background: #EBF5FB; }
+
+/* === フィルターセクション（アコーディオン） === */
+.filter-section {
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.filter-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4A5568;
+  background: #F7FAFC;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  user-select: none;
+  letter-spacing: 0.3px;
+}
+.filter-section-header:hover { background: #EDF2F7; }
+
+/* 矢印：デフォルト右向き（折りたたみ）／ expanded で下向き（展開） */
+.fsh-arrow {
+  font-size: 11px;
+  display: inline-block;
+  transform: rotate(-90deg);
+  transition: transform 0.18s ease;
+}
+.fsh-arrow.expanded { transform: rotate(0deg); }
+
+/* セクション本体 */
+.filter-section-body {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* フィルターアイテム共通ラベル */
+.filter-item-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.filter-item-label:hover { background: #EBF5FB; }
+.filter-item-label input[type="checkbox"] { flex-shrink: 0; }
+
+/* 「すべて」固定ヘッダー行 */
+.all-filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #718096;
+  background: #F7FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.all-filter-label:hover { background: #EDF2F7; }
+
+/* 会議室行は border-left のため左パディングを詰める */
+.room-label.filter-item-label { padding-left: 8px; }
 
 /* === ポップオーバー === */
 .popover-title {

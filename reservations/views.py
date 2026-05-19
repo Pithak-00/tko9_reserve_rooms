@@ -15,9 +15,9 @@ from django.utils.timezone import localtime
 from django.urls import reverse
 from django.conf import settings
 
-from .models import Room, Reservation
+from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom
 from .forms import ReservationForm
-from accounts.models import Department, UserGoogleToken
+from accounts.models import Department, User, UserGoogleToken
 try:
     from .services.google_sync import GoogleSyncService
     GOOGLE_SYNC_AVAILABLE = True
@@ -98,11 +98,21 @@ class CalendarView(LoginRequiredMixin, TemplateView):
             for r in rooms
         ], ensure_ascii=False)
 
+        # フィルター用マスターデータ
+        facilities  = Facility.objects.all().order_by('name')
+        buildings   = Building.objects.all().order_by('name')
+        departments = Department.objects.all().order_by('name')
+        users       = User.objects.filter(is_active=True).order_by('name')
+
         ctx.update({
-            'rooms_list': list(rooms),
-            'view': view,
-            'target_date': target.isoformat(),
-            'rooms_json': rooms_json,
+            'rooms_list':       list(rooms),
+            'view':             view,
+            'target_date':      target.isoformat(),
+            'rooms_json':       rooms_json,
+            'facilities_list':  list(facilities),
+            'buildings_list':   list(buildings),
+            'departments_list': list(departments),
+            'users_list':       list(users),
             'fc_initial_view': {
                 'day': 'timeGridDay',
                 'week': 'timeGridWeek',
@@ -277,13 +287,62 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
             is_cancelled=False
         ).select_related('room', 'user')
 
+        # ── room_ids フィルター（既存） ─────────────────────────
         if room_ids_str is not None:
-            # room_ids パラメータが存在する場合は必ずフィルターを適用する
-            # 空文字（全チェックOFF）の場合は 0件を返す
             if room_ids_str == '':
                 return JsonResponse([], safe=False)
             ids = [int(x) for x in room_ids_str.split(',') if x.strip().isdigit()]
             qs = qs.filter(room_id__in=ids)
+
+        # ── 汎用フィルター解析ヘルパー ────────────────────────────
+        def parse_ids(param_name):
+            """
+            パラメータ未送信 → None（フィルターなし）
+            '' → []（0件表示）
+            '1,2,3' → [1, 2, 3]
+            """
+            val = request.GET.get(param_name)
+            if val is None:
+                return None
+            if val == '':
+                return []
+            return [int(x) for x in val.split(',') if x.strip().isdigit()]
+
+        # ── 建物フィルター ────────────────────────────────────────
+        building_ids = parse_ids('building_ids')
+        if building_ids is not None:
+            if not building_ids:
+                return JsonResponse([], safe=False)
+            qs = qs.filter(room__building_id__in=building_ids)
+
+        # ── 設備フィルター（指定設備を持つ会議室の予約のみ） ─────
+        facility_ids = parse_ids('facility_ids')
+        if facility_ids is not None:
+            if not facility_ids:
+                return JsonResponse([], safe=False)
+            room_ids_with_facility = list(
+                RoomFacility.objects.filter(facility_id__in=facility_ids)
+                .values_list('room_id', flat=True).distinct()
+            )
+            qs = qs.filter(room_id__in=room_ids_with_facility)
+
+        # ── 所属フィルター（所属に紐付く会議室の予約のみ） ────────
+        department_ids = parse_ids('department_ids')
+        if department_ids is not None:
+            if not department_ids:
+                return JsonResponse([], safe=False)
+            room_ids_in_dept = list(
+                DepartmentRoom.objects.filter(department_id__in=department_ids)
+                .values_list('room_id', flat=True).distinct()
+            )
+            qs = qs.filter(room_id__in=room_ids_in_dept)
+
+        # ── ユーザーフィルター ────────────────────────────────────
+        user_ids = parse_ids('user_ids')
+        if user_ids is not None:
+            if not user_ids:
+                return JsonResponse([], safe=False)
+            qs = qs.filter(user_id__in=user_ids)
 
         events = []
         for res in qs:
