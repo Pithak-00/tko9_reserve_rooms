@@ -211,18 +211,53 @@ class ReservationForm(forms.ModelForm):
         cleaned_data["end_at"] = end
 
         if room:
+            exclude_pk = self.instance.pk
+            tz = timezone.get_current_timezone()
+            day_start = timezone.make_aware(
+                datetime.combine(reserve_date, dt_time(0, 0)), tz
+            )
+            day_end = day_start + timedelta(days=1)
+
+            # ① 通常の時間重複チェック
             exists = Reservation.objects.filter(
                 room=room,
                 is_cancelled=False,
                 start_at__lt=end,
                 end_at__gt=start,
             )
-
-            if self.instance.pk:
-                exists = exists.exclude(pk=self.instance.pk)
-
+            if exclude_pk:
+                exists = exists.exclude(pk=exclude_pk)
             if exists.exists():
                 raise ValidationError("その時間帯は既に予約されています")
+
+            # ② 終日予約との重複チェック
+            #    終日予約は 00:00〜00:30 で保存されるため通常の重複検知に引っかからない
+            #    → 同日に終日予約があれば通常予約・終日予約どちらもブロック
+            all_day_exists = Reservation.objects.filter(
+                room=room,
+                is_cancelled=False,
+                is_all_day=True,
+                start_at__gte=day_start,
+                start_at__lt=day_end,
+            )
+            if exclude_pk:
+                all_day_exists = all_day_exists.exclude(pk=exclude_pk)
+            if all_day_exists.exists():
+                raise ValidationError("その日は終日予約が入っているため予約できません")
+
+            # ③ 新規が終日予約の場合、同日に通常予約があればブロック
+            if is_all_day:
+                day_exists = Reservation.objects.filter(
+                    room=room,
+                    is_cancelled=False,
+                    is_all_day=False,
+                    start_at__gte=day_start,
+                    start_at__lt=day_end,
+                )
+                if exclude_pk:
+                    day_exists = day_exists.exclude(pk=exclude_pk)
+                if day_exists.exists():
+                    raise ValidationError("その日は既に予約が入っているため終日予約できません")
 
         return cleaned_data
 

@@ -203,6 +203,13 @@ class ReservationCreateView(CreateView):
         if all_day == "1":
             initial["is_all_day"] = True
 
+        # 日付だけ渡された場合（終日予約）でも reserve_date を初期セット
+        if date_str:
+            try:
+                initial["reserve_date"] = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
         if date_str and time_str:
             try:
                 start_at = datetime.strptime(
@@ -417,6 +424,7 @@ class ReservationMoveView(LoginRequiredMixin, View):
             )
 
         # 重複チェック（自分自身を除く）
+        # ① 通常の時間重複
         conflict = Reservation.objects.filter(
             room_id=room_id,
             start_at__lt=end_at,
@@ -426,6 +434,37 @@ class ReservationMoveView(LoginRequiredMixin, View):
 
         if conflict:
             return JsonResponse({'error': '競合する予約が存在します'}, status=400)
+
+        # ② 終日予約との重複（終日は00:00〜00:30で保存されるため別途チェック）
+        move_date = localtime(start_at).date()
+        day_start = timezone.make_aware(
+            datetime.combine(move_date, dt_time(0, 0)),
+            timezone.get_current_timezone()
+        )
+        day_end = day_start + timedelta(days=1)
+
+        all_day_conflict = Reservation.objects.filter(
+            room_id=room_id,
+            is_cancelled=False,
+            is_all_day=True,
+            start_at__gte=day_start,
+            start_at__lt=day_end,
+        ).exclude(pk=pk).exists()
+
+        if all_day_conflict:
+            return JsonResponse({'error': 'その日は終日予約が入っています'}, status=400)
+
+        # ③ 移動先が終日の場合、同日に通常予約があればブロック
+        if is_all_day:
+            day_conflict = Reservation.objects.filter(
+                room_id=room_id,
+                is_cancelled=False,
+                is_all_day=False,
+                start_at__gte=day_start,
+                start_at__lt=day_end,
+            ).exclude(pk=pk).exists()
+            if day_conflict:
+                return JsonResponse({'error': 'その日は既に予約が入っているため終日予約できません'}, status=400)
 
         reservation.start_at   = start_at
         reservation.end_at     = end_at
