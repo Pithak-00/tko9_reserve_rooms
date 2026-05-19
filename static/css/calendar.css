@@ -297,6 +297,26 @@
   background:#EBF5FB !important;
 }
 
+/* ── 土曜：薄青 ── */
+.fc-day-sat,
+.fc-timegrid-col.fc-day-sat {
+  background: rgba(219, 234, 254, 0.35) !important;
+}
+.fc-col-header-cell.fc-day-sat a,
+.fc-col-header-cell.fc-day-sat {
+  color: #2563eb !important;
+}
+
+/* ── 日曜：薄赤 ── */
+.fc-day-sun,
+.fc-timegrid-col.fc-day-sun {
+  background: rgba(254, 226, 226, 0.45) !important;
+}
+.fc-col-header-cell.fc-day-sun a,
+.fc-col-header-cell.fc-day-sun {
+  color: #dc2626 !important;
+}
+
 .reservation-popover {
   position:fixed;
   z-index:1000;
