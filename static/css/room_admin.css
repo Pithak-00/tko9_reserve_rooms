@@ -220,6 +220,26 @@
   margin-top: 28px;
 }
 
+/* ===== カラースウォッチ（会議室一覧） ===== */
+.color-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.15);
+  vertical-align: middle;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.color-code {
+  font-size: 12px;
+  font-family: "Courier New", monospace;
+  color: #555;
+  vertical-align: middle;
+}
+
+
 /* ===== ユーザー管理フォーム用 ===== */
 .login-id-display {
   padding: 8px 12px;

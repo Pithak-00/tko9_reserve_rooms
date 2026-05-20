@@ -6,6 +6,12 @@ from .views import (
     ReservationDetailView,
     reservation_cancel,
     ReservationUpdateView,
+    CalendarEventsAPI,
+    ReservationMoveView,
+    google_oauth_start,
+    google_oauth_callback,
+    google_oauth_disconnect,
+    google_sync_toggle,
 )
 
 urlpatterns = [
@@ -20,4 +26,10 @@ urlpatterns = [
     path("<int:pk>/edit/", ReservationUpdateView.as_view(), name="reservation_edit"),
     # F-12: reservation cancel
     path("<int:pk>/cancel/", reservation_cancel, name="reservation_cancel"),
+    path('events/', CalendarEventsAPI.as_view(), name='calendar_events'),
+    path('<int:pk>/move/', ReservationMoveView.as_view(), name='reservation_move'),
+    path('auth/google/', google_oauth_start, name='google_oauth_start'),
+    path('auth/google/callback/', google_oauth_callback, name='google_oauth_callback'),
+    path('auth/google/disconnect/', google_oauth_disconnect.as_view(), name='google_oauth_disconnect'),
+    path('auth/google/sync-toggle/', google_sync_toggle.as_view(), name='google_sync_toggle'),
 ]

@@ -72,24 +72,30 @@
                 </div>
               </div>
             </div>
-            <div class="form-row-errorable">
-              <div class="label">日付</div>
-              <div class="field-block short">
-                {{ form.reserve_date }}
-                <div class="field-error-area">
-                  {% for error in form.reserve_date.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+            <!-- 日時行：日付・開始時刻・終了時刻を横一列 -->
+            <div class="form-row datetime-row">
+              <div class="label">日時</div>
+              <div class="datetime-fields">
+                <div class="datetime-date">
+                  {{ form.reserve_date }}
+                  {% for error in form.reserve_date.errors %}
+                    <div class="field-error">{{ error }}</div>
+                  {% endfor %}
+                </div>
+                <div id="timeFields" class="datetime-times">
+                  {{ form.start_time }}
+                  <span class="time-sep">〜</span>
+                  {{ form.end_time }}
                 </div>
               </div>
             </div>
-            <div class="form-row double">
-              <div class="pair">
-                <div class="label">開始時刻</div>
-                <div class="input short">{{ form.start_time }}</div>
-              </div>
-              <div class="pair">
-                <div class="label">終了時刻</div>
-                <div class="input short">{{ form.end_time }}</div>
-              </div>
+            <!-- 終日チェック行（日時行の直下・インデント揃え） -->
+            <div class="form-row allday-check-row">
+              <div class="label"></div>
+              <label class="allday-check-label" for="isAllDay">
+                {{ form.is_all_day }}
+                <span class="allday-check-text">終日</span>
+              </label>
             </div>
           </div>
         </div>
@@ -128,5 +134,18 @@
     </div>
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
+    <script>
+      (function () {
+        const allDayChk  = document.getElementById('isAllDay');
+        const timeFields = document.getElementById('timeFields');
+
+        function toggleTimeFields() {
+          timeFields.style.display = allDayChk.checked ? 'none' : 'flex';
+        }
+
+        allDayChk.addEventListener('change', toggleTimeFields);
+        toggleTimeFields();  // 初期表示に適用
+      }());
+    </script>
   </body>
 </html>

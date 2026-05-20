@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .models import Room, Reservation
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 
 
 def time_choices():
@@ -98,6 +98,12 @@ class ReservationForm(forms.ModelForm):
         ),
     )
 
+    is_all_day = forms.BooleanField(
+        label="終日",
+        required=False,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input", "id": "isAllDay"}),
+    )
+
     class Meta:
         model = Reservation
         fields = [
@@ -105,6 +111,7 @@ class ReservationForm(forms.ModelForm):
             "title",
             "participants",
             "notes",
+            "is_all_day",
         ]
 
         widgets = {
@@ -143,19 +150,25 @@ class ReservationForm(forms.ModelForm):
             local_end_at = timezone.localtime(self.instance.end_at)
 
             self.fields["reserve_date"].initial = local_start_at.date()
-            self.fields["start_time"].initial = local_start_at.strftime("%H:%M")
-            self.fields["end_time"].initial = local_end_at.strftime("%H:%M")
+            self.fields["is_all_day"].initial   = self.instance.is_all_day
+            if not self.instance.is_all_day:
+                self.fields["start_time"].initial = local_start_at.strftime("%H:%M")
+                self.fields["end_time"].initial   = local_end_at.strftime("%H:%M")
         else:
-            start_at = self.initial.get("start_at")
-            end_at = self.initial.get("end_at")
+            start_at   = self.initial.get("start_at")
+            end_at     = self.initial.get("end_at")
+            is_all_day = self.initial.get("is_all_day", False)
+
+            self.fields["is_all_day"].initial = is_all_day
 
             if start_at:
                 if timezone.is_aware(start_at):
                     start_at = timezone.localtime(start_at)
                 self.fields["reserve_date"].initial = start_at.date()
-                self.fields["start_time"].initial = start_at.strftime("%H:%M")
+                if not is_all_day:
+                    self.fields["start_time"].initial = start_at.strftime("%H:%M")
 
-            if end_at:
+            if end_at and not is_all_day:
                 if timezone.is_aware(end_at):
                     end_at = timezone.localtime(end_at)
                 self.fields["end_time"].initial = end_at.strftime("%H:%M")
@@ -165,38 +178,86 @@ class ReservationForm(forms.ModelForm):
 
         room = cleaned_data.get("room")
         reserve_date = cleaned_data.get("reserve_date")
-        start_time = cleaned_data.get("start_time")
-        end_time = cleaned_data.get("end_time")
+        is_all_day = cleaned_data.get("is_all_day", False)
 
-        if not reserve_date or not start_time or not end_time:
+        if not reserve_date:
             return cleaned_data
 
-        start = datetime.strptime(f"{reserve_date} {start_time}", "%Y-%m-%d %H:%M")
-        end = datetime.strptime(f"{reserve_date} {end_time}", "%Y-%m-%d %H:%M")
-
         tz = timezone.get_current_timezone()
-        start = timezone.make_aware(start, tz)
-        end = timezone.make_aware(end, tz)
+
+        if is_all_day:
+            start = timezone.make_aware(
+                datetime.combine(reserve_date, dt_time(0, 0)), tz
+            )
+            end = start + timedelta(minutes=30)
+        else:
+            start_time = cleaned_data.get("start_time")
+            end_time = cleaned_data.get("end_time")
+
+            if not start_time or not end_time:
+                return cleaned_data
+
+            start = timezone.make_aware(
+                datetime.strptime(f"{reserve_date} {start_time}", "%Y-%m-%d %H:%M"), tz
+            )
+            end = timezone.make_aware(
+                datetime.strptime(f"{reserve_date} {end_time}", "%Y-%m-%d %H:%M"), tz
+            )
+
+            if start >= end:
+                raise ValidationError("終了時刻は開始時刻より後にしてください")
 
         cleaned_data["start_at"] = start
         cleaned_data["end_at"] = end
 
-        if start >= end:
-            raise ValidationError("終了時刻は開始時刻より後にしてください")
-
         if room:
+            exclude_pk = self.instance.pk
+            tz = timezone.get_current_timezone()
+            day_start = timezone.make_aware(
+                datetime.combine(reserve_date, dt_time(0, 0)), tz
+            )
+            day_end = day_start + timedelta(days=1)
+
+            # ① 通常の時間重複チェック
             exists = Reservation.objects.filter(
                 room=room,
                 is_cancelled=False,
                 start_at__lt=end,
                 end_at__gt=start,
             )
-
-            if self.instance.pk:
-                exists = exists.exclude(pk=self.instance.pk)
-
+            if exclude_pk:
+                exists = exists.exclude(pk=exclude_pk)
             if exists.exists():
                 raise ValidationError("その時間帯は既に予約されています")
+
+            # ② 終日予約との重複チェック
+            #    終日予約は 00:00〜00:30 で保存されるため通常の重複検知に引っかからない
+            #    → 同日に終日予約があれば通常予約・終日予約どちらもブロック
+            all_day_exists = Reservation.objects.filter(
+                room=room,
+                is_cancelled=False,
+                is_all_day=True,
+                start_at__gte=day_start,
+                start_at__lt=day_end,
+            )
+            if exclude_pk:
+                all_day_exists = all_day_exists.exclude(pk=exclude_pk)
+            if all_day_exists.exists():
+                raise ValidationError("その日は終日予約が入っているため予約できません")
+
+            # ③ 新規が終日予約の場合、同日に通常予約があればブロック
+            if is_all_day:
+                day_exists = Reservation.objects.filter(
+                    room=room,
+                    is_cancelled=False,
+                    is_all_day=False,
+                    start_at__gte=day_start,
+                    start_at__lt=day_end,
+                )
+                if exclude_pk:
+                    day_exists = day_exists.exclude(pk=exclude_pk)
+                if day_exists.exists():
+                    raise ValidationError("その日は既に予約が入っているため終日予約できません")
 
         return cleaned_data
 
@@ -204,6 +265,7 @@ class ReservationForm(forms.ModelForm):
         instance = super().save(commit=False)
         instance.start_at = self.cleaned_data["start_at"]
         instance.end_at = self.cleaned_data["end_at"]
+        instance.is_all_day = self.cleaned_data.get("is_all_day", False)
 
         if commit:
             instance.save()

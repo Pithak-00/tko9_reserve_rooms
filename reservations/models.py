@@ -77,6 +77,12 @@ class Room(models.Model):
         verbose_name="所属別表示設定",
     )
 
+    # 【追加 F-04-R04】会議室カラーコード
+    color = models.CharField(
+        max_length=7, default='#3182CE', blank=True,
+        verbose_name='カラーコード'
+    )
+
     class Meta:
         db_table = "rooms"
         verbose_name = "会議室"
@@ -169,10 +175,31 @@ class Reservation(models.Model):
     start_at = models.DateTimeField()
     end_at = models.DateTimeField()
 
+    is_all_day = models.BooleanField(default=False, verbose_name='終日')
     is_cancelled = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # 【追加 F-04-R10】繰り返し予定
+    recurrence_rule = models.CharField(
+        max_length=255, blank=True, default='',
+        verbose_name='繰り返しルール（RRULE）'
+    )
+    recurrence_id = models.DateTimeField(
+        null=True, blank=True, verbose_name='繰り返し識別日時'
+    )
+    parent_reservation = models.ForeignKey(
+        'self', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='recurrence_instances',
+        verbose_name='親予約'
+    )
+    # 【追加 F-04-R09】Google カレンダー同期
+    google_event_id = models.CharField(
+        max_length=255, blank=True, default='',
+        verbose_name='Google カレンダーイベントID'
+    )
 
     class Meta:
         db_table = "reservations"

@@ -134,6 +134,87 @@
   min-width: 0;
 }
 
+/* ===== 日時・終日 レイアウト ===== */
+
+/* 日付＋時刻を横並びにする行 */
+.datetime-fields {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.datetime-date {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 開始時刻〜終了時刻を横並び */
+.datetime-times {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.datetime-times select {
+  width: 120px;
+}
+
+.time-sep {
+  color: #666;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* 終日チェックボックス行（日時行の直下） */
+.allday-check-row {
+  margin-top: -4px;  /* 日時行との間隔を詰める */
+  margin-bottom: 8px;
+}
+
+.allday-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: #555;
+}
+
+.allday-check-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #2E75B6;
+}
+
+.allday-check-text {
+  font-size: 13px;
+  color: #555;
+}
+
+/* 詳細画面：日付・時刻の disabled input サイズ */
+.detail-date-input {
+  width: 200px;
+}
+.detail-time-input {
+  width: 72px;
+  text-align: center;
+}
+
+/* 詳細画面：終日バッジ */
+.allday-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #2E75B6;
+  color: #fff;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
 /* ===== 入力部品 ===== */
 input,
 select,

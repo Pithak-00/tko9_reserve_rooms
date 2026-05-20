@@ -51,6 +51,7 @@
               <th class="center">収容人数</th>
               <th>設備</th>
               <th>建物／階</th>
+              <th class="center">カラー</th>
               <th class="center">利用状況</th>
               <th class="center">今後の予約</th>
               <th class="center">操作</th>
@@ -74,6 +75,12 @@
                   {% if room.building %}{{ room.building.name }}{% endif %}
                   {% if room.floor %}{{ room.floor }}階{% endif %}
                   {% if not room.building and not room.floor %}―{% endif %}
+                </td>
+                <td class="center">
+                  <span class="color-swatch"
+                        style="background:{{ room.color|default:'#3182CE' }};"
+                        title="{{ room.color|default:'#3182CE' }}"></span>
+                  <span class="color-code">{{ room.color|default:'#3182CE' }}</span>
                 </td>
                 <td class="center">
                   {% if room.is_active %}
@@ -100,7 +107,8 @@
                             data-building-id="{{ room.building_id|default:'' }}"
                             data-floor="{{ room.floor|default:'' }}"
                             data-facility-ids="{{ room.facility_ids }}"
-                            data-department-ids="{{ room.department_ids }}">編集</button>
+                            data-department-ids="{{ room.department_ids }}"
+                            data-color="{{ room.color|default:'#3182CE' }}">編集</button>
                     <form id="stop-form-{{ room.id }}" method="post"
                           action="{% url 'room_toggle_active' room.pk %}"
                           class="logout-form">
@@ -137,7 +145,7 @@
               </tr>
             {% empty %}
               <tr class="empty-row">
-                <td colspan="8">会議室が登録されていません</td>
+                <td colspan="9">会議室が登録されていません</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -235,6 +243,13 @@
                     </label>
                   {% endfor %}
                 </div>
+              </td>
+            </tr>
+            <tr>
+              <th>カラー</th>
+              <td>
+                {{ form.color }}
+                {% for e in form.color.errors %}<div class="error-text">{{ e }}</div>{% endfor %}
               </td>
             </tr>
           </table>

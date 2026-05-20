@@ -26,10 +26,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /**
  * カスタム確認ダイアログを表示する
- * @param {string}   message - ダイアログに表示するメッセージ
- * @param {Function} onOk    - OK ボタン押下時に呼ばれるコールバック
+ * @param {string}   message                - ダイアログに表示するメッセージ
+ * @param {Function} onOk                   - OK ボタン押下時に呼ばれるコールバック
+ * @param {Function} [onCancel]             - キャンセル時に呼ばれるコールバック（省略可）
+ * @param {string}   [okLabel='確認']       - OK ボタンのラベル（省略可）
+ * @param {string}   [okClass='btn-danger'] - OK ボタンの CSS クラス（省略可）
  */
-function showConfirm(message, onOk) {
+function showConfirm(message, onOk, onCancel, okLabel, okClass) {
+  const btnLabel = okLabel || '確認';
+  const btnClass = okClass  || 'btn-danger';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '9999';
@@ -40,25 +45,27 @@ function showConfirm(message, onOk) {
       "</p>" +
       "<div class='modal-footer'>" +
         "<button id='_cfm_cancel' class='btn btn-light btn-md'>キャンセル</button>" +
-        "<button id='_cfm_ok'     class='btn btn-danger btn-md'>削除する</button>" +
+        "<button id='_cfm_ok'     class='btn " + btnClass + " btn-md'>" + btnLabel + "</button>" +
       "</div>" +
     "</div>";
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
 
-  function close() {
+  function close(cancelled) {
     document.body.removeChild(overlay);
     document.body.style.overflow = '';
+    if (cancelled && typeof onCancel === 'function') onCancel();
   }
 
   overlay.querySelector('#_cfm_ok').addEventListener('click', function () {
-    close();
+    document.body.removeChild(overlay);
+    document.body.style.overflow = '';
     onOk();
   });
-  overlay.querySelector('#_cfm_cancel').addEventListener('click', close);
+  overlay.querySelector('#_cfm_cancel').addEventListener('click', function () { close(true); });
   overlay.addEventListener('click', function (e) {
-    if (e.target === overlay) close();
+    if (e.target === overlay) close(true);
   });
 }
 
@@ -145,3 +152,47 @@ document.addEventListener('DOMContentLoaded', function () {
   window.addEventListener('resize', update);
   update();
 });
+/* ===== カレンダー共通ユーティリティ（F-04 追加分） ===== */
+
+// CSRF トークン取得
+function getCsrfToken() {
+  return document.cookie.split(';')
+    .map(c => c.trim()).find(c => c.startsWith('csrftoken='))
+    ?.split('=')[1] ?? '';
+}
+
+// 成功・エラートースト
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast show top-right';
+  t.style.backgroundColor = type === 'error' ? '#c0392b' : '#27ae60';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 500); }, 3000);
+}
+
+// 「元に戻す」付きトースト（5秒）
+function showUndoToast(msg, onUndo) {
+  const t = document.createElement('div');
+  t.className = 'toast show top-right';
+  t.style.backgroundColor = '#2563eb';
+  t.innerHTML = `${msg} <button style='margin-left:12px;background:none;border:1px solid #fff;
+    color:#fff;cursor:pointer;border-radius:4px;padding:2px 8px;'>元に戻す</button>`;
+  document.body.appendChild(t);
+  const btn = t.querySelector('button');
+  let done = false;
+  btn.addEventListener('click', () => { if (!done) { done = true; onUndo(); t.remove(); } });
+  setTimeout(() => { if (!done) { t.classList.add('hide'); setTimeout(() => t.remove(), 500); } }, 5000);
+}
+
+// 日付フォーマット（例：5月14日(水) 10:00）
+function formatDate(dt) {
+  const days = ['日','月','火','水','木','金','土'];
+  return `${dt.getMonth()+1}月${dt.getDate()}日(${days[dt.getDay()]})`;
+}
+
+// 時刻フォーマット（例：10:00）
+function formatTime(dt) {
+  if (!dt) return '';
+  return dt.toTimeString().slice(0, 5);
+}

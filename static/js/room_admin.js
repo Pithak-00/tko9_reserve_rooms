@@ -85,6 +85,10 @@ function openRoomModal(mode, editBtn) {
     modal.querySelectorAll('input[name="departments"]').forEach((cb) => {
       cb.checked = deptIds.includes(cb.value);
     });
+
+    // カラーの復元
+    const colorInput = document.getElementById("id_color");
+    if (colorInput) colorInput.value = editBtn.dataset.color || "#3182CE";
   }
 
   modal.classList.add("open");

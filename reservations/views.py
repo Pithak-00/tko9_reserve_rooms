@@ -1,150 +1,123 @@
+import json
+import logging
+
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse
-from django.views.generic import TemplateView, CreateView, ListView, UpdateView
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.views import View
+from django.views.generic import TemplateView, CreateView, ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time as dt_time
 from django.utils import timezone
 from django.utils.timezone import localtime
 from django.urls import reverse
+from django.conf import settings
 
-from .models import Room, Reservation
+from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom
 from .forms import ReservationForm
-from accounts.models import Department
-from django.views.generic import DetailView
+from accounts.models import Department, User, UserGoogleToken
+try:
+    from .services.google_sync import GoogleSyncService
+    GOOGLE_SYNC_AVAILABLE = True
+except ImportError:
+    GOOGLE_SYNC_AVAILABLE = False
+    class GoogleSyncService:
+        """google-api-python-client 未インストール時のダミー"""
+        def __init__(self, user): pass
+        def create_event(self, r): pass
+        def update_event(self, r): pass
+        def delete_event(self, r): pass
+
+logger = logging.getLogger(__name__)
+
+# google_auth_oauthlib は F-04-R09 Google 同期機能でのみ使用
+# pip install google-auth-oauthlib google-api-python-client python-dateutil が必要
+try:
+    from google_auth_oauthlib.flow import Flow
+    GOOGLE_OAUTH_AVAILABLE = True
+except ImportError:
+    GOOGLE_OAUTH_AVAILABLE = False
+
+try:
+    from dateutil.rrule import rrulestr
+    DATEUTIL_AVAILABLE = True
+except ImportError:
+    DATEUTIL_AVAILABLE = False
 
 
 def home(request):
     return HttpResponse("meeting room reservation system")
 
 
+def _generate_recurrence_instances(parent: Reservation, until=None):
+    """親予約の recurrence_rule からインスタンス予約を一括生成"""
+    if not DATEUTIL_AVAILABLE:
+        logger.warning('python-dateutil が未インストールのため繰り返し生成をスキップ')
+        return
+    duration = parent.end_at - parent.start_at
+    rule_str = f'DTSTART:{parent.start_at.strftime("%Y%m%dT%H%M%SZ")}\nRRULE:{parent.recurrence_rule}'
+    rule = rrulestr(rule_str)
+    instances = []
+    for dt in rule:
+        if until and dt.date() > until: break
+        if dt == parent.start_at: continue  # 親自身をスキップ
+        instances.append(Reservation(
+            room=parent.room,
+            user=parent.user,
+            reserved_by=parent.reserved_by,
+            title=parent.title,
+            start_at=dt,
+            end_at=dt + duration,
+            parent_reservation=parent,
+            recurrence_id=dt,
+        ))
+    Reservation.objects.bulk_create(instances)
+
+
 # F-04
 class CalendarView(LoginRequiredMixin, TemplateView):
-    template_name = "reservations/calendar.html"
+    template_name = 'reservations/calendar.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        date_str = self.request.GET.get("date")
+        ctx = super().get_context_data(**kwargs)
+        view  = self.request.GET.get('view', 'week')  # day/week/month
+        date_str = self.request.GET.get('date')
         try:
-            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            target = datetime.strptime(date_str, '%Y-%m-%d').date()
         except (TypeError, ValueError):
-            target_date = date.today()
+            target = date.today()
 
-        departments = Department.objects.all().order_by("name")
+        # 会議室一覧（JSON として埋め込み）
+        rooms = Room.objects.filter(is_active=True).order_by('name')
+        rooms_json = json.dumps([
+            {'id': r.id, 'name': r.name,
+             'color': r.color or '#3182CE'}
+            for r in rooms
+        ], ensure_ascii=False)
 
-        user = self.request.user
-        default_filter = str(user.department_id) if user.department_id else "all"
-        filter_value = self.request.GET.get("filter", default_filter)
+        # フィルター用マスターデータ
+        facilities  = Facility.objects.all().order_by('name')
+        buildings   = Building.objects.all().order_by('name')
+        departments = Department.objects.all().order_by('name')
+        users       = User.objects.filter(is_active=True).order_by('name')
 
-        rooms = Room.objects.none()
-
-        room_id_str = self.request.GET.get("room_id")
-        room_id = None
-        if room_id_str:
-            try:
-                room_id = int(room_id_str)
-            except (ValueError, TypeError):
-                room_id = None
-
-        if room_id:
-            rooms = Room.objects.filter(id=room_id, is_active=True)
-            if not rooms.exists():
-                rooms = Room.objects.filter(is_active=True).order_by("name")
-            filter_value = "all"
-        else:
-            if filter_value != "all":
-                try:
-                    dept_id = int(filter_value)
-                    rooms = Room.objects.filter(
-                        is_active=True,
-                        departmentroom__department_id=dept_id,
-                    ).order_by("name")
-                except (ValueError, TypeError):
-                    filter_value = "all"
-
-            if filter_value == "all" or not rooms.exists():
-                rooms = Room.objects.filter(is_active=True).order_by("name")
-                filter_value = "all"
-
-        slots = []
-        current = datetime.combine(target_date, datetime.min.time())
-        end_of_day = current.replace(hour=23, minute=30)
-        while current <= end_of_day:
-            slots.append(current.time())
-            current += timedelta(minutes=30)
-
-        reservations = Reservation.objects.filter(
-            start_at__date=target_date,
-            is_cancelled=False,
-        ).select_related("room")
-
-        reservation_map = {}
-        for rsv in reservations:
-            local_start = localtime(rsv.start_at)
-            local_end = localtime(rsv.end_at)
-            start_time = local_start.time()
-            duration_min = int((local_end - local_start).total_seconds() / 60)
-            span = max(1, duration_min // 30)
-            reservation_map[(rsv.room_id, start_time)] = {
-                "reservation": rsv,
-                "span": span,
-            }
-
-        occupied = set()
-        for (room_id, start_time), data in reservation_map.items():
-            span = data["span"]
-            for i, slot in enumerate(slots):
-                if slot == start_time:
-                    for j in range(1, span):
-                        if i + j < len(slots):
-                            occupied.add((room_id, slots[i + j]))
-                    break
-
-        grid = []
-        for slot in slots:
-            cells = []
-            for room in rooms:
-                if (room.id, slot) in occupied:
-                    cells.append(
-                        {"room": room, "reservation": None, "span": 1, "skip": True}
-                    )
-                else:
-                    data = reservation_map.get((room.id, slot))
-                    if data:
-                        cells.append(
-                            {
-                                "room": room,
-                                "reservation": data["reservation"],
-                                "span": data["span"],
-                                "skip": False,
-                            }
-                        )
-                    else:
-                        cells.append(
-                            {
-                                "room": room,
-                                "reservation": None,
-                                "span": 1,
-                                "skip": False,
-                            }
-                        )
-            grid.append({"slot": slot, "cells": cells})
-
-        context.update(
-            {
-                "target_date": target_date,
-                "prev_date": target_date - timedelta(days=1),
-                "next_date": target_date + timedelta(days=1),
-                "rooms": rooms,
-                "grid": grid,
-                "today": date.today(),
-                "filter_value": filter_value,
-                "departments": departments,
-            }
-        )
-        return context
+        ctx.update({
+            'rooms_list':       list(rooms),
+            'view':             view,
+            'target_date':      target.isoformat(),
+            'rooms_json':       rooms_json,
+            'facilities_list':  list(facilities),
+            'buildings_list':   list(buildings),
+            'departments_list': list(departments),
+            'users_list':       list(users),
+            'fc_initial_view': {
+                'day': 'timeGridDay',
+                'week': 'timeGridWeek',
+                'month': 'dayGridMonth',
+            }.get(view, 'timeGridWeek'),
+        })
+        return ctx
 
 
 # F-06
@@ -184,6 +157,16 @@ class MyReservationListView(LoginRequiredMixin, ListView):
         context["past_count"] = Reservation.objects.filter(
             user=self.request.user, start_at__lt=now
         ).count()
+
+        # Google カレンダー連携状態
+        try:
+            token = self.request.user.google_token
+            context["google_connected"]    = True
+            context["google_sync_enabled"] = token.sync_enabled
+        except UserGoogleToken.DoesNotExist:
+            context["google_connected"]    = False
+            context["google_sync_enabled"] = False
+
         return context
 
 
@@ -212,14 +195,36 @@ class ReservationCreateView(CreateView):
         if room_id:
             initial["room"] = room_id
 
-        date_str = self.request.GET.get("date")
-        time_str = self.request.GET.get("time")
+        date_str     = self.request.GET.get("date")
+        time_str     = self.request.GET.get("time")
+        end_time_str = self.request.GET.get("end_time")
+        all_day      = self.request.GET.get("all_day")
+
+        if all_day == "1":
+            initial["is_all_day"] = True
+
+        # 日付だけ渡された場合（終日予約）でも reserve_date を初期セット
+        if date_str:
+            try:
+                initial["reserve_date"] = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
         if date_str and time_str:
             try:
                 start_at = datetime.strptime(
                     date_str + " " + time_str, "%Y-%m-%d %H:%M"
                 )
-                end_at = start_at + timedelta(minutes=30)
+                # end_time が渡されていればそれを使う。なければ開始+30分
+                if end_time_str:
+                    end_at = datetime.strptime(
+                        date_str + " " + end_time_str, "%Y-%m-%d %H:%M"
+                    )
+                    # 日をまたぐ場合（例：23:30〜00:00）は翌日に補正
+                    if end_at <= start_at:
+                        end_at += timedelta(days=1)
+                else:
+                    end_at = start_at + timedelta(minutes=30)
                 initial["start_at"] = start_at
                 initial["end_at"] = end_at
             except ValueError:
@@ -228,8 +233,16 @@ class ReservationCreateView(CreateView):
         return initial
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
-        form.instance.reserved_by = self.request.user.name
+        reservation = form.save(commit=False)
+        reservation.user = self.request.user
+        reservation.reserved_by = self.request.user.name
+        recurrence_rule = form.cleaned_data.get('recurrence_rule', '')
+        reservation.recurrence_rule = recurrence_rule
+        reservation.save()
+        # 繰り返しインスタンスを一括生成
+        if recurrence_rule:
+            _generate_recurrence_instances(reservation)
+        GoogleSyncService(self.request.user).create_event(reservation)
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -254,6 +267,14 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
         form.fields["room"].disabled = True
         return form
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            GoogleSyncService(self.request.user).update_event(self.object)
+        except Exception as e:
+            logger.warning(f'Google sync on update failed: {e}')
+        return response
+
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
 
@@ -269,4 +290,311 @@ def reservation_cancel(request, pk):
     reservation.is_cancelled = True
     reservation.save()
 
+    # Google カレンダーのイベントも削除
+    try:
+        GoogleSyncService(request.user).delete_event(reservation)
+    except Exception as e:
+        logger.warning(f'Google sync on cancel failed: {e}')
+
     return redirect("calendar")
+
+
+class CalendarEventsAPI(LoginRequiredMixin, View):
+    def get(self, request):
+        start_str = request.GET.get('start')
+        end_str   = request.GET.get('end')
+        room_ids_str = request.GET.get('room_ids')  # None = パラメータ未送信、'' = 全チェックOFF
+
+        try:
+            start = datetime.fromisoformat(start_str)
+            end   = datetime.fromisoformat(end_str)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'invalid params'}, status=400)
+
+        qs = Reservation.objects.filter(
+            start_at__lt=end, end_at__gt=start,
+            is_cancelled=False
+        ).select_related('room', 'user')
+
+        # ── room_ids フィルター（既存） ─────────────────────────
+        if room_ids_str is not None:
+            if room_ids_str == '':
+                return JsonResponse([], safe=False)
+            ids = [int(x) for x in room_ids_str.split(',') if x.strip().isdigit()]
+            qs = qs.filter(room_id__in=ids)
+
+        # ── 汎用フィルター解析ヘルパー ────────────────────────────
+        def parse_ids(param_name):
+            """
+            パラメータ未送信 → None（フィルターなし）
+            '' → []（0件表示）
+            '1,2,3' → [1, 2, 3]
+            """
+            val = request.GET.get(param_name)
+            if val is None:
+                return None
+            if val == '':
+                return []
+            return [int(x) for x in val.split(',') if x.strip().isdigit()]
+
+        # ── 建物フィルター ────────────────────────────────────────
+        building_ids = parse_ids('building_ids')
+        if building_ids is not None:
+            if not building_ids:
+                return JsonResponse([], safe=False)
+            qs = qs.filter(room__building_id__in=building_ids)
+
+        # ── 設備フィルター（指定設備を持つ会議室の予約のみ） ─────
+        facility_ids = parse_ids('facility_ids')
+        if facility_ids is not None:
+            if not facility_ids:
+                return JsonResponse([], safe=False)
+            room_ids_with_facility = list(
+                RoomFacility.objects.filter(facility_id__in=facility_ids)
+                .values_list('room_id', flat=True).distinct()
+            )
+            qs = qs.filter(room_id__in=room_ids_with_facility)
+
+        # ── 所属フィルター（所属に紐付く会議室の予約のみ） ────────
+        department_ids = parse_ids('department_ids')
+        if department_ids is not None:
+            if not department_ids:
+                return JsonResponse([], safe=False)
+            room_ids_in_dept = list(
+                DepartmentRoom.objects.filter(department_id__in=department_ids)
+                .values_list('room_id', flat=True).distinct()
+            )
+            qs = qs.filter(room_id__in=room_ids_in_dept)
+
+        # ── ユーザーフィルター ────────────────────────────────────
+        user_ids = parse_ids('user_ids')
+        if user_ids is not None:
+            if not user_ids:
+                return JsonResponse([], safe=False)
+            qs = qs.filter(user_id__in=user_ids)
+
+        events = []
+        for res in qs:
+            color = res.room.color or '#3182CE'
+            events.append({
+                'id': res.id,
+                'title': res.title,
+                'start': localtime(res.start_at).isoformat(),
+                'end':   localtime(res.end_at).isoformat(),
+                'room_id': res.room_id,
+                'room_name': res.room.name,
+                'color': color,
+                'reserved_by': res.reserved_by,
+                'is_owner': res.user == request.user,
+                'editable': res.user == request.user or request.user.is_staff,
+                'allDay': res.is_all_day,
+            })
+        return JsonResponse(events, safe=False)
+    
+
+class ReservationMoveView(LoginRequiredMixin, View):
+    def patch(self, request, pk):
+        reservation = get_object_or_404(Reservation, pk=pk, is_cancelled=False)
+
+        # 権限チェック
+        if reservation.user != request.user and not request.user.is_staff:
+            return JsonResponse({'error': '操作権限がありません'}, status=403)
+
+        data      = json.loads(request.body)
+        room_id   = data.get('room_id', reservation.room_id)
+        is_all_day = data.get('is_all_day', False)
+
+        tz = timezone.get_current_timezone()
+
+        if is_all_day:
+            # 終日ドロップ：JS から 'YYYY-MM-DD' の date フィールドを受け取る
+            date_str   = data.get('date', '')
+            local_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            start_at   = timezone.make_aware(
+                datetime.combine(local_date, dt_time(0, 0)), tz
+            )
+            end_at = start_at + timedelta(minutes=30)
+        else:
+            start_at   = datetime.fromisoformat(data['start_at'])
+            end_at_str = data.get('end_at')
+            end_at     = (
+                datetime.fromisoformat(end_at_str)
+                if end_at_str
+                else start_at + timedelta(minutes=30)  # フォールバック：30分後
+            )
+
+        # 重複チェック（自分自身を除く）
+        # ① 通常の時間重複
+        conflict = Reservation.objects.filter(
+            room_id=room_id,
+            start_at__lt=end_at,
+            end_at__gt=start_at,
+            is_cancelled=False,
+        ).exclude(pk=pk).exists()
+
+        if conflict:
+            return JsonResponse({'error': '競合する予約が存在します'}, status=400)
+
+        # ② 終日予約との重複（終日は00:00〜00:30で保存されるため別途チェック）
+        move_date = localtime(start_at).date()
+        day_start = timezone.make_aware(
+            datetime.combine(move_date, dt_time(0, 0)),
+            timezone.get_current_timezone()
+        )
+        day_end = day_start + timedelta(days=1)
+
+        all_day_conflict = Reservation.objects.filter(
+            room_id=room_id,
+            is_cancelled=False,
+            is_all_day=True,
+            start_at__gte=day_start,
+            start_at__lt=day_end,
+        ).exclude(pk=pk).exists()
+
+        if all_day_conflict:
+            return JsonResponse({'error': 'その日は終日予約が入っています'}, status=400)
+
+        # ③ 移動先が終日の場合、同日に通常予約があればブロック
+        if is_all_day:
+            day_conflict = Reservation.objects.filter(
+                room_id=room_id,
+                is_cancelled=False,
+                is_all_day=False,
+                start_at__gte=day_start,
+                start_at__lt=day_end,
+            ).exclude(pk=pk).exists()
+            if day_conflict:
+                return JsonResponse({'error': 'その日は既に予約が入っているため終日予約できません'}, status=400)
+
+        reservation.start_at   = start_at
+        reservation.end_at     = end_at
+        reservation.room_id    = room_id
+        reservation.is_all_day = is_all_day
+        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
+
+        # Google カレンダー同期
+        try:
+            GoogleSyncService(request.user).update_event(reservation)
+        except Exception as e:
+            logger.warning(f'Google sync failed: {e}')
+
+        color = reservation.room.color or '#3182CE'
+        return JsonResponse({'id': reservation.id, 'color': color}, status=200)
+    
+
+# ─────────────────────────────────────────────────────────────
+# Google OAuth 2.0 ビュー
+# ─────────────────────────────────────────────────────────────
+
+@login_required
+def google_oauth_start(request):
+    """Google OAuth 認証画面へリダイレクト"""
+    if not GOOGLE_OAUTH_AVAILABLE:
+        return HttpResponse('google-auth-oauthlib が未インストールです。pip install google-auth-oauthlib を実行してください。', status=501)
+
+    import secrets, hashlib, base64
+    code_verifier = secrets.token_urlsafe(64)
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode('ascii')).digest()
+    ).rstrip(b'=').decode('ascii')
+
+    flow = Flow.from_client_config(
+        {
+            'web': {
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uris': [settings.GOOGLE_REDIRECT_URI],
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://oauth2.googleapis.com/token',
+            }
+        },
+        scopes=settings.GOOGLE_CALENDAR_SCOPES,
+    )
+    flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
+    auth_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true',
+        prompt='consent',
+        code_challenge=code_challenge,
+        code_challenge_method='S256',
+    )
+    request.session['google_oauth_state'] = state
+    request.session['google_code_verifier'] = code_verifier
+    return redirect(auth_url)
+
+
+@login_required
+def google_oauth_callback(request):
+    """Google からのコールバック：トークンを取得して保存"""
+    if not GOOGLE_OAUTH_AVAILABLE:
+        return HttpResponse('google-auth-oauthlib が未インストールです。', status=501)
+    state = request.GET.get('state')
+    if state != request.session.get('google_oauth_state'):
+        return HttpResponseBadRequest('Invalid state parameter')
+
+    flow = Flow.from_client_config(
+        {
+            'web': {
+                'client_id': settings.GOOGLE_CLIENT_ID,
+                'client_secret': settings.GOOGLE_CLIENT_SECRET,
+                'redirect_uris': [settings.GOOGLE_REDIRECT_URI],
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://oauth2.googleapis.com/token',
+            }
+        },
+        scopes=settings.GOOGLE_CALENDAR_SCOPES,
+        state=state,
+    )
+    flow.redirect_uri = settings.GOOGLE_REDIRECT_URI
+    code_verifier = request.session.pop('google_code_verifier', '')
+    flow.fetch_token(code=request.GET.get('code'), code_verifier=code_verifier)
+    creds = flow.credentials
+
+    # UserGoogleToken に保存（or 更新）
+    from django.utils import timezone
+    from datetime import datetime, timezone as dt_tz
+    expiry = None
+    if creds.expiry:
+        expiry = creds.expiry.replace(tzinfo=dt_tz.utc)
+    UserGoogleToken.objects.update_or_create(
+        user=request.user,
+        defaults={
+            'access_token':  creds.token,
+            'refresh_token': creds.refresh_token or '',
+            'token_expiry':  expiry,
+            'sync_enabled':  True,
+        }
+    )
+    request.session['toast'] = 'Google カレンダーと連携しました'
+    return redirect('calendar')
+
+
+class google_oauth_disconnect(LoginRequiredMixin, View):
+    def post(self, request):
+        """連携解除：トークンを revoke して削除"""
+        import requests as req_lib
+        try:
+            token_obj = request.user.google_token
+            req_lib.post('https://oauth2.googleapis.com/revoke',
+                params={'token': token_obj.access_token}, timeout=5)
+            token_obj.delete()
+        except UserGoogleToken.DoesNotExist:
+            pass
+        return JsonResponse({'status': 'ok'})
+
+
+class google_sync_toggle(LoginRequiredMixin, View):
+    def patch(self, request):
+        """同期 ON/OFF 切り替え"""
+        try:
+            token_obj = request.user.google_token
+            token_obj.sync_enabled = not token_obj.sync_enabled
+            token_obj.save(update_fields=['sync_enabled'])
+            return JsonResponse({'sync_enabled': token_obj.sync_enabled})
+        except UserGoogleToken.DoesNotExist:
+            return JsonResponse({'error': 'Not connected'}, status=404)
+
+# ── views.py 先頭 import に以下も追加（未追加の場合）───────────
+# from django.contrib.auth.decorators import login_required
+# from django.http import HttpResponseBadRequest, JsonResponse
+# from django.shortcuts import redirect
