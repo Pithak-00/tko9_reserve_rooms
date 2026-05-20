@@ -24,7 +24,7 @@
     <!-- ① フィルターサイドバー -->
     <div class="room-selector-sidebar" id="roomSidebar">
       <!-- 予約登録ボタン -->
-      <a href="{% url 'reservation_create' %}" class="btn-create-reservation sidebar-create-btn">＋ 予約を登録する</a>
+      <button type="button" class="btn-create-reservation sidebar-create-btn" onclick="openRsvCreateModal({})">＋ 予約を登録する</button>
 
       <!-- ── 会議室 ── -->
       <div class="filter-section">
@@ -229,6 +229,86 @@
       <a class="btn btn-light btn-sm btn-detail" href="#">詳細を見る</a>
     </div>
   </div>
+
+  <!-- ===== 予約登録モーダル ===== -->
+  <div class="rsv-modal-overlay" id="rsvCreateModal" hidden>
+    <div class="rsv-modal-box">
+      <div class="rsv-modal-header">
+        <span class="rsv-modal-title">予約を登録する</span>
+        <button type="button" class="rsv-modal-close" id="rsvModalClose">✕</button>
+      </div>
+      <form id="rsvCreateForm" novalidate>
+        {% csrf_token %}
+        <div class="rsv-error-banner" id="rsvErrorBanner" hidden></div>
+        <div class="rsv-form-body">
+          <!-- 件名 -->
+          <div class="rsv-field">
+            <label class="rsv-label">件名 <span class="rsv-required">*</span></label>
+            <input type="text" name="title" id="rsvTitle" class="rsv-input" placeholder="会議・打ち合わせ など">
+            <div class="rsv-field-error" id="err-title"></div>
+          </div>
+          <!-- 会議室 -->
+          <div class="rsv-field">
+            <label class="rsv-label">会議室 <span class="rsv-required">*</span></label>
+            <select name="room" id="rsvRoom" class="rsv-select">
+              <option value="">--- 選択してください ---</option>
+              {% for room in rooms_list %}
+              <option value="{{ room.id }}">{{ room.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="rsv-field-error" id="err-room"></div>
+          </div>
+          <!-- 日付 -->
+          <div class="rsv-field">
+            <label class="rsv-label">日付 <span class="rsv-required">*</span></label>
+            <input type="date" name="reserve_date" id="rsvDate" class="rsv-input">
+            <div class="rsv-field-error" id="err-reserve_date"></div>
+          </div>
+          <!-- 終日トグル -->
+          <div class="rsv-field rsv-field-inline">
+            <label class="rsv-allday-label">
+              <input type="checkbox" name="is_all_day" id="rsvAllDay">
+              <span>終日</span>
+            </label>
+          </div>
+          <!-- 時刻 -->
+          <div class="rsv-field rsv-time-row" id="rsvTimeRow">
+            <label class="rsv-label">時刻 <span class="rsv-required">*</span></label>
+            <div class="rsv-time-fields">
+              <select name="start_time" id="rsvStartTime" class="rsv-select rsv-select-time">
+                {% for val, label in form_time_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+              <span class="rsv-time-sep">〜</span>
+              <select name="end_time" id="rsvEndTime" class="rsv-select rsv-select-time">
+                {% for val, label in form_time_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="rsv-field-error" id="err-start_time"></div>
+            <div class="rsv-field-error" id="err-end_time"></div>
+          </div>
+          <!-- 参加者 -->
+          <div class="rsv-field">
+            <label class="rsv-label">参加者名</label>
+            <textarea name="participants" id="rsvParticipants" class="rsv-textarea" rows="2" placeholder="田中 一郎、鈴木 花子 など"></textarea>
+          </div>
+          <!-- 備考 -->
+          <div class="rsv-field">
+            <label class="rsv-label">備考</label>
+            <textarea name="notes" id="rsvNotes" class="rsv-textarea" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="rsv-modal-footer">
+          <button type="button" class="btn btn-light btn-md" id="rsvCancelBtn">キャンセル</button>
+          <button type="submit" class="btn btn-primary btn-md" id="rsvSubmitBtn">予約を登録する</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- ===== /予約登録モーダル ===== -->
 
   <!-- トースト（Django messages） -->
   {% if messages %}{% for message in messages %}

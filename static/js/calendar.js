@@ -395,15 +395,6 @@ function getTextColor(hexColor) {
   return L > 0.179 ? '#1A1A2E' : '#FFFFFF';
 }
 
-// 使用例：FullCalendar eventDidMount で適用
-eventDidMount: (info) => {
-  const bgColor = info.event.backgroundColor;
-  info.el.style.color = getTextColor(bgColor);
-  if (!info.event.extendedProps.editable) {
-    info.el.setAttribute('draggable', 'false');
-  }
-},
-
 // Google 同期トグル・連携解除（calendar.js 追記）
 
 // 同期 ON/OFF トグル
@@ -508,24 +499,120 @@ function handleDateClick(info) {
   location.href = `?view=day&date=${info.dateStr}`;
 }
 
-// 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
+// 空きスロット選択 → 予約登録モーダルを開く
 function handleSelect(info) {
-  const dateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+  const dateStr  = info.startStr.slice(0, 10);
+  const isAllDay = info.allDay;
+  const startTime = isAllDay ? '09:00' : info.startStr.slice(11, 16);
+  const endTime   = isAllDay ? '10:00' : info.endStr.slice(11, 16);
 
-  let url;
-  if (info.allDay) {
-    // 終日スロット選択：all_day=1 を渡してフォームを終日モードで開く
-    url = `/reservations/create/?date=${dateStr}&all_day=1`;
-  } else {
-    const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
-    const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
-    url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
-  }
-
-  // サイドバーで1室のみ選択中なら room を自動補完
   const selectedIds = getSelectedRoomIds();
-  if (selectedIds.length === 1) {
-    url += `&room=${selectedIds[0]}`;
-  }
-  location.href = url;
+  const presetRoom  = selectedIds.length === 1 ? selectedIds[0] : null;
+
+  openRsvCreateModal({ dateStr, isAllDay, startTime, endTime, presetRoom });
 }
+
+// ===== 予約登録モーダル =====
+
+function openRsvCreateModal({ dateStr = '', isAllDay = false, startTime = '09:00', endTime = '10:00', presetRoom = null } = {}) {
+  const modal = document.getElementById('rsvCreateModal');
+  if (!modal) return;
+
+  document.getElementById('rsvCreateForm').reset();
+  clearRsvErrors();
+
+  document.getElementById('rsvDate').value     = dateStr;
+  document.getElementById('rsvAllDay').checked = isAllDay;
+  setSelectValue(document.getElementById('rsvStartTime'), startTime);
+  setSelectValue(document.getElementById('rsvEndTime'),   endTime);
+  if (presetRoom) setSelectValue(document.getElementById('rsvRoom'), String(presetRoom));
+
+  toggleRsvTimeRow();
+  modal.hidden = false;
+}
+
+function closeRsvCreateModal() {
+  const modal = document.getElementById('rsvCreateModal');
+  if (modal) modal.hidden = true;
+}
+
+function setSelectValue(sel, val) {
+  if (!sel) return;
+  for (const opt of sel.options) {
+    if (opt.value === val) { sel.value = val; return; }
+  }
+}
+
+function toggleRsvTimeRow() {
+  const allDay  = document.getElementById('rsvAllDay')?.checked;
+  const timeRow = document.getElementById('rsvTimeRow');
+  if (timeRow) timeRow.hidden = !!allDay;
+}
+
+function clearRsvErrors() {
+  document.querySelectorAll('.rsv-field-error').forEach(el => { el.textContent = ''; });
+  const banner = document.getElementById('rsvErrorBanner');
+  if (banner) { banner.textContent = ''; banner.hidden = true; }
+}
+
+function showRsvErrors(errors) {
+  clearRsvErrors();
+  let hasFieldError = false;
+  for (const [field, msgs] of Object.entries(errors)) {
+    const el = document.getElementById(`err-${field}`);
+    if (el) { el.textContent = msgs[0]; hasFieldError = true; }
+  }
+  if (errors.__all__ || !hasFieldError) {
+    const banner = document.getElementById('rsvErrorBanner');
+    const msg = errors.__all__ ? errors.__all__[0]
+      : (Object.values(errors).flat()[0] || 'エラーが発生しました');
+    banner.textContent = msg;
+    banner.hidden = false;
+  }
+}
+
+// モーダルのイベントリスナー（DOMContentLoaded 後に登録）
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('rsvAllDay')?.addEventListener('change', toggleRsvTimeRow);
+  document.getElementById('rsvModalClose')?.addEventListener('click', closeRsvCreateModal);
+  document.getElementById('rsvCancelBtn')?.addEventListener('click', closeRsvCreateModal);
+  document.getElementById('rsvCreateModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'rsvCreateModal') closeRsvCreateModal();
+  });
+
+  document.getElementById('rsvCreateForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('rsvSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = '登録中...';
+
+    const form = e.target;
+    const data = new FormData(form);
+
+    if (document.getElementById('rsvAllDay').checked) {
+      data.set('start_time', '00:00');
+      data.set('end_time',   '00:30');
+    }
+
+    try {
+      const res  = await fetch('/reservations/create-ajax/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken() },
+        body: data,
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        closeRsvCreateModal();
+        window.calendar?.refetchEvents();
+        showToast('予約を登録しました');
+      } else {
+        showRsvErrors(json.errors || {});
+      }
+    } catch {
+      showRsvErrors({ __all__: ['通信エラーが発生しました'] });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '予約を登録する';
+    }
+  });
+});
