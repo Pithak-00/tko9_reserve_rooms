@@ -69,15 +69,7 @@ function showConfirm(message, onOk, onCancel, okLabel, okClass) {
   });
 }
 
-/* ── data-confirm-msg 属性を持つボタンに削除確認を自動登録 ──
-   ※ このスクリプトは </body> 直前で読み込むため、
-      DOMContentLoaded を使わず即時実行する。
-   使い方:
-     <form id="del-form-1" method="post" action="..." class="logout-form">{% csrf_token %}</form>
-     <button type="button"
-             data-confirm-msg="本当に削除しますか？"
-             data-form="del-form-1">削除</button>
-   ─────────────────────────────────────────────────────────── */
+/* ── data-confirm-msg 属性を持つボタンに削除確認を自動登録 ── */
 (function () {
   document.querySelectorAll('[data-confirm-msg]').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
@@ -93,6 +85,73 @@ function showConfirm(message, onOk, onCancel, okLabel, okClass) {
   });
 }());
 
+// ── カスタムスクロールバー（Safari対応） ──
+document.addEventListener('DOMContentLoaded', function () {
+  const scroll = document.querySelector('.table-scroll');
+  if (!scroll) return;
+
+  // 横スクロールバー（テーブルの下）
+  const hBar = document.createElement('div');
+  const hThumb = document.createElement('div');
+  hBar.style.cssText = `
+    width: 100%;
+    height: 8px;
+    background: #ddd;
+    border-radius: 4px;
+    margin-top: 6px;
+    position: relative;
+    cursor: pointer;
+  `;
+  hThumb.style.cssText = `
+    height: 100%;
+    background: #888;
+    border-radius: 4px;
+    position: absolute;
+    top: 0;
+  `;
+  hBar.appendChild(hThumb);
+  scroll.parentNode.insertBefore(hBar, scroll.nextSibling);
+
+  // 縦スクロールバー（テーブルの右）
+  const vBar = document.createElement('div');
+  const vThumb = document.createElement('div');
+  vBar.style.cssText = `
+    width: 8px;
+    background: #ddd;
+    border-radius: 4px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    cursor: pointer;
+  `;
+  vThumb.style.cssText = `
+    width: 100%;
+    background: #888;
+    border-radius: 4px;
+    position: absolute;
+    left: 0;
+  `;
+  vBar.appendChild(vThumb);
+  scroll.style.position = 'relative';
+  scroll.parentNode.style.position = 'relative';
+  scroll.parentNode.appendChild(vBar);
+
+  // 位置を更新する関数
+  function update() {
+    const hRatio = scroll.clientWidth / scroll.scrollWidth;
+    hThumb.style.width = (hRatio * 100) + '%';
+    hThumb.style.left = (scroll.scrollLeft / scroll.scrollWidth * 100) + '%';
+
+    vBar.style.height = scroll.clientHeight + 'px';
+    const vRatio = scroll.clientHeight / scroll.scrollHeight;
+    vThumb.style.height = (vRatio * 100) + '%';
+    vThumb.style.top = (scroll.scrollTop / scroll.scrollHeight * 100) + '%';
+  }
+
+  scroll.addEventListener('scroll', update);
+  window.addEventListener('resize', update);
+  update();
+});
 /* ===== カレンダー共通ユーティリティ（F-04 追加分） ===== */
 
 // CSRF トークン取得

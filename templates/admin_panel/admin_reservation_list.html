@@ -76,47 +76,49 @@
         {% endif %}
       </div>
       <div class="admin-card">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>予約日時</th>
-              <th>会議室名</th>
-              <th>件名</th>
-              <th>予約者</th>
-              <th>ステータス</th>
-              <th>登録日時</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for rsv in reservations %}
-              <tr>
-                <td>{{ rsv.start_at|date:"Y/m/d" }}&nbsp;{{ rsv.start_at|time:"H:i" }}</td>
-                <td>{{ rsv.room.name }}</td>
-                <td>{{ rsv.title }}</td>
-                <td>{{ rsv.user.name }}</td>
-                <td>
-                  {% if rsv.is_cancelled %}
-                    <span class="badge badge-cancelled">キャンセル済</span>
-                  {% elif rsv.end_at > now %}
-                    <span class="badge badge-reserved">予約済み</span>
-                  {% else %}
-                    <span class="badge badge-ended">終了</span>
-                  {% endif %}
-                </td>
-                <td>{{ rsv.created_at|date:"m/d" }}&nbsp;{{ rsv.created_at|time:"H:i" }}</td>
-                <td>
-                  <a href="{% url 'reservation_detail' rsv.id %}" class="link-detail">詳細・編集 &gt;</a>
-                </td>
-              </tr>
-            {% empty %}
-              <tr class="empty-row">
-                <td colspan="7">該当する予約はありません。</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+        <div class="table-scroll">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>予約日時</th>
+        <th>会議室名</th>
+        <th>件名</th>
+        <th>予約者</th>
+        <th>ステータス</th>
+        <th>登録日時</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rsv in reservations %}
+        <tr>
+          <td>{{ rsv.start_at|date:"Y/m/d" }}&nbsp;{{ rsv.start_at|time:"H:i" }}</td>
+          <td>{{ rsv.room.name }}</td>
+          <td>{{ rsv.title }}</td>
+          <td>{{ rsv.user.name }}</td>
+          <td>
+            {% if rsv.is_cancelled %}
+              <span class="badge badge-cancelled">キャンセル済</span>
+            {% elif rsv.end_at > now %}
+              <span class="badge badge-reserved">予約済み</span>
+            {% else %}
+              <span class="badge badge-ended">終了</span>
+            {% endif %}
+          </td>
+          <td>{{ rsv.created_at|date:"m/d" }}&nbsp;{{ rsv.created_at|time:"H:i" }}</td>
+          <td>
+            <a href="{% url 'reservation_detail' rsv.id %}" class="link-detail">詳細・編集 &gt;</a>
+          </td>
+        </tr>
+      {% empty %}
+        <tr class="empty-row">
+          <td colspan="7">該当する予約はありません。</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
     </div>
+    <script src="{% static 'js/common.js' %}"></script>
   </body>
 </html>

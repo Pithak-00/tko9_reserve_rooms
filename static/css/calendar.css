@@ -259,6 +259,162 @@
   gap: 10px 12px;
 }
 
+  /* ── モバイル（max-width: 767px） — ツールバー2段化 ── */							
+  @media (max-width: 767px) {							
+    .calendar-toolbar {							
+      flex-wrap: wrap;							
+      gap: 8px;							
+    }							
+    .toolbar-center {							
+      position: static;							
+      transform: none;							
+      order: 1;							
+      width: 100%;							
+      text-align: center;							
+    }							
+    .toolbar-left {							
+      order: 0;							
+    }							
+    .toolbar-right {							
+      order: 2;							
+      width: 100%;							
+      display: flex;							
+      justify-content: space-between;							
+    }							
+    .filter-select {							
+      flex: 1;							
+      min-width: unset;							
+      margin-right: 8px;							
+    }							
+    .current-date {							
+      font-size: 15px;							
+    }							
+  }							
+							
+  /* ── モバイル（max-width: 767px） — •••メニュー・ドロップダウン ── */							
+  @media (max-width: 767px) {							
+    .dots-btn {							
+      width: 44px;							
+      height: 44px;							
+      border-radius: 8px;							
+      font-size: 18px;							
+    }							
+    .nav-dropdown {							
+      min-width: 200px;							
+      right: 0;							
+    }							
+    .nav-dropdown a,							
+    .nav-dropdown .logout-btn {							
+      padding: 14px 20px;							
+      font-size: 15px;							
+    }							
+    .nav-submenu {							
+      position: static;							
+      box-shadow: none;							
+      margin: 0;							
+      border-radius: 0;							
+    }							
+  }							
+							
+  /* ── モバイル（max-width: 767px） — カレンダーグリッド ── */							
+  @media (max-width: 767px) {							
+    .calendar-scroll {							
+      -webkit-overflow-scrolling: touch;							
+    }							
+    .room-header-cell {							
+      min-width: 100px;							
+    }							
+    .time-label {							
+      width: 40px;							
+      font-size: 11px;							
+    }							
+    .reservation-card {							
+      font-size: 10px;							
+      padding: 2px 4px;							
+    }							
+    .modal-box {							
+      width: calc(100vw - 32px) !important;							
+    }							
+  }							
+
+  /* ── モバイル（max-width: 767px） — ツールバー2段化 ── */							
+  @media (max-width: 767px) {							
+    .calendar-toolbar {							
+      flex-wrap: wrap;							
+      gap: 8px;							
+    }							
+    .toolbar-center {							
+      position: static;							
+      transform: none;							
+      order: 1;							
+      width: 100%;							
+      text-align: center;							
+    }							
+    .toolbar-left {							
+      order: 0;							
+    }							
+    .toolbar-right {							
+      order: 2;							
+      width: 100%;							
+      display: flex;							
+      justify-content: space-between;							
+    }							
+    .filter-select {							
+      flex: 1;							
+      min-width: unset;							
+      margin-right: 8px;							
+    }							
+    .current-date {							
+      font-size: 15px;							
+    }							
+  }							
+							
+  /* ── モバイル（max-width: 767px） — •••メニュー・ドロップダウン ── */							
+  @media (max-width: 767px) {							
+    .dots-btn {							
+      width: 44px;							
+      height: 44px;							
+      border-radius: 8px;							
+      font-size: 18px;							
+    }							
+    .nav-dropdown {							
+      min-width: 200px;							
+      right: 0;							
+    }							
+    .nav-dropdown a,							
+    .nav-dropdown .logout-btn {							
+      padding: 14px 20px;							
+      font-size: 15px;							
+    }							
+    .nav-submenu {							
+      position: static;							
+      box-shadow: none;							
+      margin: 0;							
+      border-radius: 0;							
+    }							
+  }							
+							
+  /* ── モバイル（max-width: 767px） — カレンダーグリッド ── */							
+  @media (max-width: 767px) {							
+    .calendar-scroll {							
+      -webkit-overflow-scrolling: touch;							
+    }							
+    .room-header-cell {							
+      min-width: 100px;							
+    }							
+    .time-label {							
+      width: 40px;							
+      font-size: 11px;							
+    }							
+    .reservation-card {							
+      font-size: 10px;							
+      padding: 2px 4px;							
+    }							
+    .modal-box {							
+      width: calc(100vw - 32px) !important;							
+    }							
+  }							
+
 .calendar-container {
   display:flex;
   height:calc(100vh - 64px);

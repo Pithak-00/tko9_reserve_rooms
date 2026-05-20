@@ -143,3 +143,31 @@
   background-color: #e74c3c;
   color: #fff;
 }
+
+  /* ── モバイル（max-width: 767px） ── */							
+  @media (max-width: 767px) {							
+    .search-row {							
+      flex-direction: column;							
+      gap: 8px;							
+    }							
+    .search-field {							
+      width: 100%;							
+    }
+    .table-scroll {
+    max-height: 55vh;
+    overflow-y: auto !important;
+    }							
+    .search-input,							
+    .search-select {							
+      width: 100%;							
+    }							
+    .search-row .btn {							
+      width: 100%;							
+    }							
+    .room-card-item {							
+      width: 100%;							
+    }							
+    .facility-icon span {							
+      font-size: 0;							
+    }							
+  }							

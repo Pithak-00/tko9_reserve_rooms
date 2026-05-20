@@ -98,3 +98,55 @@ tr.row-error td strong {
   color: #c0392b;
   margin-bottom: 8px;
 }
+
+ /* ── csv_import.css — モバイル（max-width: 767px） ── */		
+@media (max-width: 767px) {
+  /* 1. 説明文の改行と見やすさ向上 */
+  .sp-only-br {
+    display: block !important;
+    content: "";
+    margin-top: 5px;
+  }
+  .pc-only-sep {
+    display: none !important; /* スマホでは斜線を消す */
+  }
+  /* ① 親要素：縦並びにして、中身を中央に寄せる */
+  .file-input-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* ② ファイル選択枠：高さを少し抑え、中身を上下中央に固定 */
+  .file-input-row input[type="file"] {
+    width: 100% !important;
+    max-width: 300px !important;
+    height: 40px !important;
+    
+    /* 垂直方向の中央揃えを強化 */
+    display: flex !important;
+    align-items: center !important; 
+    line-height: 24px !important; /* heightと同じ値にすると文字が中央にきます */
+    
+    padding: 10px 10px !important;
+    box-sizing: border-box !important;
+    font-size: 13px !important;
+    background: #fff !important; /* 枠内を白くしてクッキリさせる */
+  }
+
+  /* ③ アップロードボタン：ファイル選択枠と高さを完全に一致させる */
+  .btn-upload {
+    width: 100% !important;
+    max-width: 300px !important;
+    height: 40px !important;
+    
+    margin: 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;  /* 枠に合わせて少しだけ小さく調整 */
+    padding: 0 !important;
+    line-height: 1 !important;
+  }
+}

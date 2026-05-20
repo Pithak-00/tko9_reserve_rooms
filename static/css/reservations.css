@@ -438,3 +438,52 @@ textarea::placeholder {
     align-items: center;
   }
 }
+
+  /* ── モバイル（max-width: 767px） ── */							
+  @media (max-width: 767px) {							
+    .form-section {							
+      padding: 16px 12px;							
+    }							
+    .time-row {							
+      flex-direction: column;							
+      gap: 8px;							
+    }							
+    .time-input {							
+      width: 100%;							
+    }							
+    .time-sep {							
+      display: none;							
+    }							
+    .datetime-group {							
+      width: 100%;							
+      flex-direction: column;							
+    }							
+    .datetime-group input {							
+      width: 100%;							
+    }							
+    .form-actions {							
+      flex-direction: column;							
+      gap: 8px;							
+    }							
+    .form-actions .btn {							
+      width: 100%;							
+    }							
+    input, select, textarea {							
+      font-size: 16px;							
+    }
+      /* input.shortの固定幅を解除 */
+    .input.short {
+      width: 100% !important;
+    }
+    /* field-block.shortの固定幅も解除（日付・会議室） */
+    .field-block.short {
+      width: 100% !important;
+    }
+      /* pairの幅を全幅に */
+    .pair {
+      width: 100% !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 4px !important;
+    }						
+  }							

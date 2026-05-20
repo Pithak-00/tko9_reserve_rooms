@@ -108,3 +108,97 @@
   background-color: #aaa;
   color: #fff;
 }
+						
+/* ── admin_reservation_list.css — モバイル修正 ── */
+@media (max-width: 767px) {
+  /* ① グリッドを完全に解除して縦並びを強制 */
+  .filter-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important; /* 項目ごとの間隔を少し広げて見やすく */
+    align-items: center !important; /* 中身を中央に寄せる */
+    width: 100% !important;
+  }
+
+  /* ② ラベルと入力エリアをそれぞれ縦に並べる */
+  .filter-label,
+  .filter-input {
+    width: 100% !important;
+    max-width: 300px !important; /* 横に広がりすぎないよう制限 */
+    text-align: left !important; /* 文字自体は左寄せが見やすい */
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ③ ラベルの微調整 */
+  .filter-label {
+    margin-bottom: -10px !important; /* 下の入力欄とセットに見えるよう近づける */
+    font-size: 10px !important;
+    font-weight: 600;
+  }
+
+  /* ④ 入力欄のサイズを統一 */
+  .filter-input select {
+    height: 40px !important;
+    font-size: 16px !important; /* iPhoneのズーム防止 */
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .table-scroll {
+    max-height: 55vh;
+    overflow-y: auto !important;
+    }
+    
+  .filter-input input{
+    font-size: 16px !important; /* iPhoneのズーム防止 */
+    width: 100% !important;
+    height: 40px !important;
+    padding: 0 0 0 0px !important;
+  }
+
+  /* ⑤ 検索・クリアボタンを中央寄せにする */
+  .filter-actions {
+    display: flex !important;
+    justify-content: center !important; 
+    gap: 12px !important;
+    margin-top: 10px !important;
+    width: 100% !important;
+  }
+
+  .filter-actions .btn {
+    flex: 1;
+    max-width: 120px !important; /* ボタンが大きくなりすぎないよう制限 */
+    height: 42px !important;
+    font-size: 15px !important;
+  }
+
+    /* ① テーブルを囲む枠：ここでスマホの画面幅にガチっと固定します */
+  .admin-card,
+  .table-scroll {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important; /* 画面幅を絶対に突き破らせない */
+    overflow-x: scroll !important;  /* はみ出た時にだけグレーのバーを出す */
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch; /* 指を離しても滑らかに動く設定 */
+    padding: 0 !important;
+    margin: 0 0 0 0 !important;
+    display: block !important;
+  }
+
+  /* ② テーブル自体：スマホ幅を無視して、横に長く広げる */
+  .admin-table {
+    width: 800px !important; /* 中身の文字の長さに合わせて自動で広げる */
+    min-width: 800px !important;   /* 「詳細・編集」まで確実に入れるために800pxに拡大 */
+    border-collapse: collapse !important;
+    margin: 0 !important;
+  }
+
+  /* 各マスの文字が縦長につぶれないようにする設定 */
+  .admin-table th,
+  .admin-table td {
+    white-space: nowrap !important; /* 文字を絶対に改行させない */
+    padding: 12px 10px !important;
+  }
+}
