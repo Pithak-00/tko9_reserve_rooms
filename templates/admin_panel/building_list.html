@@ -51,11 +51,11 @@
         </div>
       </form>
       <!-- 建物一覧テーブル -->
-      <div class='admin-card'>
-        <div class='list-header'>
+       <div class='list-header'>
           全建物 {{ total }}件
           {% if q %}（「{{ q }}」で絞り込み：{{ page_obj.paginator.count }}件）{% endif %}
         </div>
+      <div class='admin-card'>
         <div class='table-scroll'>
           <table class='admin-table'>
             <thead>

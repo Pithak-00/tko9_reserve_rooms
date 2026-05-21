@@ -279,7 +279,10 @@
   .table-scroll {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    border: 1px solid #eee;
+  }
+
+  list-header {
+    border-bottom: none !important;
   }
 
   .admin-table {
@@ -289,7 +292,7 @@
   /* 3. 操作ボタンを大きくする */
   .action-group {
     display: flex;
-    gap: 8px;
+    gap: 2px;
     justify-content: center;
     flex-direction: column !important;
     align-items: center !important; /* 中央揃えを強制 */
@@ -304,6 +307,13 @@
     max-height: 55vh;
     overflow-y: auto !important;
     }
+    
+  .table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #2d3748;
+  }
 
   /* 4. ヘッダー周りの調整 */
   .calendar-toolbar {

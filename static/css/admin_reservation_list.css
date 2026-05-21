@@ -148,7 +148,14 @@
   .table-scroll {
     max-height: 55vh;
     overflow-y: auto !important;
-    }
+  }
+  /* ↓ 追加 */
+  .table-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #2d3748;
+  }
     
   .filter-input input{
     font-size: 16px !important; /* iPhoneのズーム防止 */

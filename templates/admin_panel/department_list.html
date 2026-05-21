@@ -51,11 +51,11 @@
         </div>
       </form>
       <!-- 所属一覧テーブル（user_count・room_count の2列あり → SP横スクロール特に重要） -->
-      <div class='admin-card'>
-        <div class='list-header'>
+       <div class='list-header'>
           全所属 {{ total }}件
           {% if q %}（「{{ q }}」で絞り込み：{{ page_obj.paginator.count }}件）{% endif %}
         </div>
+      <div class='admin-card'>
         <div class='table-scroll'>
           <table class='admin-table'>
             <thead>
