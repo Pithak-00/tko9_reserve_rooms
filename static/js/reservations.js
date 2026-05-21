@@ -88,13 +88,11 @@ function clearError(selector) {
   if (!el) return;
 
   el.addEventListener("input", function () {
-    const block = el.closest(".field-block");
-    if (!block) return;
+    const container = el.closest(".field-block") || el.closest(".input");
+    if (!container) return;
 
-    const error = block.querySelector(".field-error");
-    const errorArea = block.querySelector(".field-error-area");
-
-    if (error) error.remove();
+    container.querySelectorAll(".field-error").forEach(e => e.remove());
+    const errorArea = container.querySelector(".field-error-area");
     if (errorArea) errorArea.innerHTML = "";
   });
 }

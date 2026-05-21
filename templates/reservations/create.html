@@ -87,9 +87,9 @@
           <div class="admin-card rsv-card">
             <div class="rsv-card-header">予約基本情報</div>
             <div class="rsv-card-body">
-              <div class="form-row-errorable">
-                <div class="label">会議室</div>
-                <div class="field-block short">
+              <div class="form-row">
+                <div class="label">会議室 <span class="label-required">*</span></div>
+                <div class="input wide">
                   <select name="room" id="roomSelect" class="form-select">
                     <option value="">--- 選択してください ---</option>
                     {% for room in form.fields.room.queryset %}
@@ -106,9 +106,7 @@
                       </option>
                     {% endfor %}
                   </select>
-                  <div class="field-error-area">
-                    {% for error in form.room.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                  </div>
+                  {% for error in form.room.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
                 </div>
               </div>
 
