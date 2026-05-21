@@ -1,126 +1,182 @@
 /* =====================================================
    login.css
-   ログイン画面専用スタイル
+   ログイン・パスワード変更画面専用スタイル
    共通スタイルは common.css を参照
    ===================================================== */
 
-/* ===== ロゴ（ログイン画面は左上固定） ===== */
-.logo {
-  position: absolute;
+/* ===== 画面レイアウト ===== */
+body {
+  background-color: #f4f6f9;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-/* ===== 画面中央配置 ===== */
-.container {
-  height: 100vh;
+/* ===== ロゴヘッダー ===== */
+.login-header {
+  padding: 28px 40px 0;
+}
+
+.login-header .header-logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.login-header .header-logo img {
+  height: 40px;
+}
+
+.login-header .header-logo span {
+  font-size: 20px;
+  color: #666;
+}
+
+/* ===== 中央コンテナ ===== */
+.login-container {
+  flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 40px 20px;
 }
 
-/* ===== フォームカード ===== */
-form {
-  background: #fff;
-  padding: 40px;
-  width: 350px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+/* ===== カード ===== */
+.login-card {
+  width: 400px;
+  max-width: 100%;
+}
 
+/* カードヘッダー（他画面の rsv-card-header と同テーマ） */
+.login-card-header {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #2c3e50;
+  border-radius: 10px 10px 0 0;
+  letter-spacing: 0.2px;
+}
+
+/* カードボディ */
+.login-card-body {
+  background: #fff;
+  padding: 32px 32px 28px;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* ===== ラベル ===== */
-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #555;
-}
-
-/* ===== 入力 ===== */
-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  background-color: #eef2f7;
-  box-sizing: border-box;
-}
-
 /* ===== フォームグループ ===== */
-.form-group {
-  width: 100%;
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.submit-group {
-  margin-top: 34px;
+.login-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.login-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2d3748;
+  font-size: 14px;
+  font-family: "Segoe UI", sans-serif;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.login-input:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.12);
 }
 
 /* ===== エラー表示 ===== */
-.error-area {
-  margin-top: 6px;
+.login-error {
+  color: #e74c3c;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
-.error-area:empty {
-  display: none;
+/* ===== 非フィールドエラー ===== */
+.login-non-field-error {
+  background: #fff5f5;
+  border: 1px solid #feb2b2;
+  border-radius: 6px;
+  color: #c53030;
+  font-size: 13px;
+  padding: 10px 14px;
+  line-height: 1.5;
 }
 
-.error-message {
-  color: red;
-  font-size: 14px;
-  line-height: 1.2;
+/* ===== ボタン行 ===== */
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
 }
 
-/* ── モバイル（max-width: 767px） ── */
+/* モバイル */
 @media (max-width: 767px) {
-  /* ① 全体の配置：center を解除して、少し上寄りにする */
-  .container {
-    height: 100vh !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important; /* 真ん中ではなく上寄席スタートにする */
-    align-items: center !important;
-    padding: 60px 20px 0 !important;       /* 上側に60pxの余白を作って位置を微調整 */
-    box-sizing: border-box !important;
-  }
-
-  /* ② ロゴとタイトルの位置 */
   .login-header {
-    position: static !important;
-    text-align: center !important;
-    margin-bottom: 20px !important; /* フォームとの隙間を少し詰める */
-    width: 100% !important;
+    padding: 16px 16px 0;
   }
 
-  .logo {
-    position: static !important;
-    margin-bottom: 10px !important;
+  .login-header .header-logo span {
+    font-size: 14px;
   }
 
-  .logo img {
-    max-width: 120px !important; /* ロゴをほんの少し小ぶりに */
-    height: auto !important;
+  .login-header .header-logo img {
+    height: 32px;
   }
 
-  .system-title {
-    display: block !important;
-    font-size: 14px !important;
-    color: #333 !important;
-    font-weight: bold !important;
+  .login-container {
+    padding: 24px 12px;
+    align-items: flex-start;
   }
 
-  /* ③ フォームカード：縦幅を小さく（スリムに）する */
-  form {
-    width: 95% !important;
-    max-width: 350px !important;
-    padding: 24px 20px !important; /* 上下の余白を40px→24pxにして縦幅を小さく */
-    gap: 15px !important;          /* 項目間の隙間も少し詰める */
-    margin: 0 !important;
+  .login-card {
+    width: 100%;
   }
 
-  /* ④ ボタン上の余白も少し詰める */
-  .submit-group {
-    margin-top: 15px !important;   /* 34px→15pxに縮小 */
+  .login-card-body {
+    padding: 24px 20px 20px;
+    gap: 16px;
   }
+}
+
+/* ===== Django フォームが出力する input/select を login スタイルに上書き ===== */
+.login-card-body input[type="text"],
+.login-card-body input[type="email"],
+.login-card-body input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  background: #fff;
+  color: #2d3748;
+  font-size: 14px;
+  font-family: "Segoe UI", sans-serif;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  margin: 0;
+}
+
+.login-card-body input[type="text"]:focus,
+.login-card-body input[type="email"]:focus,
+.login-card-body input[type="password"]:focus {
+  border-color: #4299e1;
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.12);
 }
