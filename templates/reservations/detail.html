@@ -70,31 +70,19 @@
         <div class="admin-card rsv-card">
           <div class="rsv-card-header">予約日時</div>
           <div class="rsv-card-body">
-            <div class="form-row datetime-row">
-              <div class="label">日時</div>
-              <div class="datetime-fields">
-                <div class="datetime-date">
-                  <input type="text"
-                         value="{{ reservation.start_at|date:'Y年n月j日(D)' }}"
-                         class="detail-date-input" disabled>
-                </div>
-                {% if not reservation.is_all_day %}
-                <div class="datetime-times">
-                  <input type="text" value="{{ reservation.start_at|time:'H:i' }}"
-                         class="detail-time-input" disabled>
-                  <span class="time-sep">〜</span>
-                  <input type="text" value="{{ reservation.end_at|time:'H:i' }}"
-                         class="detail-time-input" disabled>
-                </div>
+            <div class="selected-room-info">
+              <span class="sri-label">日付</span>
+              <span class="sri-value">{{ reservation.start_at|date:'Y年n月j日(D)' }}</span>
+
+              <span class="sri-label">時間</span>
+              <span class="sri-value">
+                {% if reservation.is_all_day %}
+                  <span class="allday-badge">終日</span>
+                {% else %}
+                  {{ reservation.start_at|time:'H:i' }} 〜 {{ reservation.end_at|time:'H:i' }}
                 {% endif %}
-              </div>
+              </span>
             </div>
-            {% if reservation.is_all_day %}
-            <div class="form-row allday-check-row">
-              <div class="label"></div>
-              <span class="allday-badge">終日</span>
-            </div>
-            {% endif %}
           </div>
         </div>
 
@@ -102,29 +90,18 @@
         <div class="admin-card rsv-card">
           <div class="rsv-card-header">予約内容</div>
           <div class="rsv-card-body">
-            <div class="form-row">
-              <div class="label">予約者名</div>
-              <div class="input wide">
-                <input type="text" value="{{ reservation.reserved_by }}" disabled>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">件名</div>
-              <div class="input wide">
-                <input type="text" value="{{ reservation.title }}" disabled>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">参加者名</div>
-              <div class="input wide">
-                <textarea class="no-resize" rows="3" disabled>{{ reservation.participants|default:'' }}</textarea>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">備考</div>
-              <div class="input wide">
-                <textarea class="no-resize" rows="3" disabled>{{ reservation.notes|default:'' }}</textarea>
-              </div>
+            <div class="selected-room-info">
+              <span class="sri-label">予約者名</span>
+              <span class="sri-value">{{ reservation.reserved_by }}</span>
+
+              <span class="sri-label">件名</span>
+              <span class="sri-value">{{ reservation.title }}</span>
+
+              <span class="sri-label">参加者名</span>
+              <span class="sri-value sri-multiline">{{ reservation.participants|default:'―' }}</span>
+
+              <span class="sri-label">備考</span>
+              <span class="sri-value sri-multiline">{{ reservation.notes|default:'―' }}</span>
             </div>
           </div>
         </div>
