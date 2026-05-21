@@ -593,8 +593,3 @@ class google_sync_toggle(LoginRequiredMixin, View):
             return JsonResponse({'sync_enabled': token_obj.sync_enabled})
         except UserGoogleToken.DoesNotExist:
             return JsonResponse({'error': 'Not connected'}, status=404)
-
-# ── views.py 先頭 import に以下も追加（未追加の場合）───────────
-# from django.contrib.auth.decorators import login_required
-# from django.http import HttpResponseBadRequest, JsonResponse
-# from django.shortcuts import redirect
