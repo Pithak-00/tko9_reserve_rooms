@@ -46,11 +46,15 @@
               </div>
             </div>
             <div class="form-row">
-              <div class="label">建物／階</div>
+              <div class="label">建物</div>
               <div class="input short">
-                <input type="text"
-                       value="{% if reservation.room.building %}{{ reservation.room.building.name }}{% endif %}{% if reservation.room.floor %}／{{ reservation.room.floor }}階{% endif %}"
-                       disabled>
+                <input type="text" value="{{ reservation.room.building.name|default:'―' }}" disabled>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="label">階数</div>
+              <div class="input short">
+                <input type="text" value="{% if reservation.room.floor %}{{ reservation.room.floor }}階{% else %}―{% endif %}" disabled>
               </div>
             </div>
             <div class="form-row">
@@ -63,8 +67,23 @@
               <div class="label">設備</div>
               <div class="input short">
                 <input type="text"
-                       value="{% for facility in reservation.room.facilities.all %}{{ facility.name }}{% if not forloop.last %}、{% endif %}{% empty %}-{% endfor %}"
+                       value="{% for f in reservation.room.facilities.all %}{{ f.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}"
                        disabled>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="label">所属別表示</div>
+              <div class="input short">
+                <input type="text"
+                       value="{% for d in reservation.room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}"
+                       disabled>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="label">カラー</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="display:inline-block;width:24px;height:24px;border-radius:4px;background:{{ reservation.room.color|default:'#3182CE' }};border:1px solid #cbd5e0;flex-shrink:0;"></span>
+                <input type="text" value="{{ reservation.room.color|default:'#3182CE' }}" disabled style="width:110px;">
               </div>
             </div>
           </div>
