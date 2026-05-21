@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -xe
 
 echo "ApplicationStart started"
 
@@ -11,24 +11,25 @@ cd "$APP_DIR"
 
 echo "Move directory completed"
 
-docker stop "$CONTAINER_NAME" || true
-docker rm "$CONTAINER_NAME" || true
-docker rmi "$IMAGE_NAME" || true
+/usr/bin/docker stop "$CONTAINER_NAME" || true
+/usr/bin/docker rm "$CONTAINER_NAME" || true
+/usr/bin/docker rmi "$IMAGE_NAME" || true
 
 echo "Old container cleanup completed"
 
-docker build --no-cache -t "$IMAGE_NAME" .
+/usr/bin/docker build --no-cache -t "$IMAGE_NAME" .
 
 echo "Docker build completed"
 
-docker run -d \
+/usr/bin/docker run -d \
   --name "$CONTAINER_NAME" \
-  -p 8000:8000 \
+  --restart unless-stopped \
+  -p 80:8000 \
   "$IMAGE_NAME"
 
 echo "Docker container start completed"
 
-# 🔥 ここが追加ポイント（アプリ起動待ち）
+
 sleep 5
 
 echo "ApplicationStart completed"
