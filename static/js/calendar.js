@@ -529,8 +529,15 @@ function handleDateClick(info) {
 
   // 日・週ビュー → 予約作成画面へ
   const dateStr = info.dateStr.slice(0, 10);
-  const timeStr = info.dateStr.slice(11, 16);
-  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  let url;
+
+  if (info.allDay) {
+    // 終日行クリック → all_day=1 を渡す
+    url = `/reservations/create/?date=${dateStr}&all_day=1`;
+  } else {
+    const timeStr = info.dateStr.slice(11, 16);
+    url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  }
 
   const selectedIds = getSelectedRoomIds();
   if (selectedIds.length === 1) {
