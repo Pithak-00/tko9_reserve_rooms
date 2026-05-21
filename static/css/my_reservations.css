@@ -85,6 +85,12 @@
     max-height: 55vh;
     overflow-y: auto !important;
     }
+    .table-scroll thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #2d3748;
+    }
 
     .reservation-row {							
       flex-direction: column;							

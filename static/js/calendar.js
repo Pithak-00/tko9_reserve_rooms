@@ -18,6 +18,21 @@ document.addEventListener("click", function (e) {
   const navMenu = document.getElementById("navMenu");
   const dotsBtn = document.querySelector(".dots-btn");
 
+   // スマホ幅以外は何もしない
+  if (window.innerWidth > 767) return;
+
+  const sidebar = document.getElementById('roomSidebar');
+  const hamburger = document.querySelector('.hamburger-btn');
+
+  if (
+    sidebar &&
+    sidebar.classList.contains('open') &&
+    !sidebar.contains(e.target) &&
+    !hamburger.contains(e.target)
+  ) {
+    sidebar.classList.remove('open');
+  }
+
   // クリック対象がメニュー内・dots-btn内であれば何もしない
   if (
     (navMenu && navMenu.contains(e.target)) ||
@@ -33,6 +48,7 @@ document.addEventListener("click", function (e) {
   if (submenu) submenu.classList.remove("open");
   if (arrow) arrow.classList.remove("open");
 });
+
 
 /* ===== フィルターセクション アコーディオン ===== */
 function toggleFilterSection(headerEl) {
@@ -503,9 +519,24 @@ function handleDatesSet(info) {
 // 月次ビューで日付クリック → 日次ビューへ遷移
 // ※ イベントブロッククリック時は _eventJustClicked フラグでスキップ
 function handleDateClick(info) {
-  if (_eventJustClicked) return;                    // イベントクリックと同時発火を無視
-  if (info.view.type !== 'dayGridMonth') return;    // 月ビュー以外では何もしない
-  location.href = `?view=day&date=${info.dateStr}`;
+  if (_eventJustClicked) return;
+
+  if (info.view.type === 'dayGridMonth') {
+    // 月ビュー → その日の日ビューへ
+    location.href = `?view=day&date=${info.dateStr}`;
+    return;
+  }
+
+  // 日・週ビュー → 予約作成画面へ
+  const dateStr = info.dateStr.slice(0, 10);
+  const timeStr = info.dateStr.slice(11, 16);
+  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+
+  const selectedIds = getSelectedRoomIds();
+  if (selectedIds.length === 1) {
+    url += `&room=${selectedIds[0]}`;
+  }
+  location.href = url;
 }
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）

@@ -263,7 +263,8 @@
   @media (max-width: 767px) {							
     .calendar-toolbar {							
       flex-wrap: wrap;							
-      gap: 8px;							
+      gap: 8px;
+      flex-shrink: 0;							
     }							
     .toolbar-center {							
       position: static;							
@@ -275,6 +276,15 @@
     .toolbar-left {							
       order: 0;							
     }							
+      .fc-col-header-cell a {
+      font-size: 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .fc-col-header-cell {
+      vertical-align: middle !important;
+    }
     .toolbar-right {							
       order: 2;							
       width: 100%;							
@@ -341,7 +351,7 @@
   @media (max-width: 767px) {							
     .calendar-toolbar {							
       flex-wrap: wrap;							
-      gap: 8px;							
+      gap: 8px;			
     }							
     .toolbar-center {							
       position: static;							
@@ -432,6 +442,7 @@
   display:flex;
   flex-direction:column;
   overflow:hidden;
+  min-height: 0;
 }
 
 .calendar-toolbar {
@@ -497,16 +508,33 @@
   .room-selector-sidebar {
     display:none;
   }
+  .room-selector-sidebar.open {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: #fff;
+    z-index: 200;
+    overflow-y: auto;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  }
   .fc-col-header {
     font-size:11px;
   }	
 }
 
 .hamburger-btn {
-  display:none;
-  @media(max-width:767px) {
-    display:block
-  }	
+  display: block;
+  font-size: 22px;  /* ← 文字サイズ */
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
 }
 
 /* === ビュー切り替えタブ === */
