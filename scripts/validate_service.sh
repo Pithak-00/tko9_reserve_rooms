@@ -5,6 +5,6 @@ echo "ValidateService started"
 
 docker ps
 
-curl -f http://localhost:8000
+curl -f http://localhost
 
 echo "ValidateService completed"
