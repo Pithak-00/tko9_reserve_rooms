@@ -18,21 +18,21 @@ document.addEventListener("click", function (e) {
   const navMenu = document.getElementById("navMenu");
   const dotsBtn = document.querySelector(".dots-btn");
 
-   // スマホ幅以外は何もしない
-  if (window.innerWidth > 767) return;
-
-  const sidebar = document.getElementById('roomSidebar');
-  const hamburger = document.querySelector('.hamburger-btn');
-
-  if (
-    sidebar &&
-    sidebar.classList.contains('open') &&
-    !sidebar.contains(e.target) &&
-    !hamburger.contains(e.target)
-  ) {
-    sidebar.classList.remove('open');
+  // ===== サイドバー閉じる（スマホのみ） =====
+  if (window.innerWidth <= 767) {
+    const sidebar = document.getElementById('roomSidebar');
+    const hamburger = document.querySelector('.hamburger-btn');
+    if (
+      sidebar &&
+      sidebar.classList.contains('open') &&
+      !sidebar.contains(e.target) &&
+      hamburger && !hamburger.contains(e.target)
+    ) {
+      sidebar.classList.remove('open');
+    }
   }
 
+  // ===== ナビメニュー閉じる（全画面幅） =====
   // クリック対象がメニュー内・dots-btn内であれば何もしない
   if (
     (navMenu && navMenu.contains(e.target)) ||
