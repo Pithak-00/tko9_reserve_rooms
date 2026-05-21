@@ -1,23 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>予約編集</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>予約編集 | 会議室予約システム</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/common.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/reservations.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/reservations.css' %}">
   </head>
   <body>
     <div class="logo between">
       <div class="header-logo">
-        <a href="/">
-          <img src="{% static 'image/bold-logo.webp' %}" alt="logo" />
-        </a>
-        <span>社内会議室予約システム：予約編集</span>
+        <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
+        <span>社内会議室予約システム</span>
       </div>
       <div class="top-links">
-        <a href="{% url 'calendar' %}">日次カレンダーに戻る</a>
+        <a href="{% url 'calendar' %}">カレンダーに戻る</a>
         <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
@@ -25,120 +23,133 @@
         </form>
       </div>
     </div>
-    <div class="page">
-      <div class="section-title main-title">予約編集モード</div>
-      <div class="section">
-        <div class="section-title">会議室情報</div>
-        <div class="section-body">
-          <div class="form-row">
-            <div class="label">会議室</div>
-            <div class="input short">
-              <input type="text" value="{{ reservation.room.name }}" disabled />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="label">建物／階</div>
-            <div class="input short">
-              <input type="text"
-                     value="{% if reservation.room.building %}{{ reservation.room.building.name }}{% endif %}{% if reservation.room.floor %}／{{ reservation.room.floor }}階{% endif %}"
-                     disabled />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="label">収容人数</div>
-            <div class="input short">
-              <input type="text" value="{{ reservation.room.capacity }}名" disabled />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="label">設備</div>
-            <div class="input short">
-              <input type="text"
-                     value="{% for facility in reservation.room.facilities.all %}{{ facility.name }}{% if not forloop.last %}、{% endif %}{% empty %}-{% endfor %}"
-                     disabled />
-            </div>
-          </div>
+
+    <div class="calendar-container">
+      <!-- ページタイトル -->
+      <div class="calendar-toolbar" style="margin-bottom:20px;">
+        <div class="toolbar-left">
+          <span class="page-title">予約編集</span>
         </div>
       </div>
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="section">
-          <div class="section-title">予約日時</div>
-          <div class="section-body">
-            <!-- 日時行：日付・開始時刻・終了時刻を横一列 -->
-            <div class="form-row datetime-row">
-              <div class="label">日時</div>
-              <div class="datetime-fields">
-                <div class="datetime-date">
-                  {{ form.reserve_date }}
-                  {% for error in form.reserve_date.errors %}
-                    <div class="field-error">{{ error }}</div>
-                  {% endfor %}
-                </div>
-                <div id="timeFields" class="datetime-times">
-                  {{ form.start_time }}
-                  <span class="time-sep">〜</span>
-                  {{ form.end_time }}
-                </div>
-              </div>
-            </div>
-            <!-- 終日チェック行（日時行の直下・インデント揃え） -->
-            <div class="form-row allday-check-row">
-              <div class="label"></div>
-              <label class="allday-check-label" for="isAllDay">
-                {{ form.is_all_day }}
-                <span class="allday-check-text">終日</span>
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">予約内容</div>
-          <div class="section-body">
-            <div class="form-row-errorable">
-              <div class="label">件名</div>
-              <div class="field-block wide">
-                {{ form.title }}
-                <div class="field-error-area">
-                  {% for error in form.title.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                </div>
+
+      <div class="rsv-content">
+        <!-- 会議室情報（変更不可） -->
+        <div class="admin-card rsv-card">
+          <div class="rsv-card-header">会議室情報</div>
+          <div class="rsv-card-body">
+            <div class="form-row">
+              <div class="label">会議室</div>
+              <div class="input short">
+                <input type="text" value="{{ reservation.room.name }}" disabled>
               </div>
             </div>
             <div class="form-row">
-              <div class="label">参加者名</div>
-              <div class="input wide">{{ form.participants }}</div>
+              <div class="label">建物／階</div>
+              <div class="input short">
+                <input type="text"
+                       value="{% if reservation.room.building %}{{ reservation.room.building.name }}{% endif %}{% if reservation.room.floor %}／{{ reservation.room.floor }}階{% endif %}"
+                       disabled>
+              </div>
             </div>
             <div class="form-row">
-              <div class="label">備考</div>
-              <div class="input wide">{{ form.notes }}</div>
+              <div class="label">収容人数</div>
+              <div class="input short">
+                <input type="text" value="{{ reservation.room.capacity }}名" disabled>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="label">設備</div>
+              <div class="input short">
+                <input type="text"
+                       value="{% for facility in reservation.room.facilities.all %}{{ facility.name }}{% if not forloop.last %}、{% endif %}{% empty %}-{% endfor %}"
+                       disabled>
+              </div>
             </div>
           </div>
         </div>
-        {% if form.non_field_errors %}
-          <div id="toast" class="toast center">
-            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          <!-- 予約日時 -->
+          <div class="admin-card rsv-card">
+            <div class="rsv-card-header">予約日時</div>
+            <div class="rsv-card-body">
+              <div class="form-row datetime-row">
+                <div class="label">日時</div>
+                <div class="datetime-fields">
+                  <div class="datetime-date">
+                    {{ form.reserve_date }}
+                    {% for error in form.reserve_date.errors %}
+                      <div class="field-error">{{ error }}</div>
+                    {% endfor %}
+                  </div>
+                  <div id="timeFields" class="datetime-times">
+                    {{ form.start_time }}
+                    <span class="time-sep">〜</span>
+                    {{ form.end_time }}
+                  </div>
+                </div>
+              </div>
+              <div class="form-row allday-check-row">
+                <div class="label"></div>
+                <label class="allday-check-label" for="isAllDay">
+                  {{ form.is_all_day }}
+                  <span class="allday-check-text">終日</span>
+                </label>
+              </div>
+            </div>
           </div>
-        {% endif %}
-        <div class="actions">
-          <button type="submit" class="btn btn-primary btn-lg">保存する</button>
-          <a href="{% url 'reservation_detail' reservation.pk %}"
-             class="btn btn-secondary btn-lg btn-cancel-reservation">編集をキャンセル</a>
-        </div>
-      </form>
+
+          <!-- 予約内容 -->
+          <div class="admin-card rsv-card">
+            <div class="rsv-card-header">予約内容</div>
+            <div class="rsv-card-body">
+              <div class="form-row-errorable">
+                <div class="label">件名</div>
+                <div class="field-block wide">
+                  {{ form.title }}
+                  <div class="field-error-area">
+                    {% for error in form.title.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                  </div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="label">参加者名</div>
+                <div class="input wide">{{ form.participants }}</div>
+              </div>
+              <div class="form-row">
+                <div class="label">備考</div>
+                <div class="input wide">{{ form.notes }}</div>
+              </div>
+            </div>
+          </div>
+
+          {% if form.non_field_errors %}
+            <div class="rsv-non-field-error">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="actions">
+            <button type="submit" class="btn btn-primary btn-md">保存する</button>
+            <a href="{% url 'reservation_detail' reservation.pk %}" class="btn btn-light btn-md">キャンセル</a>
+          </div>
+        </form>
+      </div>
     </div>
+
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
     <script>
       (function () {
         const allDayChk  = document.getElementById('isAllDay');
         const timeFields = document.getElementById('timeFields');
-
         function toggleTimeFields() {
           timeFields.style.display = allDayChk.checked ? 'none' : 'flex';
         }
-
         allDayChk.addEventListener('change', toggleTimeFields);
-        toggleTimeFields();  // 初期表示に適用
+        toggleTimeFields();
       }());
     </script>
   </body>
