@@ -27,7 +27,6 @@
     </div>
 
     <div class="calendar-container">
-      <!-- ページタイトル -->
       <div class="calendar-toolbar" style="margin-bottom:20px;">
         <div class="toolbar-left">
           <span class="page-title">新規予約</span>
@@ -35,22 +34,47 @@
       </div>
 
       <div class="rsv-content">
-        <!-- 選択中会議室 -->
+
+        <!-- 選択中の会議室 -->
         <div class="admin-card rsv-card">
           <div class="rsv-card-header">選択中の会議室</div>
           <div class="rsv-card-body">
             <div class="selected-room-info" id="selectedRoomInfo">
-              <span class="room-main" id="selectedRoomName">
+              <span class="sri-label">会議室</span>
+              <span class="sri-value room-main" id="dispRoomName">
                 {% if selected_room %}{{ selected_room.name }}{% else %}<span class="selected-room-placeholder">会議室を選択してください</span>{% endif %}
               </span>
-              <span class="selected-room-capacity" id="selectedRoomCapacity">
-                {% if selected_room %}収容人数：{{ selected_room.capacity }}名{% endif %}
+
+              <span class="sri-label">建物</span>
+              <span class="sri-value" id="dispRoomBuilding">
+                {% if selected_room %}{{ selected_room.building.name|default:'―' }}{% endif %}
               </span>
-              <span class="selected-room-building" id="selectedRoomBuilding">
-                {% if selected_room and selected_room.building %}{{ selected_room.building }}{% endif %}
+
+              <span class="sri-label">階数</span>
+              <span class="sri-value" id="dispRoomFloor">
+                {% if selected_room %}{% if selected_room.floor %}{{ selected_room.floor }}階{% else %}―{% endif %}{% endif %}
               </span>
-              <span class="selected-room-floor" id="selectedRoomFloor">
-                {% if selected_room and selected_room.floor %}{{ selected_room.floor }}階{% endif %}
+
+              <span class="sri-label">収容人数</span>
+              <span class="sri-value" id="dispRoomCapacity">
+                {% if selected_room %}{{ selected_room.capacity }}名{% endif %}
+              </span>
+
+              <span class="sri-label">設備</span>
+              <span class="sri-value" id="dispRoomFacilities">
+                {% if selected_room %}{% for f in selected_room.facilities.all %}{{ f.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}{% endif %}
+              </span>
+
+              <span class="sri-label">所属別表示</span>
+              <span class="sri-value" id="dispRoomDepartments">
+                {% if selected_room %}{% for d in selected_room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}{% endif %}
+              </span>
+
+              <span class="sri-label">カラー</span>
+              <span class="sri-value" id="dispRoomColor">
+                {% if selected_room %}
+                  <span class="sri-color-swatch" id="dispRoomColorSwatch" style="background:{{ selected_room.color|default:'#3182CE' }};"></span>{{ selected_room.color|default:'#3182CE' }}
+                {% endif %}
               </span>
             </div>
           </div>
@@ -71,9 +95,12 @@
                     {% for room in form.fields.room.queryset %}
                       <option value="{{ room.id }}"
                               data-name="{{ room.name }}"
-                              data-capacity="{{ room.capacity }}"
-                              data-building="{{ room.building|default:'' }}"
+                              data-building="{{ room.building.name|default:'' }}"
                               data-floor="{% if room.floor %}{{ room.floor }}{% endif %}"
+                              data-capacity="{{ room.capacity }}"
+                              data-facilities="{% for f in room.facilities.all %}{{ f.name }}{% if not forloop.last %}、{% endif %}{% endfor %}"
+                              data-departments="{% for d in room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% endfor %}"
+                              data-color="{{ room.color|default:'#3182CE' }}"
                               {% if form.room.value|stringformat:"s" == room.id|stringformat:"s" %}selected{% endif %}>
                         {{ room.name }}
                       </option>
@@ -116,13 +143,17 @@
           <div class="admin-card rsv-card">
             <div class="rsv-card-header">予約内容</div>
             <div class="rsv-card-body">
-              <div class="form-row-errorable">
-                <div class="label">件名</div>
-                <div class="field-block wide">
+              <div class="form-row">
+                <div class="label">予約者名</div>
+                <div class="input wide">
+                  <input type="text" value="{{ request.user.name }}" disabled>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="label">件名 <span class="label-required">*</span></div>
+                <div class="input wide">
                   {{ form.title }}
-                  <div class="field-error-area">
-                    {% for error in form.title.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
-                  </div>
+                  {% for error in form.title.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
                 </div>
               </div>
               <div class="form-row">

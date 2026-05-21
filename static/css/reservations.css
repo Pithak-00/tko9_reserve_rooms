@@ -45,13 +45,24 @@
 
 /* ===== 選択中会議室（作成画面） ===== */
 .selected-room-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: center;
-  font-size: 15px;
-  color: #2d3748;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 10px 12px;
+  align-items: baseline;
   min-height: 32px;
+}
+
+.selected-room-info .sri-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #718096;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.selected-room-info .sri-value {
+  font-size: 14px;
+  color: #2d3748;
 }
 
 .room-main {
@@ -60,11 +71,14 @@
   color: #2c7a9b;
 }
 
-.selected-room-capacity,
-.selected-room-building,
-.selected-room-floor {
-  font-size: 14px;
-  color: #718096;
+.sri-color-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid #cbd5e0;
+  vertical-align: middle;
+  margin-right: 6px;
 }
 
 .selected-room-placeholder {
@@ -116,6 +130,12 @@
   font-weight: 600;
   color: #4a5568;
   flex-shrink: 0;
+}
+
+.label-required {
+  color: #e53e3e;
+  font-size: 13px;
+  margin-left: 2px;
 }
 
 .input.short {
