@@ -185,6 +185,13 @@
       (function () {
         const allDayChk  = document.getElementById('isAllDay');
         const timeFields = document.getElementById('timeFields');
+
+        // URL パラメータ all_day=1 が指定されていれば強制チェック
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('all_day') === '1') {
+          allDayChk.checked = true;
+        }
+
         function toggleTimeFields() {
           timeFields.style.display = allDayChk.checked ? 'none' : 'flex';
         }
