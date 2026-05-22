@@ -1,14 +1,18 @@
 """
-F-05: 予約コマのクリック表示（カレンダーポップアップ）の単体テスト
-対象ビュー : reservations.views.CalendarView（サーバーサイドのデータ検証）
-URL name  : calendar  →  /calendar/
+F-05: カレンダーの予約表示・ポップアップ の単体テスト
 
-F-05 はフロントエンド（JavaScript）による UI インタラクションだが、
-本テストでは「ポップアップが動作するために必要なサーバーサイドのデータ」が
-カレンダーページに正しく含まれることを検証する。
+現在の実装では予約データは JavaScript（FullCalendar）が
+CalendarEventsAPI（/calendar/events/）を呼び出して取得する。
+
+本テストでは以下を検証する:
+  1. CalendarEventsAPI が正しい予約データを返すこと
+  2. キャンセル済み予約が API から返されないこと
+  3. カレンダーページにポップアップ用 HTML 構造が含まれること
+  4. カレンダーページに予約作成 URL が含まれること
 """
 
-from datetime import date, datetime, time
+import json
+from datetime import date, datetime, time, timedelta
 
 from django.test import TestCase
 from django.urls import reverse
@@ -19,12 +23,12 @@ from reservations.models import Reservation, Room
 
 
 class TestF05CalendarPopup(TestCase):
-    """F-05 予約コマのクリック表示（サーバーサイド検証）"""
+    """F-05 カレンダー予約表示・ポップアップ機能のテスト"""
 
     def setUp(self):
-        self.url = reverse("calendar")
+        self.calendar_url = reverse("calendar")
+        self.events_url = reverse("calendar_events")
         self.today = date.today()
-        self.date_param = self.today.strftime("%Y-%m-%d")
 
         self.user = User.objects.create_user(
             login_id="test@example.com",
@@ -48,59 +52,93 @@ class TestF05CalendarPopup(TestCase):
 
         self.client.login(username="test@example.com", password="TestPass123")
 
-    def _get_calendar(self):
-        return self.client.get(self.url, {"date": self.date_param, "filter": "all"})
+        # CalendarEventsAPI に渡す start/end パラメータ（当日全体）
+        self.start_param = timezone.make_aware(
+            datetime.combine(self.today, time(0, 0))
+        ).isoformat()
+        self.end_param = timezone.make_aware(
+            datetime.combine(self.today + timedelta(days=1), time(0, 0))
+        ).isoformat()
+
+    def _get_events(self, **extra_params):
+        params = {"start": self.start_param, "end": self.end_param}
+        params.update(extra_params)
+        return self.client.get(self.events_url, params)
 
     # ──────────────────────────────────────────────
-    # 正常系
+    # 正常系: CalendarEventsAPI
     # ──────────────────────────────────────────────
 
-    def test_reservation_block_has_data_reservation_id(self):
-        """正常系: 予約ブロックに data-reservation-id 属性が含まれること"""
-        response = self._get_calendar()
-        self.assertContains(
-            response,
-            f'data-reservation-id="{self.reservation.id}"',
-        )
+    def test_events_api_returns_200(self):
+        """正常系: イベント API が 200 を返すこと"""
+        response = self._get_events()
+        self.assertEqual(response.status_code, 200)
 
-    def test_reservation_block_has_data_title(self):
-        """正常系: 予約ブロックに data-title（件名）属性が含まれること"""
-        response = self._get_calendar()
-        self.assertContains(response, 'data-title="テスト会議"')
+    def test_events_api_returns_reservation(self):
+        """正常系: 予約が JSON 配列として返されること"""
+        response = self._get_events()
+        events = json.loads(response.content)
+        ids = [e["id"] for e in events]
+        self.assertIn(self.reservation.id, ids)
 
-    def test_reservation_block_has_data_reserved_by(self):
-        """正常系: 予約ブロックに data-reserved-by（予約者名）属性が含まれること"""
-        response = self._get_calendar()
-        self.assertContains(response, 'data-reserved-by="テストユーザー"')
+    def test_events_api_reservation_has_title(self):
+        """正常系: 返された予約に title（件名）が含まれること"""
+        response = self._get_events()
+        events = json.loads(response.content)
+        event = next(e for e in events if e["id"] == self.reservation.id)
+        self.assertEqual(event["title"], "テスト会議")
 
-    def test_reservation_block_has_data_start_and_end(self):
-        """正常系: 予約ブロックに data-start / data-end（時刻）属性が含まれること"""
-        response = self._get_calendar()
-        content = response.content.decode("utf-8")
-        self.assertIn('data-start="10:00"', content)
-        self.assertIn('data-end="11:00"', content)
+    def test_events_api_reservation_has_reserved_by(self):
+        """正常系: 返された予約に reserved_by（予約者名）が含まれること"""
+        response = self._get_events()
+        events = json.loads(response.content)
+        event = next(e for e in events if e["id"] == self.reservation.id)
+        self.assertEqual(event["reserved_by"], "テストユーザー")
 
-    def test_modal_detail_link_exists_in_page(self):
-        """正常系: 予約詳細モーダルの「詳細を見る」リンク要素がページに存在すること"""
-        response = self._get_calendar()
-        self.assertContains(response, "modal-detail-link")
-        self.assertContains(response, "詳細を見る")
-
-    def test_empty_cell_has_reservation_create_url(self):
-        """正常系: 空きコマに予約作成画面（/reservations/create/）への URL が含まれること"""
-        response = self._get_calendar()
-        self.assertContains(response, "/reservations/create/")
+    def test_events_api_reservation_has_start_and_end(self):
+        """正常系: 返された予約に start / end（時刻）が含まれること"""
+        response = self._get_events()
+        events = json.loads(response.content)
+        event = next(e for e in events if e["id"] == self.reservation.id)
+        self.assertIn("start", event)
+        self.assertIn("end", event)
+        self.assertIn("10:00", event["start"])
+        self.assertIn("11:00", event["end"])
 
     # ──────────────────────────────────────────────
-    # 異常系
+    # 異常系: CalendarEventsAPI
     # ──────────────────────────────────────────────
 
-    def test_cancelled_reservation_not_shown_in_calendar(self):
-        """異常系: キャンセル済み予約は予約ブロックとしてカレンダーに表示されないこと"""
+    def test_cancelled_reservation_not_returned_by_api(self):
+        """異常系: キャンセル済み予約は API から返されないこと"""
         self.reservation.is_cancelled = True
         self.reservation.save()
-        response = self._get_calendar()
-        self.assertNotContains(
-            response,
-            f'data-reservation-id="{self.reservation.id}"',
-        )
+        response = self._get_events()
+        events = json.loads(response.content)
+        ids = [e["id"] for e in events]
+        self.assertNotIn(self.reservation.id, ids)
+
+    def test_events_api_invalid_params_returns_400(self):
+        """異常系: start/end パラメータ不正 → 400 が返ること"""
+        response = self.client.get(self.events_url, {"start": "invalid", "end": "invalid"})
+        self.assertEqual(response.status_code, 400)
+
+    # ──────────────────────────────────────────────
+    # 正常系: カレンダーページ HTML 構造
+    # ──────────────────────────────────────────────
+
+    def test_calendar_page_has_popover_structure(self):
+        """正常系: カレンダーページにポップアップ用 HTML 構造が含まれること"""
+        response = self.client.get(self.calendar_url)
+        self.assertContains(response, "reservation-popover")
+
+    def test_calendar_page_has_detail_link(self):
+        """正常系: カレンダーページにポップアップの「詳細を見る」リンク要素が含まれること"""
+        response = self.client.get(self.calendar_url)
+        self.assertContains(response, "btn-detail")
+        self.assertContains(response, "詳細を見る")
+
+    def test_calendar_page_has_reservation_create_url(self):
+        """正常系: カレンダーページに予約作成画面への URL が含まれること"""
+        response = self.client.get(self.calendar_url)
+        self.assertContains(response, "/reservations/create/")
