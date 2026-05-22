@@ -7,13 +7,16 @@
 /* ===== ナビボタン（今日・←・→） ===== */
 .nav-btn {
   display: inline-block;
-  padding: 7px 18px;
+  padding: 0px 18px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  height: 43px;         
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
   background: #fff;
   color: #555;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -73,8 +76,8 @@
 .toolbar-right {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 4px;
 }
 
@@ -309,18 +312,18 @@
   padding: 15px;
 }
 
-  .room-selector-sidebar.open {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 260px;
-    height: 100vh;
-    background: #fff;
-    z-index: 200;
-    overflow-y: auto;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-  }
+.room-selector-sidebar.open {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: #fff;
+  z-index: 200;
+  overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+}
 
 .calendar-main {
   flex: 1;
@@ -384,8 +387,16 @@
 /* === ビュー切り替えタブ === */
 .view-tabs { display: flex; gap: 4px; }
 .view-tab {
-  padding: 4px 14px; border: 1px solid #CBD5E0; border-radius: 4px;
-  background: #fff; cursor: pointer; font-size: 13px;
+  padding: 0px 18px;
+  border: 1px solid #CBD5E0;
+  border-radius: 4px;
+  background: #fff; 
+  cursor: pointer;
+  font-size: 13px;
+  box-sizing: border-box;
+  height: 43px;       
+  padding: 0 18px;   
+  border-radius: 6px;  
 }
 .view-tab.active, .view-tab:hover { background: #2E75B6; color: #fff; border-color: #2E75B6; }
 
