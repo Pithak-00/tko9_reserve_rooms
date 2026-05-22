@@ -13,26 +13,22 @@ function toggleAdminSubmenu(e) {
   if (arrow) arrow.classList.toggle("open");
 }
 
-// メニュー外クリック時のみ閉じる（contains チェックで内部クリックを除外）
+//メニュー外・画面外クリック時のみ閉じる処理（PC・スマホ両対応）
 document.addEventListener("click", function (e) {
   const navMenu = document.getElementById("navMenu");
   const dotsBtn = document.querySelector(".dots-btn");
-
-   // スマホ幅以外は何もしない
-  if (window.innerWidth > 767) return;
-
   const sidebar = document.getElementById('roomSidebar');
   const hamburger = document.querySelector('.hamburger-btn');
 
-  if (
-    sidebar &&
-    sidebar.classList.contains('open') &&
-    !sidebar.contains(e.target) &&
-    !hamburger.contains(e.target)
-  ) {
-    sidebar.classList.remove('open');
+  // --- 💡 変更ポイント: サイドバー（フィルター）を画面外クリックで閉じる制御 ---
+  if (sidebar && sidebar.classList.contains('open')) {
+    // クリックされた場所が「サイドバーの中」でも「ハンバーガーボタン自体」でもない場合
+    if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+      sidebar.classList.remove('open');
+    }
   }
 
+  // --- 右上の三点リーダーメニュー（dotsBtn）の制御 ---
   // クリック対象がメニュー内・dots-btn内であれば何もしない
   if (
     (navMenu && navMenu.contains(e.target)) ||
@@ -41,7 +37,7 @@ document.addEventListener("click", function (e) {
     return;
   }
 
-  // メニュー外クリック → すべて閉じる
+  // メニュー外クリック → 右上のドロップダウンをすべて閉じる
   if (navMenu) navMenu.classList.remove("open");
   const submenu = document.getElementById("adminSubmenu");
   const arrow = document.getElementById("adminArrow");
