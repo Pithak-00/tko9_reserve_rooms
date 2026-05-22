@@ -9,29 +9,44 @@ function initRoomSelect() {
   const roomSelect = document.getElementById("roomSelect");
   if (!roomSelect) return;
 
-  const roomName = document.getElementById("selectedRoomName");
-  const roomCapacity = document.getElementById("selectedRoomCapacity");
-  const roomBuilding = document.getElementById("selectedRoomBuilding");
-  const roomFloor = document.getElementById("selectedRoomFloor");
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
 
   function update() {
-    const option = roomSelect.options[roomSelect.selectedIndex];
+    const opt   = roomSelect.options[roomSelect.selectedIndex];
+    const empty = !opt || !opt.value;
 
-    if (!option || !option.value) {
-      roomName.textContent = "";
-      roomCapacity.textContent = "";
-      roomBuilding.textContent = "";
-      roomFloor.textContent = "";
+    if (empty) {
+      const nameEl = document.getElementById("dispRoomName");
+      if (nameEl) {
+        nameEl.innerHTML = '<span class="selected-room-placeholder">会議室を選択してください</span>';
+      }
+      setText("dispRoomBuilding",    "");
+      setText("dispRoomFloor",       "");
+      setText("dispRoomCapacity",    "");
+      setText("dispRoomFacilities",  "");
+      setText("dispRoomDepartments", "");
+      const colorEl = document.getElementById("dispRoomColor");
+      if (colorEl) colorEl.textContent = "";
       return;
     }
 
-    roomName.textContent = option.dataset.name || "-";
-    roomCapacity.textContent =
-      "収容人数：" + (option.dataset.capacity || "-") + "名";
-    roomBuilding.textContent = "建物：" + (option.dataset.building || "-");
-    roomFloor.textContent = option.dataset.floor
-      ? option.dataset.floor + "階"
-      : "-";
+    setText("dispRoomName",        opt.dataset.name        || "");
+    setText("dispRoomBuilding",    opt.dataset.building    || "―");
+    setText("dispRoomFloor",       opt.dataset.floor       ? opt.dataset.floor + "階" : "―");
+    setText("dispRoomCapacity",    opt.dataset.capacity    ? opt.dataset.capacity + "名" : "―");
+    setText("dispRoomFacilities",  opt.dataset.facilities  || "―");
+    setText("dispRoomDepartments", opt.dataset.departments || "―");
+
+    // カラー：スウォッチ＋テキスト
+    const color   = opt.dataset.color || "#3182CE";
+    const colorEl = document.getElementById("dispRoomColor");
+    if (colorEl) {
+      colorEl.innerHTML =
+        `<span class="sri-color-swatch" style="background:${color};"></span>${color}`;
+    }
   }
 
   roomSelect.addEventListener("change", update);
@@ -73,13 +88,11 @@ function clearError(selector) {
   if (!el) return;
 
   el.addEventListener("input", function () {
-    const block = el.closest(".field-block");
-    if (!block) return;
+    const container = el.closest(".field-block") || el.closest(".input");
+    if (!container) return;
 
-    const error = block.querySelector(".field-error");
-    const errorArea = block.querySelector(".field-error-area");
-
-    if (error) error.remove();
+    container.querySelectorAll(".field-error").forEach(e => e.remove());
+    const errorArea = container.querySelector(".field-error-area");
     if (errorArea) errorArea.innerHTML = "";
   });
 }

@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="ja">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>予約詳細</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>予約詳細 | 会議室予約システム</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/common.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/reservations.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/reservations.css' %}">
   </head>
   <body>
     <div class="logo between">
       <div class="header-logo">
-        <a href="/">
-          <img src="{% static 'image/bold-logo.webp' %}" alt="logo" />
-        </a>
-        <span>社内会議室予約システム：予約詳細</span>
+        <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
+        <span>社内会議室予約システム</span>
       </div>
       <div class="top-links">
-        <a href="{% url 'calendar' %}">日次カレンダーに戻る</a>
+        <a href="{% url 'calendar' %}">カレンダーに戻る</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'my_reservations' %}">自分の予約</a>
         <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
@@ -25,134 +25,120 @@
         </form>
       </div>
     </div>
-    <div class="page">
-      <div class="section-title main-title">予約詳細</div>
-      <form>
-        <div class="section">
-          <div class="section-title">会議室情報</div>
-          <div class="section-body">
-            <div class="form-row">
-              <div class="label">会議室</div>
-              <div class="input short">
-                <input type="text" value="{{ reservation.room.name }}" disabled />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">建物／階</div>
-              <div class="input short">
-                <input type="text"
-                       value="{% if reservation.room.building %}{{ reservation.room.building.name }}{% endif %}{% if reservation.room.floor %}／{{ reservation.room.floor }}階{% endif %}"
-                       disabled />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">収容人数</div>
-              <div class="input short">
-                <input type="text" value="{{ reservation.room.capacity }}名" disabled />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">設備</div>
-              <div class="input short">
-                <input type="text"
-                       value="{% for facility in reservation.room.facilities.all %}{{ facility.name }}{% if not forloop.last %}、{% endif %}{% empty %}-{% endfor %}"
-                       disabled />
-              </div>
+
+    <div class="calendar-container">
+      <!-- ページタイトル -->
+      <div class="calendar-toolbar" style="margin-bottom:20px;">
+        <div class="toolbar-left">
+          <span class="page-title">予約詳細</span>
+        </div>
+      </div>
+
+      <div class="rsv-content">
+        <!-- 会議室情報 -->
+        <div class="admin-card rsv-card">
+          <div class="rsv-card-header">会議室情報</div>
+          <div class="rsv-card-body">
+            <div class="selected-room-info">
+              <span class="sri-label">会議室</span>
+              <span class="sri-value room-main">{{ reservation.room.name }}</span>
+
+              <span class="sri-label">建物</span>
+              <span class="sri-value">{{ reservation.room.building.name|default:'―' }}</span>
+
+              <span class="sri-label">階数</span>
+              <span class="sri-value">{% if reservation.room.floor %}{{ reservation.room.floor }}階{% else %}―{% endif %}</span>
+
+              <span class="sri-label">収容人数</span>
+              <span class="sri-value">{{ reservation.room.capacity }}名</span>
+
+              <span class="sri-label">設備</span>
+              <span class="sri-value">{% for f in reservation.room.facilities.all %}{{ f.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}</span>
+
+              <span class="sri-label">所属別表示</span>
+              <span class="sri-value">{% for d in reservation.room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}</span>
+
+              <span class="sri-label">カラー</span>
+              <span class="sri-value">
+                <span class="sri-color-swatch" style="background:{{ reservation.room.color|default:'#3182CE' }};"></span>{{ reservation.room.color|default:'#3182CE' }}
+              </span>
             </div>
           </div>
         </div>
-        <div class="section">
-          <div class="section-title">予約日時</div>
-          <div class="section-body">
-            <!-- 日時行：日付・開始時刻・終了時刻を横一列 -->
-            <div class="form-row datetime-row">
-              <div class="label">日時</div>
-              <div class="datetime-fields">
-                <div class="datetime-date">
-                  <input type="text"
-                         value="{{ reservation.start_at|date:'Y年n月j日(D)' }}"
-                         class="detail-date-input" disabled />
-                </div>
-                {% if not reservation.is_all_day %}
-                <div class="datetime-times">
-                  <input type="text" value="{{ reservation.start_at|time:'H:i' }}"
-                         class="detail-time-input" disabled />
-                  <span class="time-sep">〜</span>
-                  <input type="text" value="{{ reservation.end_at|time:'H:i' }}"
-                         class="detail-time-input" disabled />
-                </div>
+
+        <!-- 予約日時 -->
+        <div class="admin-card rsv-card">
+          <div class="rsv-card-header">予約日時</div>
+          <div class="rsv-card-body">
+            <div class="selected-room-info">
+              <span class="sri-label">日付</span>
+              <span class="sri-value">{{ reservation.start_at|date:'Y年n月j日(D)' }}</span>
+
+              <span class="sri-label">時間</span>
+              <span class="sri-value">
+                {% if reservation.is_all_day %}
+                  <span class="allday-badge">終日</span>
+                {% else %}
+                  {{ reservation.start_at|time:'H:i' }} 〜 {{ reservation.end_at|time:'H:i' }}
                 {% endif %}
-              </div>
-            </div>
-            <!-- 終日バッジ -->
-            {% if reservation.is_all_day %}
-            <div class="form-row allday-check-row">
-              <div class="label"></div>
-              <span class="allday-badge">終日</span>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        <div class="section">
-          <div class="section-title">予約内容</div>
-          <div class="section-body">
-            <div class="form-row">
-              <div class="label">予約者名</div>
-              <div class="input wide">
-                <input type="text" value="{{ reservation.reserved_by }}" disabled />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">件名</div>
-              <div class="input wide">
-                <input type="text" value="{{ reservation.title }}" disabled />
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">参加者名</div>
-              <div class="input wide">
-                <textarea class="no-resize" rows="3" disabled>
-{{ reservation.participants|default:'' }}</textarea>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="label">備考</div>
-              <div class="input wide">
-                <textarea class="no-resize" rows="4" disabled>
-{{ reservation.notes|default:'' }}</textarea>
-              </div>
+              </span>
             </div>
           </div>
         </div>
+
+        <!-- 予約内容 -->
+        <div class="admin-card rsv-card">
+          <div class="rsv-card-header">予約内容</div>
+          <div class="rsv-card-body">
+            <div class="selected-room-info">
+              <span class="sri-label">予約者名</span>
+              <span class="sri-value">{{ reservation.reserved_by }}</span>
+
+              <span class="sri-label">件名</span>
+              <span class="sri-value">{{ reservation.title }}</span>
+
+              <span class="sri-label">参加者名</span>
+              <span class="sri-value sri-multiline">{{ reservation.participants|default:'―' }}</span>
+
+              <span class="sri-label">備考</span>
+              <span class="sri-value sri-multiline">{{ reservation.notes|default:'―' }}</span>
+            </div>
+          </div>
+        </div>
+
+        {% if not reservation.is_cancelled %}
         <div class="actions">
-          <a href="{% url 'reservation_edit' reservation.pk %}"
-             class="btn btn-primary btn-lg">編集する</a>
-          <button type="button"
-                  class="btn btn-secondary btn-lg btn-cancel-reservation"
-                  id="openCancelModal">予約をキャンセル</button>
+          <a href="{% url 'reservation_edit' reservation.pk %}" class="btn btn-primary btn-md">編集する</a>
+          <button type="button" class="btn btn-danger btn-md" id="openCancelModal">予約をキャンセル</button>
         </div>
-      </form>
-      <div class="modal-overlay" id="cancelModal" hidden>
-        <div class="cancel-modal">
-          <div class="cancel-modal-title">予約のキャンセル</div>
-          <div class="cancel-modal-message">
-            「{{ reservation.title }}（{{ reservation.start_at|date:'Y/m/d' }}
-            {{ reservation.start_at|time:'H:i' }}～{{ reservation.end_at|time:'H:i' }}）」をキャンセルしますか？
-            <br />
-            この操作は取り消せません
-          </div>
-          <div class="cancel-modal-actions">
-            <button type="button" class="btn btn-light btn-lg" id="closeCancelModal">キャンセルしない</button>
-            <form method="post"
-                  action="{% url 'reservation_cancel' reservation.pk %}"
-                  class="cancel-form">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-danger btn-lg">キャンセルする</button>
-            </form>
-          </div>
+        {% else %}
+        <div class="actions">
+          <span class="badge-cancelled" style="padding:6px 16px;border-radius:6px;font-size:14px;">キャンセル済み</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- キャンセル確認モーダル -->
+    <div class="modal-overlay" id="cancelModal" hidden>
+      <div class="cancel-modal">
+        <div class="cancel-modal-title">予約のキャンセル確認</div>
+        <div class="cancel-modal-message">
+          「{{ reservation.title }}（{{ reservation.start_at|date:'Y/m/d' }}
+          {% if not reservation.is_all_day %} {{ reservation.start_at|time:'H:i' }}〜{{ reservation.end_at|time:'H:i' }}{% endif %}）」をキャンセルしますか？
+          <br>この操作は取り消せません。
+        </div>
+        <div class="cancel-modal-actions">
+          <button type="button" class="btn btn-light btn-md" id="closeCancelModal">戻る</button>
+          <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" class="cancel-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger btn-md">キャンセルする</button>
+          </form>
         </div>
       </div>
     </div>
+
+    <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
   </body>
 </html>

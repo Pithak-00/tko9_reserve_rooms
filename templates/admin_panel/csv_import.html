@@ -122,8 +122,7 @@
           <div class="step-body">
             {% if error_count > 0 %}
               <p class="import-note">
-                エラー行（{{ error_count }}件）はスキップされ、有効な {{ valid_count
-                }}件のみ登録されます。
+                エラー行（{{ error_count }}件）はスキップされ、有効な {{ valid_count }}件のみ登録されます。
               </p>
             {% endif %}
             <div class="action-group" style="justify-content: flex-start; gap: 10px">
@@ -131,11 +130,12 @@
               {% if valid_count > 0 %}
                 <form method="post"
                       action="{% url 'csv_import_execute' %}"
+                      id="importExecuteForm"
                       class="logout-form">
                   {% csrf_token %}
-                  <button type="submit"
+                  <button type="button"
                           class="btn btn-primary btn-md"
-                          onclick="return confirm('{{ valid_count }}件のユーザーを登録します。よろしいですか？')">
+                          id="openImportModal">
                     インポートを実行する（{{ valid_count }}件）
                   </button>
                 </form>
@@ -143,8 +143,7 @@
                 <button type="button"
                         class="btn btn-primary btn-md"
                         disabled
-                        style="opacity: 0.4;
-                               cursor: not-allowed">インポートを実行する（有効行なし）</button>
+                        style="opacity: 0.4; cursor: not-allowed">インポートを実行する（有効行なし）</button>
               {% endif %}
             </div>
           </div>
@@ -153,5 +152,55 @@
       <!-- /.admin-card -->
     </div>
     <!-- /.calendar-container -->
+
+    <!-- ===== インポート確認モーダル ===== -->
+    <div class="modal-overlay" id="importModal" hidden>
+      <div class="import-modal">
+        <div class="import-modal-header">インポートの確認</div>
+        <div class="import-modal-body">
+          <p class="import-modal-message">
+            <strong>{{ valid_count }}件</strong>のユーザーを登録します。<br>
+            この操作は取り消せません。よろしいですか？
+          </p>
+        </div>
+        <div class="import-modal-actions">
+          <button type="button" class="btn btn-light btn-md" id="closeImportModal">戻る</button>
+          <button type="button" class="btn btn-primary btn-md" id="confirmImport">実行する</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const modal      = document.getElementById('importModal');
+        const openBtn    = document.getElementById('openImportModal');
+        const closeBtn   = document.getElementById('closeImportModal');
+        const confirmBtn = document.getElementById('confirmImport');
+        const form       = document.getElementById('importExecuteForm');
+
+        if (!openBtn || !modal) return;
+
+        function openModal() {
+          modal.removeAttribute('hidden');
+          modal.classList.add('open');
+        }
+
+        function closeModal() {
+          modal.classList.remove('open');
+          modal.setAttribute('hidden', '');
+        }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) closeModal();
+        });
+
+        confirmBtn.addEventListener('click', function () {
+          form.submit();
+        });
+      }());
+    </script>
   </body>
 </html>

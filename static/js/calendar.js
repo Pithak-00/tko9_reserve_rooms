@@ -24,11 +24,25 @@ document.addEventListener("click", function (e) {
   if (sidebar && sidebar.classList.contains('open')) {
     // クリックされた場所が「サイドバーの中」でも「ハンバーガーボタン自体」でもない場合
     if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+
+
+  // ===== サイドバー閉じる（スマホのみ） =====
+  if (window.innerWidth <= 767) {
+    const sidebar = document.getElementById('roomSidebar');
+    const hamburger = document.querySelector('.hamburger-btn');
+    if (
+      sidebar &&
+      sidebar.classList.contains('open') &&
+      !sidebar.contains(e.target) &&
+      hamburger && !hamburger.contains(e.target)
+    ) {
       sidebar.classList.remove('open');
     }
   }
 
+
   // --- 右上の三点リーダーメニュー（dotsBtn）の制御 ---
+  // ===== ナビメニュー閉じる（全画面幅） =====
   // クリック対象がメニュー内・dots-btn内であれば何もしない
   if (
     (navMenu && navMenu.contains(e.target)) ||
@@ -525,8 +539,15 @@ function handleDateClick(info) {
 
   // 日・週ビュー → 予約作成画面へ
   const dateStr = info.dateStr.slice(0, 10);
-  const timeStr = info.dateStr.slice(11, 16);
-  let url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  let url;
+
+  if (info.allDay) {
+    // 終日行クリック → all_day=1 を渡す
+    url = `/reservations/create/?date=${dateStr}&all_day=1`;
+  } else {
+    const timeStr = info.dateStr.slice(11, 16);
+    url = `/reservations/create/?date=${dateStr}&time=${timeStr}`;
+  }
 
   const selectedIds = getSelectedRoomIds();
   if (selectedIds.length === 1) {

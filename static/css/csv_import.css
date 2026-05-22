@@ -150,3 +150,48 @@ tr.row-error td strong {
     line-height: 1 !important;
   }
 }
+/* ===== 確認モーダル ===== */
+.import-modal {
+  width: 480px;
+  max-width: calc(100% - 32px);
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.import-modal-header {
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: #2c3e50;
+}
+
+.import-modal-body {
+  padding: 24px 28px 20px;
+}
+
+.import-modal-message {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4a5568;
+}
+
+.import-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 28px 24px;
+}
+
+@media (max-width: 767px) {
+  .import-modal-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .import-modal-actions .btn {
+    width: 100%;
+  }
+}

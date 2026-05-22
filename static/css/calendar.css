@@ -68,6 +68,23 @@
 }
 
 /* ドットのメニューボタン（既存） */
+
+/* ===== toolbar-right：ビュータブと・・・ボタンを縦積み ===== */
+.toolbar-right {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+/* ===== メニューボタン ===== */
+.nav-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .dots-btn {
   width: 40px;
   height: 36px;
@@ -76,8 +93,6 @@
   background: #fff;
   cursor: pointer;
   color: #555;
-  margin-left: 100px;
-  margin-top: 12px;
 }
 
 .dots-btn:hover {
@@ -88,13 +103,13 @@
 .nav-dropdown {
   display: none;
   position: absolute;
-  top: 44px;
+  top: calc(100% + 6px);
   right: 0;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  min-width: 150px;
-  z-index: 1000; /* カレンダー要素より前面へ */
+  min-width: 160px;
+  z-index: 100;
 }
 
 .nav-dropdown.open {
