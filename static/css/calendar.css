@@ -7,13 +7,16 @@
 /* ===== ナビボタン（今日・←・→） ===== */
 .nav-btn {
   display: inline-block;
-  padding: 7px 18px;
+  padding: 0px 18px;
   border: 1px solid #ccc;
   border-radius: 8px;
+  height: 43px;         
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
   background: #fff;
   color: #555;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
@@ -53,12 +56,28 @@
   border-color: #3182ce;
 }
 
+/* ===== メニューボタン（ハンバーガーボタン） ===== */
+/* ⭕️ PC版でも最初から表示し、クリックでメニューが開くトリガーにします */
+.hamburger-btn {
+  display: block !important; /* PC・SP共に見えるようにします */
+  font-size: 22px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* ドットのメニューボタン（既存） */
+
 /* ===== toolbar-right：ビュータブと・・・ボタンを縦積み ===== */
 .toolbar-right {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 4px;
 }
 
@@ -215,7 +234,7 @@
 
 .calendar-cell {
   padding: 1px 3px;
-  height: 1px; /* rowspan セルで height:100% を子要素に継承させるハック */
+  height: 1px;
 }
 
 /* ===== 空きセル ===== */
@@ -261,7 +280,7 @@
   background-color: #4a9bcc;
 }
 
-/* ===== モーダル（サイズのみ上書き） ===== */
+/* ===== モーダル ===== */
 .modal-box {
   width: 360px;
 }
@@ -272,209 +291,65 @@
   gap: 10px 12px;
 }
 
-  /* ── モバイル（max-width: 767px） — ツールバー2段化 ── */							
-  @media (max-width: 767px) {							
-    .calendar-toolbar {							
-      flex-wrap: wrap;							
-      gap: 8px;
-      flex-shrink: 0;							
-    }							
-    .toolbar-center {							
-      position: static;							
-      transform: none;							
-      order: 1;							
-      width: 100%;							
-      text-align: center;							
-    }							
-    .toolbar-left {							
-      order: 0;							
-    }							
-      .fc-col-header-cell a {
-      font-size: 8px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-    }
-    .fc-col-header-cell {
-      vertical-align: middle !important;
-    }
-    .toolbar-right {							
-      order: 2;							
-      width: 100%;							
-      display: flex;							
-      justify-content: space-between;							
-    }							
-    .filter-select {							
-      flex: 1;							
-      min-width: unset;							
-      margin-right: 8px;							
-    }							
-    .current-date {							
-      font-size: 15px;							
-    }							
-  }							
-							
-  /* ── モバイル（max-width: 767px） — •••メニュー・ドロップダウン ── */							
-  @media (max-width: 767px) {							
-    .dots-btn {							
-      width: 44px;							
-      height: 44px;							
-      border-radius: 8px;							
-      font-size: 18px;							
-    }							
-    .nav-dropdown {							
-      min-width: 200px;							
-      right: 0;							
-    }							
-    .nav-dropdown a,							
-    .nav-dropdown .logout-btn {							
-      padding: 14px 20px;							
-      font-size: 15px;							
-    }							
-    .nav-submenu {							
-      position: static;							
-      box-shadow: none;							
-      margin: 0;							
-      border-radius: 0;							
-    }							
-  }							
-							
-  /* ── モバイル（max-width: 767px） — カレンダーグリッド ── */							
-  @media (max-width: 767px) {							
-    .calendar-scroll {							
-      -webkit-overflow-scrolling: touch;							
-    }							
-    .room-header-cell {							
-      min-width: 100px;							
-    }							
-    .time-label {							
-      width: 40px;							
-      font-size: 11px;							
-    }							
-    .reservation-card {							
-      font-size: 10px;							
-      padding: 2px 4px;							
-    }							
-    .modal-box {							
-      width: calc(100vw - 32px) !important;							
-    }							
-  }							
-
-  /* ── モバイル（max-width: 767px） — ツールバー2段化 ── */							
-  @media (max-width: 767px) {							
-    .calendar-toolbar {							
-      flex-wrap: wrap;							
-      gap: 8px;			
-    }							
-    .toolbar-center {							
-      position: static;							
-      transform: none;							
-      order: 1;							
-      width: 100%;							
-      text-align: center;							
-    }							
-    .toolbar-left {							
-      order: 0;							
-    }							
-    .toolbar-right {							
-      order: 2;							
-      width: 100%;							
-      display: flex;							
-      justify-content: space-between;							
-    }							
-    .filter-select {							
-      flex: 1;							
-      min-width: unset;							
-      margin-right: 8px;							
-    }							
-    .current-date {							
-      font-size: 15px;							
-    }							
-  }							
-							
-  /* ── モバイル（max-width: 767px） — •••メニュー・ドロップダウン ── */							
-  @media (max-width: 767px) {							
-    .dots-btn {							
-      width: 44px;							
-      height: 44px;							
-      border-radius: 8px;							
-      font-size: 18px;							
-    }							
-    .nav-dropdown {							
-      min-width: 200px;							
-      right: 0;							
-    }							
-    .nav-dropdown a,							
-    .nav-dropdown .logout-btn {							
-      padding: 14px 20px;							
-      font-size: 15px;							
-    }							
-    .nav-submenu {							
-      position: static;							
-      box-shadow: none;							
-      margin: 0;							
-      border-radius: 0;							
-    }							
-  }							
-							
-  /* ── モバイル（max-width: 767px） — カレンダーグリッド ── */							
-  @media (max-width: 767px) {							
-    .calendar-scroll {							
-      -webkit-overflow-scrolling: touch;							
-    }							
-    .room-header-cell {							
-      min-width: 100px;							
-    }							
-    .time-label {							
-      width: 40px;							
-      font-size: 11px;							
-    }							
-    .reservation-card {							
-      font-size: 10px;							
-      padding: 2px 4px;							
-    }							
-    .modal-box {							
-      width: calc(100vw - 32px) !important;							
-    }							
-  }							
-
 .calendar-container {
-  display:flex;
-  height:calc(100vh - 64px);
-  overflow:hidden;
+  display: flex;
+  height: calc(100vh - 64px);
+  overflow: hidden;
 }
 
 .room-selector-sidebar {
-  width:220px;
-  overflow-y:auto;
-  border-right:1px solid #E2E8F0;
+  position: fixed;
+  top: 60px; /* ヘッダーの高さに合わせて調整してください */
+  left: -280px; /* 最初は画面の左外側に隠す */
+  width: 260px;
+  height: calc(100vh - 60px);
+  background-color: #ffffff;
+  z-index: 100;
+  overflow-y: auto;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  transition: left 0.3s ease; /* 開閉時のアニメーション */
+  padding: 15px;
+}
+
+.room-selector-sidebar.open {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100vh;
+  background: #fff;
+  z-index: 200;
+  overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
 }
 
 .calendar-main {
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-height: 0;
 }
 
 .calendar-toolbar {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:8px 16px
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
 }
 
 .fc-now-indicator {
-  border-color:#E53E3E !important;
+  border-color: #E53E3E !important;
 }
 
 .fc-now-indicator-arrow {
-  border-top-color:#E53E3E !important;
+  border-top-color: #E53E3E !important;
 }
 
 .fc-day-today {
-  background:#EBF5FB !important;
+  background: #EBF5FB !important;
 }
 
 /* ── 土曜：薄青 ── */
@@ -509,52 +384,19 @@
   overflow-y: auto;
 }
 
-.room-legend {
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  padding:4px 16px;
-  font-size:12px;	
-}
-
-@media(max-width:767px) {
-  .room-selector-sidebar {
-    display:none;
-  }
-  .room-selector-sidebar.open {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 260px;
-    height: 100vh;
-    background: #fff;
-    z-index: 200;
-    overflow-y: auto;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-  }
-  .fc-col-header {
-    font-size:11px;
-  }	
-}
-
-.hamburger-btn {
-  display: block;
-  font-size: 22px;  /* ← 文字サイズ */
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-
 /* === ビュー切り替えタブ === */
 .view-tabs { display: flex; gap: 4px; }
 .view-tab {
-  padding: 4px 14px; border: 1px solid #CBD5E0; border-radius: 4px;
-  background: #fff; cursor: pointer; font-size: 13px;
+  padding: 0px 18px;
+  border: 1px solid #CBD5E0;
+  border-radius: 4px;
+  background: #fff; 
+  cursor: pointer;
+  font-size: 13px;
+  box-sizing: border-box;
+  height: 43px;       
+  padding: 0 18px;   
+  border-radius: 6px;  
 }
 .view-tab.active, .view-tab:hover { background: #2E75B6; color: #fff; border-color: #2E75B6; }
 
@@ -593,7 +435,6 @@
 }
 .filter-section-header:hover { background: #EDF2F7; }
 
-/* 矢印：デフォルト右向き（折りたたみ）／ expanded で下向き（展開） */
 .fsh-arrow {
   font-size: 11px;
   display: inline-block;
@@ -602,13 +443,11 @@
 }
 .fsh-arrow.expanded { transform: rotate(0deg); }
 
-/* セクション本体 */
 .filter-section-body {
   max-height: 200px;
   overflow-y: auto;
 }
 
-/* フィルターアイテム共通ラベル */
 .filter-item-label {
   display: flex;
   align-items: center;
@@ -621,7 +460,6 @@
 .filter-item-label:hover { background: #EBF5FB; }
 .filter-item-label input[type="checkbox"] { flex-shrink: 0; }
 
-/* 「すべて」固定ヘッダー行 */
 .all-filter-label {
   font-size: 11px;
   font-weight: 600;
@@ -634,7 +472,6 @@
 }
 .all-filter-label:hover { background: #EDF2F7; }
 
-/* 会議室行は border-left のため左パディングを詰める */
 .room-label.filter-item-label { padding-left: 8px; }
 
 /* === ポップオーバー === */
@@ -649,22 +486,17 @@
 }
 
 /* === FullCalendar 上書き === */
-
-/* #fullcalendar が flex 列の残り高さをすべて占有し、
-   FullCalendar が正確な高さを計算できるようにする */
 #fullcalendar {
   flex: 1;
-  min-height: 0;   /* flex 子要素がコンテンツサイズ以下に縮めるよう許可 */
+  min-height: 0;
 }
 
 .fc { height: 100% !important; }
 .fc-event { cursor: pointer; }
-
-/* 時間スロットの高さを縮小して0〜24時を表示 */
 .fc .fc-timegrid-slot { height: 16px !important; }
 .fc .fc-timegrid-slot-label { font-size: 11px; }
 
-/* === 予約登録ボタン（F-09連携）=== */
+/* === 予約登録ボタン === */
 .btn-create-reservation {
   display: inline-flex; align-items: center;
   padding: 6px 16px;
@@ -675,7 +507,6 @@
 }
 .btn-create-reservation:hover { background: #1F5A9E; color: #fff; }
 
-/* サイドバー内の予約登録ボタン */
 .sidebar-create-btn {
   display: flex;
   justify-content: center;
@@ -685,10 +516,125 @@
   border-radius: 6px;
 }
 
-/* === SP 対応（追記分）=== */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   📱 モバイル専用スタイル（重複記述を1つのブロックに集約）
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @media (max-width: 767px) {
-  .view-tab { padding: 4px 8px; font-size: 11px; }
-  .room-legend { display: none; }  /* SP では凡例非表示 */
-  .btn-create-reservation { padding: 6px 10px; }
-  .btn-create-reservation .btn-label { display: none; }
+  /* ツールバー2段化 */
+  .calendar-toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .toolbar-center {
+    position: static;
+    transform: none;
+    order: 1;
+    width: 100%;
+    text-align: center;
+  }
+  .toolbar-left {
+    order: 0;
+  }
+  .toolbar-right {
+    order: 2;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* フォント・ボタン・セレクトボックス調整 */
+  .fc-col-header-cell a {
+    font-size: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .fc-col-header-cell {
+    vertical-align: middle !important;
+  }
+  .filter-select {
+    flex: 1;
+    min-width: unset;
+    margin-right: 8px;
+  }
+  .current-date {
+    font-size: 15px;
+  }
+  .view-tab {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .btn-create-reservation {
+    padding: 6px 10px;
+  }
+  .btn-create-reservation .btn-label {
+    display: none;
+  }
+
+  /* ドロップダウン・メニュー */
+  .dots-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    font-size: 18px;
+  }
+  .nav-dropdown {
+    min-width: 200px;
+    right: 0;
+  }
+  .nav-dropdown a,
+  .nav-dropdown .logout-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+  .nav-submenu {
+    position: static;
+    box-shadow: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  /* カレンダーグリッド */
+  .calendar-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+  .room-header-cell {
+    min-width: 100px;
+  }
+  .time-label {
+    width: 40px;
+    font-size: 11px;
+  }
+  .reservation-card {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+  .modal-box {
+    width: calc(100vw - 32px) !important;
+  }
+
+  /* サイドバー開閉 */
+  .room-selector-sidebar {
+    display: none;
+  }
+  .room-selector-sidebar.open {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: #fff;
+    z-index: 200;
+    overflow-y: auto;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  }
+  .fc-col-header {
+    font-size: 11px;
+  }
+  .room-legend {
+    display: none; /* SP では凡例非表示 */
+  }
 }

@@ -1,52 +1,40 @@
 /* ===== ナビゲーションメニュー ===== */
+// ===== ナビゲーションメニュー =====
 function toggleNavMenu(e) {
   e.stopPropagation();
-  document.getElementById("navMenu").classList.toggle("open");
+  document.getElementById("navMenu")?.classList.toggle("open");
 }
 
 function toggleAdminSubmenu(e) {
-  // 親メニューへの伝播を止めてメニューが閉じないようにする
   e.stopPropagation();
-  const submenu = document.getElementById("adminSubmenu");
-  const arrow = document.getElementById("adminArrow");
-  if (submenu) submenu.classList.toggle("open");
-  if (arrow) arrow.classList.toggle("open");
+  document.getElementById("adminSubmenu")?.classList.toggle("open");
+  document.getElementById("adminArrow")?.classList.toggle("open");
 }
 
-// メニュー外クリック時のみ閉じる（contains チェックで内部クリックを除外）
+// ===== メニュー外・画面外クリック時に閉じる処理（PC・スマホ共通） =====
 document.addEventListener("click", function (e) {
+  const sidebar = document.getElementById('roomSidebar');
+  const hamburger = document.querySelector('.hamburger-btn');
   const navMenu = document.getElementById("navMenu");
   const dotsBtn = document.querySelector(".dots-btn");
 
-  // ===== サイドバー閉じる（スマホのみ） =====
-  if (window.innerWidth <= 767) {
-    const sidebar = document.getElementById('roomSidebar');
-    const hamburger = document.querySelector('.hamburger-btn');
-    if (
-      sidebar &&
-      sidebar.classList.contains('open') &&
-      !sidebar.contains(e.target) &&
-      hamburger && !hamburger.contains(e.target)
-    ) {
+  // 1. 左側フィルターサイドバーの外側クリック判定
+  if (sidebar && sidebar.classList.contains('open')) {
+    // クリックされた場所が「サイドバー自身」でも「ハンバーガーボタン」でもない場合、閉じる
+    if (!sidebar.contains(e.target) && !hamburger?.contains(e.target)) {
       sidebar.classList.remove('open');
     }
   }
 
-  // ===== ナビメニュー閉じる（全画面幅） =====
-  // クリック対象がメニュー内・dots-btn内であれば何もしない
-  if (
-    (navMenu && navMenu.contains(e.target)) ||
-    (dotsBtn && dotsBtn.contains(e.target))
-  ) {
-    return;
+  // 2. 右側三点リーダー（•••）メニューの外側クリック判定
+  if (navMenu && navMenu.classList.contains('open')) {
+    // クリックされた場所が「メニュー内」でも「三点リーダーボタン」でもない場合、閉じる
+    if (!navMenu.contains(e.target) && !dotsBtn?.contains(e.target)) {
+      navMenu.classList.remove("open");
+      document.getElementById("adminSubmenu")?.classList.remove("open");
+      document.getElementById("adminArrow")?.classList.remove("open");
+    }
   }
-
-  // メニュー外クリック → すべて閉じる
-  if (navMenu) navMenu.classList.remove("open");
-  const submenu = document.getElementById("adminSubmenu");
-  const arrow = document.getElementById("adminArrow");
-  if (submenu) submenu.classList.remove("open");
-  if (arrow) arrow.classList.remove("open");
 });
 
 
