@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
     datesSet: handleDatesSet,
     eventDidMount: (info) => {
       info.el.style.color = getTextColor(info.event.backgroundColor);
-      if (!info.event.extendedProps.is_owner) {
+      if (!info.event.extendedProps.can_edit) {
         info.el.setAttribute('draggable', 'false');
         info.el.style.cursor = 'default';
       }
@@ -210,8 +210,8 @@ function handleEventClick(info) {
   const cancelBtn  = po.querySelector('.btn-cancel');
   const detailBtn  = po.querySelector('.btn-detail');
 
-  editBtn.style.display    = ep.is_owner ? '' : 'none';  // 編集は自分の予約のみ
-  cancelForm.style.display = ep.is_owner ? '' : 'none';  // キャンセルは自分の予約のみ
+  editBtn.style.display    = ep.can_edit ? '' : 'none';  // 編集：自分の予約 or 管理者
+  cancelForm.style.display = ep.can_edit ? '' : 'none';  // キャンセル：自分の予約 or 管理者
   editBtn.href     = `/reservations/${ev.id}/edit/`;
   detailBtn.href   = `/reservations/${ev.id}/`;
 

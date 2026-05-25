@@ -335,7 +335,7 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
             # 未ログイン時は LoginRequiredMixin のリダイレクトに委譲
             return super().dispatch(request, *args, **kwargs)
         reservation = self.get_object()
-        if reservation.user != request.user:
+        if reservation.user != request.user and not request.user.is_staff:
             return HttpResponseForbidden("この予約を編集する権限がありません")
         return super().dispatch(request, *args, **kwargs)
 
@@ -376,7 +376,7 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
 def reservation_cancel(request, pk):
     reservation = get_object_or_404(Reservation, pk=pk)
 
-    if reservation.user != request.user:
+    if reservation.user != request.user and not request.user.is_staff:
         return HttpResponseForbidden("この予約をキャンセルする権限がありません")
 
     reservation.is_cancelled = True
@@ -480,6 +480,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
                 'color': color,
                 'reserved_by': res.reserved_by,
                 'is_owner': res.user == request.user,
+                'can_edit': res.user == request.user or request.user.is_staff,
                 'editable': res.user == request.user or request.user.is_staff,
                 'allDay': res.is_all_day,
             })
@@ -490,8 +491,8 @@ class ReservationMoveView(LoginRequiredMixin, View):
     def patch(self, request, pk):
         reservation = get_object_or_404(Reservation, pk=pk, is_cancelled=False)
 
-        # 権限チェック（自分の予約のみ移動可）
-        if reservation.user != request.user:
+        # 権限チェック（自分の予約、または管理者は全予約を移動可）
+        if reservation.user != request.user and not request.user.is_staff:
             return JsonResponse({'error': '操作権限がありません'}, status=403)
 
         data      = json.loads(request.body)
