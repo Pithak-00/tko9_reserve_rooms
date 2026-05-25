@@ -5,7 +5,7 @@ echo "BeforeInstall started"
 
 echo "=== Docker cleanup start ==="
 
-docker build prune -f
+docker builder prune -a -f
 
 echo "=== Docker cleanup done ==="
 
