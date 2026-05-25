@@ -309,7 +309,17 @@ class ReservationCreateView(CreateView):
                 _generate_recurrence_instances(reservation)
 
         self.object = reservation
-        _log_operation(self.request, OperationLog.ACTION_CREATE, reservation)
+        _log_operation(
+            self.request,
+            OperationLog.ACTION_CREATE,
+            reservation,
+            detail=(
+                f"{reservation.room.name} / "
+                f"{reservation.title} / "
+                f"{localtime(reservation.start_at).strftime('%Y-%m-%d %H:%M')}"
+                f"〜{localtime(reservation.end_at).strftime('%H:%M')}"
+            ),
+        )
         GoogleSyncService(self.request.user).create_event(reservation)
         return redirect(self.get_success_url())
 
@@ -347,6 +357,9 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
     def form_valid(self, form):
         reservation = form.save(commit=False)
 
+        # 変更前の値を保存（detail 生成用）
+        old = Reservation.objects.get(pk=reservation.pk)
+
         with transaction.atomic():
             Room.objects.select_for_update().get(pk=reservation.room_id)
             error_msg = _conflict_exists(
@@ -360,7 +373,25 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
             reservation.save()
             self.object = reservation
 
-        _log_operation(self.request, OperationLog.ACTION_UPDATE, self.object)
+        # 変更内容を差分形式で記録
+        diff_parts = []
+        if old.title != reservation.title:
+            diff_parts.append(f"件名: 「{old.title}」→「{reservation.title}」")
+        old_start_local = localtime(old.start_at)
+        new_start_local = localtime(reservation.start_at)
+        old_end_local   = localtime(old.end_at)
+        new_end_local   = localtime(reservation.end_at)
+        if old_start_local != new_start_local or old_end_local != new_end_local:
+            diff_parts.append(
+                f"日時: {old_start_local.strftime('%Y-%m-%d %H:%M')}〜{old_end_local.strftime('%H:%M')}"
+                f"→{new_start_local.strftime('%Y-%m-%d %H:%M')}〜{new_end_local.strftime('%H:%M')}"
+            )
+        if old.participants != reservation.participants:
+            diff_parts.append("参加者を変更")
+        if old.notes != reservation.notes:
+            diff_parts.append("備考を変更")
+        detail = " / ".join(diff_parts) if diff_parts else "変更なし"
+        _log_operation(self.request, OperationLog.ACTION_UPDATE, self.object, detail=detail)
         try:
             GoogleSyncService(self.request.user).update_event(self.object)
         except Exception as e:
@@ -382,7 +413,11 @@ def reservation_cancel(request, pk):
     reservation.is_cancelled = True
     reservation.save()
 
-    _log_operation(request, OperationLog.ACTION_CANCEL, reservation)
+    if request.user == reservation.user:
+        cancel_detail = "本人によるキャンセル"
+    else:
+        cancel_detail = f"管理者（{request.user.name}）による代理キャンセル"
+    _log_operation(request, OperationLog.ACTION_CANCEL, reservation, detail=cancel_detail)
 
     # Google カレンダーのイベントも削除
     try:
@@ -495,6 +530,11 @@ class ReservationMoveView(LoginRequiredMixin, View):
         if reservation.user != request.user and not request.user.is_staff:
             return JsonResponse({'error': '操作権限がありません'}, status=403)
 
+        # 移動前の値を保存（detail 生成用）
+        old_room_name = reservation.room.name
+        old_start_at  = reservation.start_at
+        old_end_at    = reservation.end_at
+
         data      = json.loads(request.body)
         room_id   = data.get('room_id', reservation.room_id)
         is_all_day = data.get('is_all_day', False)
@@ -531,7 +571,27 @@ class ReservationMoveView(LoginRequiredMixin, View):
             reservation.is_all_day = is_all_day
             reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
 
-        _log_operation(request, OperationLog.ACTION_MOVE, reservation)
+        # 移動内容を差分形式で記録
+        move_parts = []
+        if old_room_name != reservation.room.name:
+            move_parts.append(f"会議室: 「{old_room_name}」→「{reservation.room.name}」")
+        old_s = localtime(old_start_at)
+        old_e = localtime(old_end_at)
+        new_s = localtime(reservation.start_at)
+        new_e = localtime(reservation.end_at)
+        if old_s != new_s or old_e != new_e:
+            if is_all_day:
+                move_parts.append(
+                    f"日時: {old_s.strftime('%Y-%m-%d %H:%M')}〜{old_e.strftime('%H:%M')}"
+                    f"→{new_s.strftime('%Y-%m-%d')}（終日）"
+                )
+            else:
+                move_parts.append(
+                    f"日時: {old_s.strftime('%Y-%m-%d %H:%M')}〜{old_e.strftime('%H:%M')}"
+                    f"→{new_s.strftime('%Y-%m-%d %H:%M')}〜{new_e.strftime('%H:%M')}"
+                )
+        move_detail = " / ".join(move_parts) if move_parts else "変更なし"
+        _log_operation(request, OperationLog.ACTION_MOVE, reservation, detail=move_detail)
 
         # Google カレンダー同期
         try:
