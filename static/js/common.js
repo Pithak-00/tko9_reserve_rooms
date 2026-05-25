@@ -26,25 +26,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
 /**
  * カスタム確認ダイアログを表示する
- * @param {string}   message                - ダイアログに表示するメッセージ
- * @param {Function} onOk                   - OK ボタン押下時に呼ばれるコールバック
- * @param {Function} [onCancel]             - キャンセル時に呼ばれるコールバック（省略可）
- * @param {string}   [okLabel='確認']       - OK ボタンのラベル（省略可）
- * @param {string}   [okClass='btn-danger'] - OK ボタンの CSS クラス（省略可）
+ * @param {string}   message                      - ダイアログに表示するメッセージ
+ * @param {Function} onOk                         - OK ボタン押下時に呼ばれるコールバック
+ * @param {Function} [onCancel]                   - キャンセル時に呼ばれるコールバック（省略可）
+ * @param {string}   [okLabel='確認']             - OK ボタンのラベル（省略可）
+ * @param {string}   [okClass='btn-danger']       - OK ボタンの CSS クラス（省略可）
+ * @param {string}   [cancelLabel='キャンセル']   - 戻るボタンのラベル（省略可）
+ * @param {string}   [title]                      - ダイアログのタイトル（省略可）
  */
-function showConfirm(message, onOk, onCancel, okLabel, okClass) {
-  const btnLabel = okLabel || '確認';
-  const btnClass = okClass  || 'btn-danger';
+function showConfirm(message, onOk, onCancel, okLabel, okClass, cancelLabel, title) {
+  const btnLabel    = okLabel     || '確認';
+  const btnClass    = okClass     || 'btn-danger';
+  const cancelText  = cancelLabel || 'キャンセル';
+  const titleHtml   = title
+    ? "<div style='font-size:16px;font-weight:bold;margin:0 0 12px;color:#1a1a2e;'>" + title + "</div>"
+    : "";
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '9999';
   overlay.innerHTML =
     "<div class='modal-box' style='max-width:420px;padding:28px 32px;'>" +
+      titleHtml +
       "<p style='margin:0 0 20px;font-size:15px;line-height:1.6;color:#333;'>" +
         message.replace(/\n/g, '<br>') +
       "</p>" +
       "<div class='modal-footer'>" +
-        "<button id='_cfm_cancel' class='btn btn-light btn-md'>キャンセル</button>" +
+        "<button id='_cfm_cancel' class='btn btn-light btn-md'>" + cancelText + "</button>" +
         "<button id='_cfm_ok'     class='btn " + btnClass + " btn-md'>" + btnLabel + "</button>" +
       "</div>" +
     "</div>";

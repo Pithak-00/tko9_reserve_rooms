@@ -221,8 +221,13 @@ function handleEventClick(info) {
     e.stopPropagation();
     const datetime = `${formatDate(ev.start)} ${formatTime(ev.start)}〜${formatTime(ev.end)}`;
     showConfirm(
-      `「${ev.title}（${datetime}）」をキャンセルしますか？\nこの操作は取り消せません`,
-      () => { cancelForm.submit(); }
+      `「${ev.title}（${datetime}）」をキャンセルしますか？\nこの操作は取り消せません。`,
+      () => { cancelForm.submit(); },
+      null,
+      'キャンセルする',
+      'btn-danger',
+      '戻る',
+      '予約のキャンセル確認'
     );
   };
 
