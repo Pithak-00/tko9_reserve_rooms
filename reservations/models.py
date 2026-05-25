@@ -208,3 +208,59 @@ class Reservation(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# ──────────────────────────────────────────────
+# 操作ログ
+# ──────────────────────────────────────────────
+class OperationLog(models.Model):
+    """予約操作ログ"""
+
+    ACTION_CREATE = 'create'
+    ACTION_UPDATE = 'update'
+    ACTION_CANCEL = 'cancel'
+    ACTION_MOVE   = 'move'
+    ACTION_CHOICES = [
+        (ACTION_CREATE, '予約作成'),
+        (ACTION_UPDATE, '予約変更'),
+        (ACTION_CANCEL, '予約キャンセル'),
+        (ACTION_MOVE,   '予約移動'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='operation_logs',
+        verbose_name='操作ユーザー',
+    )
+    action = models.CharField(
+        max_length=20,
+        choices=ACTION_CHOICES,
+        verbose_name='操作種別',
+    )
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='logs',
+        verbose_name='予約',
+    )
+    # 操作時点のスナップショット（予約が削除されても残る）
+    room_name  = models.CharField(max_length=100, verbose_name='会議室名')
+    title      = models.CharField(max_length=200, verbose_name='件名')
+    start_at   = models.DateTimeField(verbose_name='開始日時')
+    end_at     = models.DateTimeField(verbose_name='終了日時')
+    detail     = models.TextField(blank=True, verbose_name='変更内容')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='IPアドレス')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='操作日時')
+
+    class Meta:
+        db_table = 'operation_logs'
+        ordering = ['-created_at']
+        verbose_name = '操作ログ'
+        verbose_name_plural = '操作ログ'
+
+    def __str__(self):
+        return f"{self.get_action_display()} – {self.title} ({self.created_at:%Y-%m-%d %H:%M})"

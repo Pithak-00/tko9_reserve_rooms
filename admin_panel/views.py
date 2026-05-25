@@ -15,7 +15,7 @@ from django.db.models import Count
 from django.http import HttpResponseForbidden
 from datetime import date
 
-from reservations.models import Room, Reservation, Building, Facility
+from reservations.models import Room, Reservation, Building, Facility, OperationLog
 from reservations.forms import ReservationFilterForm
 from accounts.models import Department, User
 from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm, FacilityForm, BuildingForm, DepartmentForm
@@ -30,18 +30,13 @@ class StaffRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         return self.request.user.is_staff
 
 
-def _list_context():
-    """一覧テンプレート用の共通コンテキストを生成するヘルパー"""
-    now = timezone.now()
-    rooms = (
-        Room.objects.select_related("building")
-        .prefetch_related("facilities", "departments")
-        .order_by("name")
-    )
+def _annotate_rooms(rooms):
+    """会議室リストに予約数・設備ID・所属IDを付与する"""
+    today = timezone.now().date()
     for room in rooms:
         room.future_reservation_count = Reservation.objects.filter(
             room=room,
-            start_at__date__gte=now.date(),
+            start_at__date__gte=today,
         ).count()
         room.facility_ids = ",".join(
             str(pk) for pk in room.facilities.values_list("id", flat=True)
@@ -49,6 +44,16 @@ def _list_context():
         room.department_ids = ",".join(
             str(pk) for pk in room.departments.values_list("id", flat=True)
         )
+
+
+def _list_context():
+    """一覧テンプレート用の共通コンテキストを生成するヘルパー（form_invalid 時に使用）"""
+    rooms = (
+        Room.objects.select_related("building")
+        .prefetch_related("facilities", "departments")
+        .order_by("name")
+    )
+    _annotate_rooms(rooms)
     return {
         "rooms": rooms,
         "buildings": Building.objects.all().order_by("name"),
@@ -72,18 +77,7 @@ class RoomAdminListView(StaffRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        now = timezone.now()
-        for room in context["rooms"]:
-            room.future_reservation_count = Reservation.objects.filter(
-                room=room,
-                start_at__date__gte=now.date(),
-            ).count()
-            room.facility_ids = ",".join(
-                str(pk) for pk in room.facilities.values_list("id", flat=True)
-            )
-            room.department_ids = ",".join(
-                str(pk) for pk in room.departments.values_list("id", flat=True)
-            )
+        _annotate_rooms(context["rooms"])
         context.update(
             {
                 "form": RoomForm(),
@@ -578,21 +572,46 @@ class AllReservationListView(StaffRequiredMixin, ListView):
         return context
 
 
+# ── ページネーター共通ヘルパー ────────────────────────────────
+
+def _facility_page_obj(request):
+    q = request.GET.get('q', '')
+    qs = Facility.objects.annotate(room_count=Count('room'))
+    if q:
+        qs = qs.filter(name__icontains=q)
+    qs = qs.order_by('name')
+    return Paginator(qs, 20).get_page(request.GET.get('page')), qs.count(), q
+
+
+def _building_page_obj(request):
+    q = request.GET.get('q', '')
+    qs = Building.objects.annotate(room_count=Count('rooms'))
+    if q:
+        qs = qs.filter(name__icontains=q)
+    qs = qs.order_by('name')
+    return Paginator(qs, 20).get_page(request.GET.get('page')), qs.count(), q
+
+
+def _department_page_obj(request):
+    q = request.GET.get('q', '')
+    qs = Department.objects.annotate(
+        room_count=Count('room', distinct=True),
+        user_count=Count('users', distinct=True),
+    )
+    if q:
+        qs = qs.filter(name__icontains=q)
+    qs = qs.order_by('name')
+    return Paginator(qs, 20).get_page(request.GET.get('page')), qs.count(), q
+
+
 # ── F-22 設備管理 ──────────────────────────────────────────
 class FacilityListView(StaffRequiredMixin, View):
     template_name = 'admin_panel/facility_list.html'
 
     def get(self, request):
-        q = request.GET.get('q', '')
-        qs = Facility.objects.annotate(room_count=Count('room'))
-        if q:
-            qs = qs.filter(name__icontains=q)
-        qs = qs.order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, q = _facility_page_obj(request)
         return render(request, self.template_name, {
-            'page_obj': page_obj, 'q': q,
-            'total': qs.count(),
+            'page_obj': page_obj, 'q': q, 'total': total,
             'toast': request.session.pop('toast', None),
         })
 
@@ -604,12 +623,9 @@ class FacilityCreateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '設備を追加しました'
             return redirect('facility_list')
-        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
-        qs = Facility.objects.annotate(room_count=Count('room')).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _facility_page_obj(request)
         return render(request, 'admin_panel/facility_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'add_form': form, 'show_add_modal': True,
         })
 
@@ -622,11 +638,9 @@ class FacilityUpdateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '設備を更新しました'
             return redirect('facility_list')
-        qs = Facility.objects.annotate(room_count=Count('room')).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _facility_page_obj(request)
         return render(request, 'admin_panel/facility_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'edit_form': form, 'edit_target': facility, 'show_edit_modal': True,
         })
 
@@ -639,21 +653,14 @@ class FacilityDeleteView(StaffRequiredMixin, View):
         return redirect('facility_list')
 
 
-# ── F-23 建物管理 ─ BuildingXxxView も同パターン ─────────
+# ── F-23 建物管理 ──────────────────────────────────────────
 class BuildingListView(StaffRequiredMixin, View):
     template_name = 'admin_panel/building_list.html'
 
     def get(self, request):
-        q = request.GET.get('q', '')
-        qs = Building.objects.annotate(room_count=Count('rooms'))
-        if q:
-            qs = qs.filter(name__icontains=q)
-        qs = qs.order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, q = _building_page_obj(request)
         return render(request, self.template_name, {
-            'page_obj': page_obj, 'q': q,
-            'total': qs.count(),
+            'page_obj': page_obj, 'q': q, 'total': total,
             'toast': request.session.pop('toast', None),
         })
 
@@ -665,12 +672,9 @@ class BuildingCreateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '建物を追加しました'
             return redirect('building_list')
-        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
-        qs = Building.objects.annotate(room_count=Count('rooms')).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _building_page_obj(request)
         return render(request, 'admin_panel/building_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'add_form': form, 'show_add_modal': True,
         })
 
@@ -683,11 +687,9 @@ class BuildingUpdateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '建物を更新しました'
             return redirect('building_list')
-        qs = Building.objects.annotate(room_count=Count('rooms')).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _building_page_obj(request)
         return render(request, 'admin_panel/building_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'edit_form': form, 'edit_target': building, 'show_edit_modal': True,
         })
 
@@ -700,24 +702,14 @@ class BuildingDeleteView(StaffRequiredMixin, View):
         return redirect('building_list')
 
 
-# ── F-24 所属管理 ─ DepartmentXxxView（user_count+room_count annotate）
+# ── F-24 所属管理 ──────────────────────────────────────────
 class DepartmentListView(StaffRequiredMixin, View):
     template_name = 'admin_panel/department_list.html'
 
     def get(self, request):
-        q = request.GET.get('q', '')
-        qs = Department.objects.annotate(
-            room_count=Count('room', distinct=True),
-            user_count=Count('users', distinct=True),
-        )
-        if q:
-            qs = qs.filter(name__icontains=q)
-        qs = qs.order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, q = _department_page_obj(request)
         return render(request, self.template_name, {
-            'page_obj': page_obj, 'q': q,
-            'total': qs.count(),
+            'page_obj': page_obj, 'q': q, 'total': total,
             'toast': request.session.pop('toast', None),
         })
 
@@ -729,15 +721,9 @@ class DepartmentCreateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '所属を追加しました'
             return redirect('department_list')
-        # バリデーションエラー時はモーダルを開いた状態で一覧を再描画
-        qs = Department.objects.annotate(
-            room_count=Count('room', distinct=True),
-            user_count=Count('users', distinct=True),
-        ).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _department_page_obj(request)
         return render(request, 'admin_panel/department_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'add_form': form, 'show_add_modal': True,
         })
 
@@ -750,14 +736,9 @@ class DepartmentUpdateView(StaffRequiredMixin, View):
             form.save()
             request.session['toast'] = '所属を更新しました'
             return redirect('department_list')
-        qs = Department.objects.annotate(
-            room_count=Count('room', distinct=True),
-            user_count=Count('users', distinct=True),
-        ).order_by('name')
-        paginator = Paginator(qs, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, total, _ = _department_page_obj(request)
         return render(request, 'admin_panel/department_list.html', {
-            'page_obj': page_obj, 'total': qs.count(),
+            'page_obj': page_obj, 'total': total,
             'edit_form': form, 'edit_target': department, 'show_edit_modal': True,
         })
 
@@ -768,3 +749,50 @@ class DepartmentDeleteView(StaffRequiredMixin, View):
         dept.delete()  # User.department→SET_NULL / DepartmentRoom→CASCADE
         request.session['toast'] = '所属を削除しました'
         return redirect('department_list')
+
+
+# ── 操作ログ閲覧 ──────────────────────────────────────────────
+class OperationLogView(StaffRequiredMixin, View):
+    template_name = 'admin_panel/operation_log.html'
+    PER_PAGE = 50
+
+    def get(self, request):
+        qs = OperationLog.objects.select_related('user', 'reservation__room').order_by('-created_at')
+
+        # 絞り込み
+        action = request.GET.get('action', '').strip()
+        date_from_str = request.GET.get('date_from', '').strip()
+        date_to_str   = request.GET.get('date_to', '').strip()
+        user_q        = request.GET.get('user', '').strip()
+        room_q        = request.GET.get('room', '').strip()
+
+        if action:
+            qs = qs.filter(action=action)
+        if date_from_str:
+            try:
+                qs = qs.filter(created_at__date__gte=date.fromisoformat(date_from_str))
+            except ValueError:
+                pass
+        if date_to_str:
+            try:
+                qs = qs.filter(created_at__date__lte=date.fromisoformat(date_to_str))
+            except ValueError:
+                pass
+        if user_q:
+            qs = qs.filter(user__name__icontains=user_q)
+        if room_q:
+            qs = qs.filter(room_name__icontains=room_q)
+
+        total = qs.count()
+        page_obj = Paginator(qs, self.PER_PAGE).get_page(request.GET.get('page'))
+
+        return render(request, self.template_name, {
+            'page_obj':    page_obj,
+            'total':       total,
+            'action_choices': OperationLog.ACTION_CHOICES,
+            'q_action':    action,
+            'q_date_from': date_from_str,
+            'q_date_to':   date_to_str,
+            'q_user':      user_q,
+            'q_room':      room_q,
+        })

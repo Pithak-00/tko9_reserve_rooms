@@ -4,17 +4,18 @@ import logging
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.views import View
 from django.views.generic import TemplateView, CreateView, ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from datetime import date, datetime, timedelta, time as dt_time
+from datetime import date, datetime, timedelta, time as dt_time, timezone as dt_tz
 from django.utils import timezone
 from django.utils.timezone import localtime
 from django.urls import reverse
 from django.conf import settings
+from django.db import transaction
 
-from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom
+from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom, OperationLog
 from .forms import ReservationForm
 from accounts.models import Department, User, UserGoogleToken
 try:
@@ -48,6 +49,60 @@ except ImportError:
 
 def home(request):
     return HttpResponse("meeting room reservation system")
+
+
+def _get_client_ip(request):
+    """X-Forwarded-For → REMOTE_ADDR の順で IP を取得"""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _log_operation(request, action, reservation, detail=''):
+    """予約操作ログを非同期的に記録する（例外は握り潰してメイン処理に影響させない）"""
+    try:
+        OperationLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            action=action,
+            reservation=reservation,
+            room_name=reservation.room.name if reservation.room_id else '',
+            title=reservation.title,
+            start_at=reservation.start_at,
+            end_at=reservation.end_at,
+            detail=detail,
+            ip_address=_get_client_ip(request),
+        )
+    except Exception as e:
+        logger.warning(f'OperationLog 書き込み失敗: {e}')
+
+
+def _conflict_exists(room_id, start_at, end_at, exclude_pk=None, is_all_day=False):
+    """
+    排他制御付き重複チェック。必ず transaction.atomic() ブロック内で呼ぶこと。
+    競合がなければ None、あればエラーメッセージ文字列を返す。
+    """
+    qs = Reservation.objects.filter(room_id=room_id, is_cancelled=False)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+
+    # ① 通常の時間重複
+    if qs.filter(start_at__lt=end_at, end_at__gt=start_at).exists():
+        return 'その時間帯は既に予約されています'
+
+    # ② 同日の終日予約との重複（終日予約は 00:00〜00:30 で保存されるため別途チェック）
+    tz = timezone.get_current_timezone()
+    day = localtime(start_at).date()
+    day_start = timezone.make_aware(datetime.combine(day, dt_time(0, 0)), tz)
+    day_end   = day_start + timedelta(days=1)
+    if qs.filter(is_all_day=True, start_at__gte=day_start, start_at__lt=day_end).exists():
+        return 'その日は終日予約が入っているため予約できません'
+
+    # ③ 終日予約で同日に通常予約が存在する
+    if is_all_day and qs.filter(is_all_day=False, start_at__gte=day_start, start_at__lt=day_end).exists():
+        return 'その日は既に予約が入っているため終日予約できません'
+
+    return None
 
 
 def _generate_recurrence_instances(parent: Reservation, until=None):
@@ -238,12 +293,35 @@ class ReservationCreateView(CreateView):
         reservation.reserved_by = self.request.user.name
         recurrence_rule = form.cleaned_data.get('recurrence_rule', '')
         reservation.recurrence_rule = recurrence_rule
-        reservation.save()
-        # 繰り返しインスタンスを一括生成
-        if recurrence_rule:
-            _generate_recurrence_instances(reservation)
+
+        with transaction.atomic():
+            # 会議室行をロックして同時リクエストの割り込みを防ぐ
+            Room.objects.select_for_update().get(pk=reservation.room_id)
+            error_msg = _conflict_exists(
+                reservation.room_id, reservation.start_at, reservation.end_at,
+                is_all_day=reservation.is_all_day,
+            )
+            if error_msg:
+                form.add_error(None, error_msg)
+                return self.form_invalid(form)
+            reservation.save()
+            if recurrence_rule:
+                _generate_recurrence_instances(reservation)
+
+        self.object = reservation
+        _log_operation(
+            self.request,
+            OperationLog.ACTION_CREATE,
+            reservation,
+            detail=(
+                f"{reservation.room.name} / "
+                f"{reservation.title} / "
+                f"{localtime(reservation.start_at).strftime('%Y-%m-%d %H:%M')}"
+                f"〜{localtime(reservation.end_at).strftime('%H:%M')}"
+            ),
+        )
         GoogleSyncService(self.request.user).create_event(reservation)
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
@@ -262,18 +340,63 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "reservations/edit.html"
     context_object_name = "reservation"
 
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # 未ログイン時は LoginRequiredMixin のリダイレクトに委譲
+            return super().dispatch(request, *args, **kwargs)
+        reservation = self.get_object()
+        if reservation.user != request.user and not request.user.is_staff:
+            return HttpResponseForbidden("この予約を編集する権限がありません")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields["room"].disabled = True
         return form
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        reservation = form.save(commit=False)
+
+        # 変更前の値を保存（detail 生成用）
+        old = Reservation.objects.get(pk=reservation.pk)
+
+        with transaction.atomic():
+            Room.objects.select_for_update().get(pk=reservation.room_id)
+            error_msg = _conflict_exists(
+                reservation.room_id, reservation.start_at, reservation.end_at,
+                exclude_pk=reservation.pk,
+                is_all_day=reservation.is_all_day,
+            )
+            if error_msg:
+                form.add_error(None, error_msg)
+                return self.form_invalid(form)
+            reservation.save()
+            self.object = reservation
+
+        # 変更内容を差分形式で記録
+        diff_parts = []
+        if old.title != reservation.title:
+            diff_parts.append(f"件名: 「{old.title}」→「{reservation.title}」")
+        old_start_local = localtime(old.start_at)
+        new_start_local = localtime(reservation.start_at)
+        old_end_local   = localtime(old.end_at)
+        new_end_local   = localtime(reservation.end_at)
+        if old_start_local != new_start_local or old_end_local != new_end_local:
+            diff_parts.append(
+                f"日時: {old_start_local.strftime('%Y-%m-%d %H:%M')}〜{old_end_local.strftime('%H:%M')}"
+                f"→{new_start_local.strftime('%Y-%m-%d %H:%M')}〜{new_end_local.strftime('%H:%M')}"
+            )
+        if old.participants != reservation.participants:
+            diff_parts.append("参加者を変更")
+        if old.notes != reservation.notes:
+            diff_parts.append("備考を変更")
+        detail = " / ".join(diff_parts) if diff_parts else "変更なし"
+        _log_operation(self.request, OperationLog.ACTION_UPDATE, self.object, detail=detail)
         try:
             GoogleSyncService(self.request.user).update_event(self.object)
         except Exception as e:
             logger.warning(f'Google sync on update failed: {e}')
-        return response
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
@@ -284,11 +407,17 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
 def reservation_cancel(request, pk):
     reservation = get_object_or_404(Reservation, pk=pk)
 
-    if reservation.user != request.user:
-        return redirect("calendar")
+    if reservation.user != request.user and not request.user.is_staff:
+        return HttpResponseForbidden("この予約をキャンセルする権限がありません")
 
     reservation.is_cancelled = True
     reservation.save()
+
+    if request.user == reservation.user:
+        cancel_detail = "本人によるキャンセル"
+    else:
+        cancel_detail = f"管理者（{request.user.name}）による代理キャンセル"
+    _log_operation(request, OperationLog.ACTION_CANCEL, reservation, detail=cancel_detail)
 
     # Google カレンダーのイベントも削除
     try:
@@ -386,6 +515,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
                 'color': color,
                 'reserved_by': res.reserved_by,
                 'is_owner': res.user == request.user,
+                'can_edit': res.user == request.user or request.user.is_staff,
                 'editable': res.user == request.user or request.user.is_staff,
                 'allDay': res.is_all_day,
             })
@@ -396,9 +526,14 @@ class ReservationMoveView(LoginRequiredMixin, View):
     def patch(self, request, pk):
         reservation = get_object_or_404(Reservation, pk=pk, is_cancelled=False)
 
-        # 権限チェック
+        # 権限チェック（自分の予約、または管理者は全予約を移動可）
         if reservation.user != request.user and not request.user.is_staff:
             return JsonResponse({'error': '操作権限がありません'}, status=403)
+
+        # 移動前の値を保存（detail 生成用）
+        old_room_name = reservation.room.name
+        old_start_at  = reservation.start_at
+        old_end_at    = reservation.end_at
 
         data      = json.loads(request.body)
         room_id   = data.get('room_id', reservation.room_id)
@@ -423,54 +558,40 @@ class ReservationMoveView(LoginRequiredMixin, View):
                 else start_at + timedelta(minutes=30)  # フォールバック：30分後
             )
 
-        # 重複チェック（自分自身を除く）
-        # ① 通常の時間重複
-        conflict = Reservation.objects.filter(
-            room_id=room_id,
-            start_at__lt=end_at,
-            end_at__gt=start_at,
-            is_cancelled=False,
-        ).exclude(pk=pk).exists()
+        with transaction.atomic():
+            # 会議室行をロックして同時リクエストの割り込みを防ぐ
+            Room.objects.select_for_update().get(pk=room_id)
+            error_msg = _conflict_exists(room_id, start_at, end_at, exclude_pk=pk, is_all_day=is_all_day)
+            if error_msg:
+                return JsonResponse({'error': error_msg}, status=400)
 
-        if conflict:
-            return JsonResponse({'error': '競合する予約が存在します'}, status=400)
+            reservation.start_at   = start_at
+            reservation.end_at     = end_at
+            reservation.room_id    = room_id
+            reservation.is_all_day = is_all_day
+            reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
 
-        # ② 終日予約との重複（終日は00:00〜00:30で保存されるため別途チェック）
-        move_date = localtime(start_at).date()
-        day_start = timezone.make_aware(
-            datetime.combine(move_date, dt_time(0, 0)),
-            timezone.get_current_timezone()
-        )
-        day_end = day_start + timedelta(days=1)
-
-        all_day_conflict = Reservation.objects.filter(
-            room_id=room_id,
-            is_cancelled=False,
-            is_all_day=True,
-            start_at__gte=day_start,
-            start_at__lt=day_end,
-        ).exclude(pk=pk).exists()
-
-        if all_day_conflict:
-            return JsonResponse({'error': 'その日は終日予約が入っています'}, status=400)
-
-        # ③ 移動先が終日の場合、同日に通常予約があればブロック
-        if is_all_day:
-            day_conflict = Reservation.objects.filter(
-                room_id=room_id,
-                is_cancelled=False,
-                is_all_day=False,
-                start_at__gte=day_start,
-                start_at__lt=day_end,
-            ).exclude(pk=pk).exists()
-            if day_conflict:
-                return JsonResponse({'error': 'その日は既に予約が入っているため終日予約できません'}, status=400)
-
-        reservation.start_at   = start_at
-        reservation.end_at     = end_at
-        reservation.room_id    = room_id
-        reservation.is_all_day = is_all_day
-        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
+        # 移動内容を差分形式で記録
+        move_parts = []
+        if old_room_name != reservation.room.name:
+            move_parts.append(f"会議室: 「{old_room_name}」→「{reservation.room.name}」")
+        old_s = localtime(old_start_at)
+        old_e = localtime(old_end_at)
+        new_s = localtime(reservation.start_at)
+        new_e = localtime(reservation.end_at)
+        if old_s != new_s or old_e != new_e:
+            if is_all_day:
+                move_parts.append(
+                    f"日時: {old_s.strftime('%Y-%m-%d %H:%M')}〜{old_e.strftime('%H:%M')}"
+                    f"→{new_s.strftime('%Y-%m-%d')}（終日）"
+                )
+            else:
+                move_parts.append(
+                    f"日時: {old_s.strftime('%Y-%m-%d %H:%M')}〜{old_e.strftime('%H:%M')}"
+                    f"→{new_s.strftime('%Y-%m-%d %H:%M')}〜{new_e.strftime('%H:%M')}"
+                )
+        move_detail = " / ".join(move_parts) if move_parts else "変更なし"
+        _log_operation(request, OperationLog.ACTION_MOVE, reservation, detail=move_detail)
 
         # Google カレンダー同期
         try:
@@ -551,8 +672,6 @@ def google_oauth_callback(request):
     creds = flow.credentials
 
     # UserGoogleToken に保存（or 更新）
-    from django.utils import timezone
-    from datetime import datetime, timezone as dt_tz
     expiry = None
     if creds.expiry:
         expiry = creds.expiry.replace(tzinfo=dt_tz.utc)

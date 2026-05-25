@@ -53,7 +53,8 @@ def test_click_allday_slot_sets_allday_flag(
 def test_create_button_navigates_to_create(logged_in_page, wait_for_calendar):
     """「＋ 予約を登録する」ボタンで予約作成画面に遷移すること"""
     wait_for_calendar(logged_in_page)
-    logged_in_page.click(".sidebar-create-btn")
+    # サイドバーがスクロールコンテナ内にあるため JS で操作する
+    logged_in_page.evaluate("document.querySelector('.sidebar-create-btn').click()")
     logged_in_page.wait_for_url(re.compile(r"/reservations/create/"), timeout=8000)
     assert "/reservations/create/" in logged_in_page.url
 

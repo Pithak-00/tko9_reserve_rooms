@@ -138,3 +138,33 @@ class TestF11ReservationEdit(TestCase):
             response,
             "/accounts/login/?next={}".format(self.url),
         )
+
+    # ------------------------------------------------------------------ 管理者権限
+
+    def test_other_user_cannot_edit(self):
+        """異常系: 一般ユーザーは他人の予約を編集できず 403 が返ること"""
+        self.client.login(username="other@example.com", password="TestPass123")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_edit_others_reservation_get(self):
+        """正常系: 管理者は他ユーザーの予約編集ページにアクセスできること"""
+        self.client.login(username="admin@example.com", password="TestPass123")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_admin_can_edit_others_reservation_post(self):
+        """正常系: 管理者は他ユーザーの予約を更新できること"""
+        self.client.login(username="admin@example.com", password="TestPass123")
+        self.client.post(self.url, self._valid_post(title="管理者による更新"))
+        self.reservation.refresh_from_db()
+        self.assertEqual(self.reservation.title, "管理者による更新")
+
+    def test_admin_edit_redirects_to_detail(self):
+        """正常系: 管理者による更新後 -> 予約詳細画面へリダイレクトされること"""
+        self.client.login(username="admin@example.com", password="TestPass123")
+        response = self.client.post(self.url, self._valid_post())
+        self.assertRedirects(
+            response,
+            reverse("reservation_detail", kwargs={"pk": self.reservation.pk}),
+        )

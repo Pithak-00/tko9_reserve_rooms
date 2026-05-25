@@ -124,7 +124,7 @@ class TestF25ReservationMove(TestCase):
         self.assertTrue(self.reservation.is_all_day)
 
     def test_staff_can_move_others_reservation(self):
-        """正常系: staff は他ユーザーの予約を移動できること"""
+        """正常系: 管理者（staff）は他ユーザーの予約を移動できること"""
         self.client.login(username="staff@example.com", password="TestPass123")
         start, end = self._make_start_end(self.today, time(14, 0), time(15, 0))
         response = self._patch({"start_at": start, "end_at": end})

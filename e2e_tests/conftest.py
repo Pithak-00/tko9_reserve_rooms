@@ -74,6 +74,7 @@ def logged_in_page(page, live_server, e2e_user):
     page.reload() または page.goto(calendar_url) を呼んでページを再取得すること。
     （fixture の解決順序の関係で room 等は login 後に作られる場合がある）
     """
+    page.set_viewport_size({"width": 1440, "height": 900})
     page.goto(f"{live_server.url}/accounts/login/")
     page.fill('input[name="username"]', "e2e_user@example.com")
     page.fill('input[name="password"]', "E2EPass123")

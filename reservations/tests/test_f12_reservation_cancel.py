@@ -6,10 +6,10 @@ URL name  : reservation_cancel  ->  /reservations/<pk>/cancel/
 仕様:
   - POST のみ受付（@require_POST）
   - ログイン必須（@login_required）
-  - 予約者本人のみキャンセル可
+  - 予約者本人または管理者がキャンセル可
   - キャンセル = is_cancelled=True に更新（論理削除）
   - 成功後はカレンダー画面へリダイレクト
-  - 他ユーザーがキャンセルしようとするとカレンダーへリダイレクト（更新はしない）
+  - 一般ユーザーが他人の予約をキャンセルしようとすると 403
 """
 
 from datetime import timedelta
@@ -35,6 +35,12 @@ class TestF12ReservationCancel(TestCase):
             login_id="other@example.com",
             name="他のユーザー",
             password="TestPass123",
+        )
+        self.admin_user = User.objects.create_user(
+            login_id="admin@example.com",
+            name="管理者",
+            password="TestPass123",
+            role="admin",
         )
         self.room = Room.objects.create(name="会議室A", capacity=10, is_active=True)
         now = timezone.now()
@@ -72,11 +78,11 @@ class TestF12ReservationCancel(TestCase):
         self.reservation.refresh_from_db()
         self.assertFalse(self.reservation.is_cancelled)
 
-    def test_cancel_by_non_owner_redirects_to_calendar(self):
-        """異常系: 他のユーザーのキャンセル試行 -> カレンダーへリダイレクト（403ではなく）"""
+    def test_cancel_by_non_owner_returns_403(self):
+        """異常系: 他のユーザーのキャンセル試行 -> 403 Forbidden が返ること"""
         self.client.login(username="other@example.com", password="TestPass123")
         response = self.client.post(self.url)
-        self.assertRedirects(response, reverse("calendar"))
+        self.assertEqual(response.status_code, 403)
 
     def test_get_method_not_allowed(self):
         """異常系: GET リクエスト -> 405 Method Not Allowed が返ること"""
@@ -97,3 +103,20 @@ class TestF12ReservationCancel(TestCase):
         url = reverse("reservation_cancel", kwargs={"pk": 9999})
         response = self.client.post(url)
         self.assertEqual(response.status_code, 404)
+
+    # ------------------------------------------------------------------ 管理者権限
+
+    def test_admin_can_cancel_others_reservation(self):
+        """正常系: 管理者は他ユーザーの予約をキャンセルできること"""
+        self.client.login(username="admin@example.com", password="TestPass123")
+        response = self.client.post(self.url)
+        self.assertRedirects(response, reverse("calendar"))
+        self.reservation.refresh_from_db()
+        self.assertTrue(self.reservation.is_cancelled)
+
+    def test_admin_cancel_sets_is_cancelled_true(self):
+        """正常系: 管理者によるキャンセル -> is_cancelled=True になること"""
+        self.client.login(username="admin@example.com", password="TestPass123")
+        self.client.post(self.url)
+        self.reservation.refresh_from_db()
+        self.assertTrue(self.reservation.is_cancelled)

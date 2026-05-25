@@ -1,4 +1,3 @@
-/* ===== ナビゲーションメニュー ===== */
 // ===== ナビゲーションメニュー =====
 function toggleNavMenu(e) {
   e.stopPropagation();
@@ -93,6 +92,44 @@ document.addEventListener('DOMContentLoaded', function () {
     editable: true,
     selectable: true,
     headerToolbar: false,  // カスタムツールバー使用
+    // 時刻を常に HH:MM 形式で表示（日本語ロケールのデフォルト「10時」を上書き）
+    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    views: {
+      dayGridMonth: { displayEventTime: true },
+    },
+    // 月ビュー：「● 終日/HH:MM 件名」形式で統一。週・日ビューはデフォルトと同等の HTML を返す
+    eventContent: (arg) => {
+      const title = arg.event.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      if (arg.view.type === 'dayGridMonth') {
+        // 月ビュー：ドット + 時刻ラベル + 件名（背景なし・黒文字）
+        const color = arg.event.backgroundColor || '#3182CE';
+        const label = arg.event.allDay ? '終日' : arg.timeText;
+        return {
+          html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
+                '<span class="mev-time">' + label + '</span>' +
+                '<span class="mev-title">&nbsp;' + title + '</span>',
+        };
+      }
+
+      // 週・日ビュー：FullCalendar デフォルトと同等の構造を明示的に返す
+      // （eventContent を設定すると undefined を返しても空になるため）
+      if (arg.timeText) {
+        return {
+          html: '<div class="fc-event-main-frame">' +
+                '<div class="fc-event-time">' + arg.timeText + '</div>' +
+                '<div class="fc-event-title-container">' +
+                '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+                '</div></div>',
+        };
+      }
+      return {
+        html: '<div class="fc-event-main-frame">' +
+              '<div class="fc-event-title-container">' +
+              '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+              '</div></div>',
+      };
+    },
     eventSources: [{ url: '/reservations/events/',
       extraParams: () => {
         const params = { room_ids: getSelectedRoomIds().join(',') };
@@ -116,9 +153,19 @@ document.addEventListener('DOMContentLoaded', function () {
     select: handleSelect,
     datesSet: handleDatesSet,
     eventDidMount: (info) => {
-      // is_owner=false の場合は DnD を無効化
-      if (!info.event.extendedProps.editable) {
+      if (info.view.type === 'dayGridMonth') {
+        // 月ビュー：背景色を除去して文字色を黒に固定
+        info.el.style.backgroundColor = 'transparent';
+        info.el.style.borderColor     = 'transparent';
+        info.el.style.boxShadow       = 'none';
+        info.el.style.color           = '#1A1A2E';
+      } else {
+        // 週・日ビュー：背景色に応じて白 or 黒を選択
+        info.el.style.color = getTextColor(info.event.backgroundColor || '#3182CE');
+      }
+      if (!info.event.extendedProps.can_edit) {
         info.el.setAttribute('draggable', 'false');
+        info.el.style.cursor = 'default';
       }
     },
   });
@@ -210,8 +257,8 @@ function handleEventClick(info) {
   const cancelBtn  = po.querySelector('.btn-cancel');
   const detailBtn  = po.querySelector('.btn-detail');
 
-  editBtn.hidden   = !ep.editable;
-  cancelForm.hidden = !ep.editable;
+  editBtn.style.display    = ep.can_edit ? '' : 'none';  // 編集：自分の予約 or 管理者
+  cancelForm.style.display = ep.can_edit ? '' : 'none';  // キャンセル：自分の予約 or 管理者
   editBtn.href     = `/reservations/${ev.id}/edit/`;
   detailBtn.href   = `/reservations/${ev.id}/`;
 
@@ -222,8 +269,13 @@ function handleEventClick(info) {
     e.stopPropagation();
     const datetime = `${formatDate(ev.start)} ${formatTime(ev.start)}〜${formatTime(ev.end)}`;
     showConfirm(
-      `「${ev.title}（${datetime}）」をキャンセルしますか？\nこの操作は取り消せません`,
-      () => { cancelForm.submit(); }
+      `「${ev.title}（${datetime}）」をキャンセルしますか？\nこの操作は取り消せません。`,
+      () => { cancelForm.submit(); },
+      null,
+      'キャンセルする',
+      'btn-danger',
+      '戻る',
+      '予約のキャンセル確認'
     );
   };
 
@@ -278,15 +330,27 @@ function saveSelectedRoomIds(ids) {
 
 // ページロード時：localStorage の選択状態をチェックボックス UI に反映
 (function restoreCheckboxState() {
-  const savedIds = getSelectedRoomIds();
-  const allIds   = getRoomIds();
-  // 保存済みと全室が一致していれば「全会議室」チェックを維持
-  const isAll = savedIds.length === allIds.length;
+  const saved  = localStorage.getItem(STORAGE_KEY);
+  const allIds = getRoomIds();
 
+  let savedIds;
+  if (saved === null) {
+    // 未保存：全室選択
+    savedIds = allIds.slice();
+  } else {
+    savedIds = JSON.parse(saved);
+    // 新規登録された会議室（localStorage に存在しないもの）は自動でチェック追加
+    const newIds = allIds.filter(id => !savedIds.includes(id));
+    if (newIds.length > 0) {
+      savedIds = savedIds.concat(newIds);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedIds));
+    }
+  }
+
+  const isAll = savedIds.length === allIds.length;
   document.querySelectorAll('.room-checkbox').forEach(cb => {
     cb.checked = savedIds.includes(parseInt(cb.value));
   });
-
   const selectAllCb = document.getElementById('selectAllRooms');
   if (selectAllCb) selectAllCb.checked = isAll;
 }());
@@ -335,7 +399,14 @@ EXTRA_FILTER_GROUPS.forEach(({ checkboxClass, group, storageKey }) => {
   try {
     const saved = localStorage.getItem(storageKey);
     if (saved !== null) {
-      const savedIds = JSON.parse(saved).map(String);
+      let savedIds = JSON.parse(saved).map(String);
+      const allIds = Array.from(allCbs, cb => cb.value);
+      // 新規登録された項目（localStorage に存在しないもの）は自動でチェック追加
+      const newIds = allIds.filter(id => !savedIds.includes(id));
+      if (newIds.length > 0) {
+        savedIds = savedIds.concat(newIds);
+        localStorage.setItem(storageKey, JSON.stringify(savedIds.map(Number)));
+      }
       allCbs.forEach(cb => { cb.checked = savedIds.includes(cb.value); });
       if (selectAllCb) selectAllCb.checked = savedIds.length === allCbs.length;
     }
@@ -398,17 +469,6 @@ function getTextColor(hexColor) {
   // 閾値 0.179 を境に白 or 黒を返す
   return L > 0.179 ? '#1A1A2E' : '#FFFFFF';
 }
-
-// 使用例：FullCalendar eventDidMount で適用
-eventDidMount: (info) => {
-  const bgColor = info.event.backgroundColor;
-  info.el.style.color = getTextColor(bgColor);
-  if (!info.event.extendedProps.editable) {
-    info.el.setAttribute('draggable', 'false');
-  }
-},
-
-// Google 同期トグル・連携解除（calendar.js 追記）
 
 // 同期 ON/OFF トグル
 document.getElementById('google-sync-toggle')?.addEventListener('change', function () {
