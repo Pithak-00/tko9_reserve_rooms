@@ -283,15 +283,27 @@ function saveSelectedRoomIds(ids) {
 
 // ページロード時：localStorage の選択状態をチェックボックス UI に反映
 (function restoreCheckboxState() {
-  const savedIds = getSelectedRoomIds();
-  const allIds   = getRoomIds();
-  // 保存済みと全室が一致していれば「全会議室」チェックを維持
-  const isAll = savedIds.length === allIds.length;
+  const saved  = localStorage.getItem(STORAGE_KEY);
+  const allIds = getRoomIds();
 
+  let savedIds;
+  if (saved === null) {
+    // 未保存：全室選択
+    savedIds = allIds.slice();
+  } else {
+    savedIds = JSON.parse(saved);
+    // 新規登録された会議室（localStorage に存在しないもの）は自動でチェック追加
+    const newIds = allIds.filter(id => !savedIds.includes(id));
+    if (newIds.length > 0) {
+      savedIds = savedIds.concat(newIds);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedIds));
+    }
+  }
+
+  const isAll = savedIds.length === allIds.length;
   document.querySelectorAll('.room-checkbox').forEach(cb => {
     cb.checked = savedIds.includes(parseInt(cb.value));
   });
-
   const selectAllCb = document.getElementById('selectAllRooms');
   if (selectAllCb) selectAllCb.checked = isAll;
 }());
@@ -340,7 +352,14 @@ EXTRA_FILTER_GROUPS.forEach(({ checkboxClass, group, storageKey }) => {
   try {
     const saved = localStorage.getItem(storageKey);
     if (saved !== null) {
-      const savedIds = JSON.parse(saved).map(String);
+      let savedIds = JSON.parse(saved).map(String);
+      const allIds = Array.from(allCbs, cb => cb.value);
+      // 新規登録された項目（localStorage に存在しないもの）は自動でチェック追加
+      const newIds = allIds.filter(id => !savedIds.includes(id));
+      if (newIds.length > 0) {
+        savedIds = savedIds.concat(newIds);
+        localStorage.setItem(storageKey, JSON.stringify(savedIds.map(Number)));
+      }
       allCbs.forEach(cb => { cb.checked = savedIds.includes(cb.value); });
       if (selectAllCb) selectAllCb.checked = savedIds.length === allCbs.length;
     }
