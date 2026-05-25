@@ -15,7 +15,7 @@ from django.db.models import Count
 from django.http import HttpResponseForbidden
 from datetime import date
 
-from reservations.models import Room, Reservation, Building, Facility
+from reservations.models import Room, Reservation, Building, Facility, OperationLog
 from reservations.forms import ReservationFilterForm
 from accounts.models import Department, User
 from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm, FacilityForm, BuildingForm, DepartmentForm
@@ -749,3 +749,50 @@ class DepartmentDeleteView(StaffRequiredMixin, View):
         dept.delete()  # User.department→SET_NULL / DepartmentRoom→CASCADE
         request.session['toast'] = '所属を削除しました'
         return redirect('department_list')
+
+
+# ── 操作ログ閲覧 ──────────────────────────────────────────────
+class OperationLogView(StaffRequiredMixin, View):
+    template_name = 'admin_panel/operation_log.html'
+    PER_PAGE = 50
+
+    def get(self, request):
+        qs = OperationLog.objects.select_related('user', 'reservation__room').order_by('-created_at')
+
+        # 絞り込み
+        action = request.GET.get('action', '').strip()
+        date_from_str = request.GET.get('date_from', '').strip()
+        date_to_str   = request.GET.get('date_to', '').strip()
+        user_q        = request.GET.get('user', '').strip()
+        room_q        = request.GET.get('room', '').strip()
+
+        if action:
+            qs = qs.filter(action=action)
+        if date_from_str:
+            try:
+                qs = qs.filter(created_at__date__gte=date.fromisoformat(date_from_str))
+            except ValueError:
+                pass
+        if date_to_str:
+            try:
+                qs = qs.filter(created_at__date__lte=date.fromisoformat(date_to_str))
+            except ValueError:
+                pass
+        if user_q:
+            qs = qs.filter(user__name__icontains=user_q)
+        if room_q:
+            qs = qs.filter(room_name__icontains=room_q)
+
+        total = qs.count()
+        page_obj = Paginator(qs, self.PER_PAGE).get_page(request.GET.get('page'))
+
+        return render(request, self.template_name, {
+            'page_obj':    page_obj,
+            'total':       total,
+            'action_choices': OperationLog.ACTION_CHOICES,
+            'q_action':    action,
+            'q_date_from': date_from_str,
+            'q_date_to':   date_to_str,
+            'q_user':      user_q,
+            'q_room':      room_q,
+        })

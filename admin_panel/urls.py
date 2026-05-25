@@ -24,6 +24,7 @@ from .views import (
     DepartmentCreateView,
     DepartmentUpdateView,
     DepartmentDeleteView,
+    OperationLogView,
 )
 
 urlpatterns = [
@@ -74,4 +75,6 @@ urlpatterns = [
     path('departments/create/',            DepartmentCreateView.as_view(), name='department_create'),
     path('departments/<int:pk>/edit/',     DepartmentUpdateView.as_view(), name='department_edit'),
     path('departments/<int:pk>/delete/',   DepartmentDeleteView.as_view(), name='department_delete'),
+    # 操作ログ
+    path('operation-log/',                 OperationLogView.as_view(),     name='operation_log'),
 ]

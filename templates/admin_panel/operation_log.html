@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>操作ログ | 会議室予約システム</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_reservation_list.css' %}">
+  </head>
+  <body>
+    <div class="logo between">
+      <div class="header-logo">
+        <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
+        <span>社内会議室予約システム：操作ログ</span>
+      </div>
+      <div class="top-links">
+        <a href="/">戻る</a>
+        <span class="sep">｜</span>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+          {% csrf_token %}
+          <button type="submit" class="logout-btn">ログアウト</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="calendar-container">
+      <div class="calendar-toolbar">
+        <div class="toolbar-left">
+          <span class="page-title">操作ログ</span>
+        </div>
+      </div>
+
+      <!-- 絞り込み -->
+      <div class="filter-card">
+        <div class="filter-card-header">絞り込み条件</div>
+        <div class="filter-card-body">
+          <form method="get" action="">
+            <div class="filter-grid">
+              <div class="filter-label">操作種別</div>
+              <div class="filter-input">
+                <select name="action">
+                  <option value="">（すべて）</option>
+                  {% for val, label in action_choices %}
+                    <option value="{{ val }}" {% if q_action == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="filter-label">日付（From）</div>
+              <div class="filter-input">
+                <input type="date" name="date_from" value="{{ q_date_from }}">
+              </div>
+              <div class="filter-label">日付（To）</div>
+              <div class="filter-input">
+                <input type="date" name="date_to" value="{{ q_date_to }}">
+              </div>
+              <div class="filter-label">操作者名</div>
+              <div class="filter-input">
+                <input type="text" name="user" value="{{ q_user }}" placeholder="例）山田">
+              </div>
+              <div class="filter-label">会議室名</div>
+              <div class="filter-input">
+                <input type="text" name="room" value="{{ q_room }}" placeholder="例）第1会議室">
+              </div>
+            </div>
+            <div class="filter-actions">
+              <button type="submit" class="btn btn-dark btn-md">検索</button>
+              <a href="." class="btn btn-light btn-md">クリア</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="result-count">検索結果&nbsp;&nbsp;{{ total }}件</div>
+
+      <div class="admin-card">
+        <div class="table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>操作日時</th>
+                <th>操作種別</th>
+                <th>操作者</th>
+                <th>会議室</th>
+                <th>件名</th>
+                <th>予約日時</th>
+                <th>変更内容</th>
+                <th>IPアドレス</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in page_obj %}
+                <tr>
+                  <td style="white-space:nowrap;">{{ log.created_at|date:"Y/m/d" }}&nbsp;{{ log.created_at|time:"H:i" }}</td>
+                  <td>
+                    {% if log.action == 'create' %}
+                      <span class="badge badge-reserved">予約作成</span>
+                    {% elif log.action == 'update' %}
+                      <span class="badge" style="background:#805ad5;color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;">予約変更</span>
+                    {% elif log.action == 'cancel' %}
+                      <span class="badge badge-cancelled">予約キャンセル</span>
+                    {% elif log.action == 'move' %}
+                      <span class="badge" style="background:#dd6b20;color:#fff;border-radius:4px;padding:2px 8px;font-size:12px;">予約移動</span>
+                    {% else %}
+                      {{ log.get_action_display }}
+                    {% endif %}
+                  </td>
+                  <td>{{ log.user.name|default:'（削除済み）' }}</td>
+                  <td>{{ log.room_name }}</td>
+                  <td>{{ log.title }}</td>
+                  <td style="white-space:nowrap;">
+                    {{ log.start_at|date:"Y/m/d" }}&nbsp;{{ log.start_at|time:"H:i" }}〜{{ log.end_at|time:"H:i" }}
+                  </td>
+                  <td>{{ log.detail|default:'―' }}</td>
+                  <td style="white-space:nowrap;">{{ log.ip_address|default:'―' }}</td>
+                </tr>
+              {% empty %}
+                <tr class="empty-row">
+                  <td colspan="8">該当するログはありません。</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ページネーション -->
+      {% if page_obj.has_other_pages %}
+        <div class="pagination" style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+          {% if page_obj.has_previous %}
+            <a href="?{% if q_action %}action={{ q_action }}&{% endif %}{% if q_date_from %}date_from={{ q_date_from }}&{% endif %}{% if q_date_to %}date_to={{ q_date_to }}&{% endif %}{% if q_user %}user={{ q_user }}&{% endif %}{% if q_room %}room={{ q_room }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-light btn-md">前へ</a>
+          {% endif %}
+          <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a href="?{% if q_action %}action={{ q_action }}&{% endif %}{% if q_date_from %}date_from={{ q_date_from }}&{% endif %}{% if q_date_to %}date_to={{ q_date_to }}&{% endif %}{% if q_user %}user={{ q_user }}&{% endif %}{% if q_room %}room={{ q_room }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-light btn-md">次へ</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    <script src="{% static 'js/common.js' %}"></script>
+  </body>
+</html>

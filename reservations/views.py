@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.conf import settings
 from django.db import transaction
 
-from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom
+from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom, OperationLog
 from .forms import ReservationForm
 from accounts.models import Department, User, UserGoogleToken
 try:
@@ -49,6 +49,32 @@ except ImportError:
 
 def home(request):
     return HttpResponse("meeting room reservation system")
+
+
+def _get_client_ip(request):
+    """X-Forwarded-For → REMOTE_ADDR の順で IP を取得"""
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _log_operation(request, action, reservation, detail=''):
+    """予約操作ログを非同期的に記録する（例外は握り潰してメイン処理に影響させない）"""
+    try:
+        OperationLog.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            action=action,
+            reservation=reservation,
+            room_name=reservation.room.name if reservation.room_id else '',
+            title=reservation.title,
+            start_at=reservation.start_at,
+            end_at=reservation.end_at,
+            detail=detail,
+            ip_address=_get_client_ip(request),
+        )
+    except Exception as e:
+        logger.warning(f'OperationLog 書き込み失敗: {e}')
 
 
 def _conflict_exists(room_id, start_at, end_at, exclude_pk=None, is_all_day=False):
@@ -283,6 +309,7 @@ class ReservationCreateView(CreateView):
                 _generate_recurrence_instances(reservation)
 
         self.object = reservation
+        _log_operation(self.request, OperationLog.ACTION_CREATE, reservation)
         GoogleSyncService(self.request.user).create_event(reservation)
         return redirect(self.get_success_url())
 
@@ -333,6 +360,7 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
             reservation.save()
             self.object = reservation
 
+        _log_operation(self.request, OperationLog.ACTION_UPDATE, self.object)
         try:
             GoogleSyncService(self.request.user).update_event(self.object)
         except Exception as e:
@@ -353,6 +381,8 @@ def reservation_cancel(request, pk):
 
     reservation.is_cancelled = True
     reservation.save()
+
+    _log_operation(request, OperationLog.ACTION_CANCEL, reservation)
 
     # Google カレンダーのイベントも削除
     try:
@@ -499,6 +529,8 @@ class ReservationMoveView(LoginRequiredMixin, View):
             reservation.room_id    = room_id
             reservation.is_all_day = is_all_day
             reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
+
+        _log_operation(request, OperationLog.ACTION_MOVE, reservation)
 
         # Google カレンダー同期
         try:
