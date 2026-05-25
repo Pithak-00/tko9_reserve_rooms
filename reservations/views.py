@@ -405,8 +405,8 @@ class ReservationMoveView(LoginRequiredMixin, View):
     def patch(self, request, pk):
         reservation = get_object_or_404(Reservation, pk=pk, is_cancelled=False)
 
-        # 権限チェック
-        if reservation.user != request.user and not request.user.is_staff:
+        # 権限チェック（自分の予約のみ移動可）
+        if reservation.user != request.user:
             return JsonResponse({'error': '操作権限がありません'}, status=403)
 
         data      = json.loads(request.body)

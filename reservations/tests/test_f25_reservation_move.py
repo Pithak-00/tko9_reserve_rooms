@@ -123,12 +123,12 @@ class TestF25ReservationMove(TestCase):
         self.reservation.refresh_from_db()
         self.assertTrue(self.reservation.is_all_day)
 
-    def test_staff_can_move_others_reservation(self):
-        """正常系: staff は他ユーザーの予約を移動できること"""
+    def test_staff_cannot_move_others_reservation(self):
+        """異常系: staff であっても他ユーザーの予約は移動できないこと"""
         self.client.login(username="staff@example.com", password="TestPass123")
         start, end = self._make_start_end(self.today, time(14, 0), time(15, 0))
         response = self._patch({"start_at": start, "end_at": end})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     # ──────────────────────────────────────────────
     # 異常系: 権限

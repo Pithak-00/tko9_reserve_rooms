@@ -116,8 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
     datesSet: handleDatesSet,
     eventDidMount: (info) => {
       info.el.style.color = getTextColor(info.event.backgroundColor);
-      if (!info.event.extendedProps.editable) {
+      if (!info.event.extendedProps.is_owner) {
         info.el.setAttribute('draggable', 'false');
+        info.el.style.cursor = 'default';
       }
     },
   });
