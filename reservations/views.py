@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.views import View
 from django.views.generic import TemplateView, CreateView, ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from datetime import date, datetime, timedelta, time as dt_time
+from datetime import date, datetime, timedelta, time as dt_time, timezone as dt_tz
 from django.utils import timezone
 from django.utils.timezone import localtime
 from django.urls import reverse
@@ -551,8 +551,6 @@ def google_oauth_callback(request):
     creds = flow.credentials
 
     # UserGoogleToken に保存（or 更新）
-    from django.utils import timezone
-    from datetime import datetime, timezone as dt_tz
     expiry = None
     if creds.expiry:
         expiry = creds.expiry.replace(tzinfo=dt_tz.utc)

@@ -1,4 +1,3 @@
-/* ===== ナビゲーションメニュー ===== */
 // ===== ナビゲーションメニュー =====
 function toggleNavMenu(e) {
   e.stopPropagation();
@@ -116,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
     select: handleSelect,
     datesSet: handleDatesSet,
     eventDidMount: (info) => {
-      // is_owner=false の場合は DnD を無効化
+      info.el.style.color = getTextColor(info.event.backgroundColor);
       if (!info.event.extendedProps.editable) {
         info.el.setAttribute('draggable', 'false');
       }
@@ -398,17 +397,6 @@ function getTextColor(hexColor) {
   // 閾値 0.179 を境に白 or 黒を返す
   return L > 0.179 ? '#1A1A2E' : '#FFFFFF';
 }
-
-// 使用例：FullCalendar eventDidMount で適用
-eventDidMount: (info) => {
-  const bgColor = info.event.backgroundColor;
-  info.el.style.color = getTextColor(bgColor);
-  if (!info.event.extendedProps.editable) {
-    info.el.setAttribute('draggable', 'false');
-  }
-},
-
-// Google 同期トグル・連携解除（calendar.js 追記）
 
 // 同期 ON/OFF トグル
 document.getElementById('google-sync-toggle')?.addEventListener('change', function () {
