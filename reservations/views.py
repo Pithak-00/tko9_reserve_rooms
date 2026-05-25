@@ -262,6 +262,15 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "reservations/edit.html"
     context_object_name = "reservation"
 
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # 未ログイン時は LoginRequiredMixin のリダイレクトに委譲
+            return super().dispatch(request, *args, **kwargs)
+        reservation = self.get_object()
+        if reservation.user != request.user:
+            return HttpResponseForbidden("この予約を編集する権限がありません")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         form.fields["room"].disabled = True

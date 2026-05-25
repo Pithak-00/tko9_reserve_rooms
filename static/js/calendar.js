@@ -209,7 +209,7 @@ function handleEventClick(info) {
   const cancelBtn  = po.querySelector('.btn-cancel');
   const detailBtn  = po.querySelector('.btn-detail');
 
-  editBtn.hidden    = !ep.editable;
+  editBtn.style.display    = ep.is_owner ? '' : 'none';  // 編集は自分の予約のみ
   cancelForm.style.display = ep.is_owner ? '' : 'none';  // キャンセルは自分の予約のみ
   editBtn.href     = `/reservations/${ev.id}/edit/`;
   detailBtn.href   = `/reservations/${ev.id}/`;

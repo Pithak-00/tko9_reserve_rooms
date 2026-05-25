@@ -108,8 +108,8 @@
 
         {% if not reservation.is_cancelled %}
         <div class="actions">
-          <a href="{% url 'reservation_edit' reservation.pk %}" class="btn btn-primary btn-md">編集する</a>
           {% if reservation.user == request.user %}
+          <a href="{% url 'reservation_edit' reservation.pk %}" class="btn btn-primary btn-md">編集する</a>
           <button type="button" class="btn btn-danger btn-md" id="openCancelModal">予約をキャンセル</button>
           {% endif %}
         </div>
