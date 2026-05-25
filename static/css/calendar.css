@@ -638,3 +638,28 @@
     display: none; /* SP では凡例非表示 */
   }
 }
+
+/* ===== 月ビュー：統一イベント表示（ドット＋時刻/終日＋件名） ===== */
+.mev-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+.mev-time {
+  font-size: 0.82em;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #1A1A2E;
+}
+.mev-title {
+  font-size: 0.85em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1A1A2E;
+}
+}

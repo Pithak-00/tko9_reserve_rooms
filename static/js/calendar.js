@@ -92,6 +92,23 @@ document.addEventListener('DOMContentLoaded', function () {
     editable: true,
     selectable: true,
     headerToolbar: false,  // カスタムツールバー使用
+    // 時刻を常に HH:MM 形式で表示（日本語ロケールのデフォルト「10時」を上書き）
+    eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    views: {
+      dayGridMonth: { displayEventTime: true },
+    },
+    // 月ビュー：終日・時刻付きイベントを「● 終日/HH:MM 件名」形式で統一表示
+    eventContent: (arg) => {
+      if (arg.view.type !== 'dayGridMonth') return undefined;
+      const color = arg.event.backgroundColor || '#3182CE';
+      const label = arg.event.allDay ? '終日' : arg.timeText;
+      const title = arg.event.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return {
+        html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
+              '<span class="mev-time">' + label + '</span>' +
+              '<span class="mev-title">&nbsp;' + title + '</span>',
+      };
+    },
     eventSources: [{ url: '/reservations/events/',
       extraParams: () => {
         const params = { room_ids: getSelectedRoomIds().join(',') };
@@ -115,7 +132,16 @@ document.addEventListener('DOMContentLoaded', function () {
     select: handleSelect,
     datesSet: handleDatesSet,
     eventDidMount: (info) => {
-      info.el.style.color = getTextColor(info.event.backgroundColor);
+      if (info.view.type === 'dayGridMonth') {
+        // 月ビュー：背景色を除去して文字色を黒に固定
+        info.el.style.backgroundColor = 'transparent';
+        info.el.style.borderColor     = 'transparent';
+        info.el.style.boxShadow       = 'none';
+        info.el.style.color           = '#1A1A2E';
+      } else {
+        // 週・日ビュー：背景色に応じて白 or 黒を選択
+        info.el.style.color = getTextColor(info.event.backgroundColor || '#3182CE');
+      }
       if (!info.event.extendedProps.can_edit) {
         info.el.setAttribute('draggable', 'false');
         info.el.style.cursor = 'default';
