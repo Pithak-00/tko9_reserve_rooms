@@ -146,10 +146,10 @@ def test_select_all_checkbox_checks_all_rooms(
     """「すべて」チェックを外して再チェックすると全会議室が選択されること"""
     logged_in_page.goto(calendar_url)
     wait_for_calendar(logged_in_page)
-    select_all = logged_in_page.locator("#selectAllRooms")
-    select_all.uncheck()
+    # サイドバーがスクロールコンテナ内にあるため JS で操作する
+    logged_in_page.evaluate("document.querySelector('#selectAllRooms').click()")
     logged_in_page.wait_for_timeout(300)
-    select_all.check()
+    logged_in_page.evaluate("document.querySelector('#selectAllRooms').click()")
     logged_in_page.wait_for_timeout(300)
     for room in [e2e_room, e2e_room2]:
         cb = logged_in_page.locator(f'.room-checkbox[value="{room.pk}"]')
