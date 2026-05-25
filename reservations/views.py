@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.utils.timezone import localtime
 from django.urls import reverse
 from django.conf import settings
+from django.db import transaction
 
 from .models import Room, Reservation, Facility, Building, RoomFacility, DepartmentRoom
 from .forms import ReservationForm
@@ -48,6 +49,34 @@ except ImportError:
 
 def home(request):
     return HttpResponse("meeting room reservation system")
+
+
+def _conflict_exists(room_id, start_at, end_at, exclude_pk=None, is_all_day=False):
+    """
+    排他制御付き重複チェック。必ず transaction.atomic() ブロック内で呼ぶこと。
+    競合がなければ None、あればエラーメッセージ文字列を返す。
+    """
+    qs = Reservation.objects.filter(room_id=room_id, is_cancelled=False)
+    if exclude_pk:
+        qs = qs.exclude(pk=exclude_pk)
+
+    # ① 通常の時間重複
+    if qs.filter(start_at__lt=end_at, end_at__gt=start_at).exists():
+        return 'その時間帯は既に予約されています'
+
+    # ② 同日の終日予約との重複（終日予約は 00:00〜00:30 で保存されるため別途チェック）
+    tz = timezone.get_current_timezone()
+    day = localtime(start_at).date()
+    day_start = timezone.make_aware(datetime.combine(day, dt_time(0, 0)), tz)
+    day_end   = day_start + timedelta(days=1)
+    if qs.filter(is_all_day=True, start_at__gte=day_start, start_at__lt=day_end).exists():
+        return 'その日は終日予約が入っているため予約できません'
+
+    # ③ 終日予約で同日に通常予約が存在する
+    if is_all_day and qs.filter(is_all_day=False, start_at__gte=day_start, start_at__lt=day_end).exists():
+        return 'その日は既に予約が入っているため終日予約できません'
+
+    return None
 
 
 def _generate_recurrence_instances(parent: Reservation, until=None):
@@ -238,12 +267,24 @@ class ReservationCreateView(CreateView):
         reservation.reserved_by = self.request.user.name
         recurrence_rule = form.cleaned_data.get('recurrence_rule', '')
         reservation.recurrence_rule = recurrence_rule
-        reservation.save()
-        # 繰り返しインスタンスを一括生成
-        if recurrence_rule:
-            _generate_recurrence_instances(reservation)
+
+        with transaction.atomic():
+            # 会議室行をロックして同時リクエストの割り込みを防ぐ
+            Room.objects.select_for_update().get(pk=reservation.room_id)
+            error_msg = _conflict_exists(
+                reservation.room_id, reservation.start_at, reservation.end_at,
+                is_all_day=reservation.is_all_day,
+            )
+            if error_msg:
+                form.add_error(None, error_msg)
+                return self.form_invalid(form)
+            reservation.save()
+            if recurrence_rule:
+                _generate_recurrence_instances(reservation)
+
+        self.object = reservation
         GoogleSyncService(self.request.user).create_event(reservation)
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
@@ -277,12 +318,26 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
         return form
 
     def form_valid(self, form):
-        response = super().form_valid(form)
+        reservation = form.save(commit=False)
+
+        with transaction.atomic():
+            Room.objects.select_for_update().get(pk=reservation.room_id)
+            error_msg = _conflict_exists(
+                reservation.room_id, reservation.start_at, reservation.end_at,
+                exclude_pk=reservation.pk,
+                is_all_day=reservation.is_all_day,
+            )
+            if error_msg:
+                form.add_error(None, error_msg)
+                return self.form_invalid(form)
+            reservation.save()
+            self.object = reservation
+
         try:
             GoogleSyncService(self.request.user).update_event(self.object)
         except Exception as e:
             logger.warning(f'Google sync on update failed: {e}')
-        return response
+        return redirect(self.get_success_url())
 
     def get_success_url(self):
         return reverse("reservation_detail", kwargs={"pk": self.object.pk})
@@ -432,54 +487,18 @@ class ReservationMoveView(LoginRequiredMixin, View):
                 else start_at + timedelta(minutes=30)  # フォールバック：30分後
             )
 
-        # 重複チェック（自分自身を除く）
-        # ① 通常の時間重複
-        conflict = Reservation.objects.filter(
-            room_id=room_id,
-            start_at__lt=end_at,
-            end_at__gt=start_at,
-            is_cancelled=False,
-        ).exclude(pk=pk).exists()
+        with transaction.atomic():
+            # 会議室行をロックして同時リクエストの割り込みを防ぐ
+            Room.objects.select_for_update().get(pk=room_id)
+            error_msg = _conflict_exists(room_id, start_at, end_at, exclude_pk=pk, is_all_day=is_all_day)
+            if error_msg:
+                return JsonResponse({'error': error_msg}, status=400)
 
-        if conflict:
-            return JsonResponse({'error': '競合する予約が存在します'}, status=400)
-
-        # ② 終日予約との重複（終日は00:00〜00:30で保存されるため別途チェック）
-        move_date = localtime(start_at).date()
-        day_start = timezone.make_aware(
-            datetime.combine(move_date, dt_time(0, 0)),
-            timezone.get_current_timezone()
-        )
-        day_end = day_start + timedelta(days=1)
-
-        all_day_conflict = Reservation.objects.filter(
-            room_id=room_id,
-            is_cancelled=False,
-            is_all_day=True,
-            start_at__gte=day_start,
-            start_at__lt=day_end,
-        ).exclude(pk=pk).exists()
-
-        if all_day_conflict:
-            return JsonResponse({'error': 'その日は終日予約が入っています'}, status=400)
-
-        # ③ 移動先が終日の場合、同日に通常予約があればブロック
-        if is_all_day:
-            day_conflict = Reservation.objects.filter(
-                room_id=room_id,
-                is_cancelled=False,
-                is_all_day=False,
-                start_at__gte=day_start,
-                start_at__lt=day_end,
-            ).exclude(pk=pk).exists()
-            if day_conflict:
-                return JsonResponse({'error': 'その日は既に予約が入っているため終日予約できません'}, status=400)
-
-        reservation.start_at   = start_at
-        reservation.end_at     = end_at
-        reservation.room_id    = room_id
-        reservation.is_all_day = is_all_day
-        reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
+            reservation.start_at   = start_at
+            reservation.end_at     = end_at
+            reservation.room_id    = room_id
+            reservation.is_all_day = is_all_day
+            reservation.save(update_fields=['start_at', 'end_at', 'room_id', 'is_all_day', 'updated_at'])
 
         # Google カレンダー同期
         try:
