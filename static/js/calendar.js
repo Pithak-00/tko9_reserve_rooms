@@ -209,8 +209,8 @@ function handleEventClick(info) {
   const cancelBtn  = po.querySelector('.btn-cancel');
   const detailBtn  = po.querySelector('.btn-detail');
 
-  editBtn.hidden   = !ep.editable;
-  cancelForm.hidden = !ep.editable;
+  editBtn.hidden    = !ep.editable;
+  cancelForm.hidden = !ep.is_owner;  // キャンセルは自分の予約のみ
   editBtn.href     = `/reservations/${ev.id}/edit/`;
   detailBtn.href   = `/reservations/${ev.id}/`;
 

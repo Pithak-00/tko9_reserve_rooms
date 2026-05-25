@@ -4,7 +4,7 @@ import logging
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.views import View
 from django.views.generic import TemplateView, CreateView, ListView, UpdateView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -285,7 +285,7 @@ def reservation_cancel(request, pk):
     reservation = get_object_or_404(Reservation, pk=pk)
 
     if reservation.user != request.user:
-        return redirect("calendar")
+        return HttpResponseForbidden("この予約をキャンセルする権限がありません")
 
     reservation.is_cancelled = True
     reservation.save()

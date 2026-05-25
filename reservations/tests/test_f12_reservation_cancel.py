@@ -72,11 +72,11 @@ class TestF12ReservationCancel(TestCase):
         self.reservation.refresh_from_db()
         self.assertFalse(self.reservation.is_cancelled)
 
-    def test_cancel_by_non_owner_redirects_to_calendar(self):
-        """異常系: 他のユーザーのキャンセル試行 -> カレンダーへリダイレクト（403ではなく）"""
+    def test_cancel_by_non_owner_returns_403(self):
+        """異常系: 他のユーザーのキャンセル試行 -> 403 Forbidden が返ること"""
         self.client.login(username="other@example.com", password="TestPass123")
         response = self.client.post(self.url)
-        self.assertRedirects(response, reverse("calendar"))
+        self.assertEqual(response.status_code, 403)
 
     def test_get_method_not_allowed(self):
         """異常系: GET リクエスト -> 405 Method Not Allowed が返ること"""
