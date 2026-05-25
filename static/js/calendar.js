@@ -97,16 +97,37 @@ document.addEventListener('DOMContentLoaded', function () {
     views: {
       dayGridMonth: { displayEventTime: true },
     },
-    // 月ビュー：終日・時刻付きイベントを「● 終日/HH:MM 件名」形式で統一表示
+    // 月ビュー：「● 終日/HH:MM 件名」形式で統一。週・日ビューはデフォルトと同等の HTML を返す
     eventContent: (arg) => {
-      if (arg.view.type !== 'dayGridMonth') return undefined;
-      const color = arg.event.backgroundColor || '#3182CE';
-      const label = arg.event.allDay ? '終日' : arg.timeText;
       const title = arg.event.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      if (arg.view.type === 'dayGridMonth') {
+        // 月ビュー：ドット + 時刻ラベル + 件名（背景なし・黒文字）
+        const color = arg.event.backgroundColor || '#3182CE';
+        const label = arg.event.allDay ? '終日' : arg.timeText;
+        return {
+          html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
+                '<span class="mev-time">' + label + '</span>' +
+                '<span class="mev-title">&nbsp;' + title + '</span>',
+        };
+      }
+
+      // 週・日ビュー：FullCalendar デフォルトと同等の構造を明示的に返す
+      // （eventContent を設定すると undefined を返しても空になるため）
+      if (arg.timeText) {
+        return {
+          html: '<div class="fc-event-main-frame">' +
+                '<div class="fc-event-time">' + arg.timeText + '</div>' +
+                '<div class="fc-event-title-container">' +
+                '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+                '</div></div>',
+        };
+      }
       return {
-        html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
-              '<span class="mev-time">' + label + '</span>' +
-              '<span class="mev-title">&nbsp;' + title + '</span>',
+        html: '<div class="fc-event-main-frame">' +
+              '<div class="fc-event-title-container">' +
+              '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+              '</div></div>',
       };
     },
     eventSources: [{ url: '/reservations/events/',
