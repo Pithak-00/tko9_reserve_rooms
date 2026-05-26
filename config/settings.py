@@ -127,8 +127,8 @@ STATICFILES_DIRS = [
 # 実際のログイン画面URL
 LOGIN_URL = "/accounts/login/"
 
-# ログイン成功後のリダイレクト先
-LOGIN_REDIRECT_URL = "/calendar/"
+# ログイン成功後のリダイレクト先（会議室の一覧画面）
+LOGIN_REDIRECT_URL = "/reservations/timeline/"
 
 # ログアウト後のリダイレクト先
 LOGOUT_REDIRECT_URL = "/accounts/login/"
