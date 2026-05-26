@@ -4,31 +4,22 @@ set -xe
 echo "ApplicationStart started"
 
 APP_DIR="/home/ec2-user/test/test_app"
-CONTAINER_NAME="test-app"
-IMAGE_NAME="test-app"
 
 cd "$APP_DIR"
 
 echo "Move directory completed"
 
-/usr/bin/docker stop "$CONTAINER_NAME" || true
-/usr/bin/docker rm "$CONTAINER_NAME" || true
-/usr/bin/docker rmi "$IMAGE_NAME" || true
+/usr/bin/docker compose down || true
 
 echo "Old container cleanup completed"
 
-/usr/bin/docker build --no-cache -t "$IMAGE_NAME" .
+/usr/bin/docker compose up -d --build
 
-echo "Docker build completed"
+echo "Docker compose up completed"
 
-/usr/bin/docker run -d \
-  --name "$CONTAINER_NAME" \
-  --restart unless-stopped \
-  -p 80:8000 \
-  "$IMAGE_NAME"
+/usr/bin/docker builder prune -a -f
 
-echo "Docker container start completed"
-
+echo "Docker build cache cleanup completed"
 
 sleep 5
 
