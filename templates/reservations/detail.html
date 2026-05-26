@@ -57,11 +57,6 @@
 
               <span class="sri-label">所属別表示</span>
               <span class="sri-value">{% for d in reservation.room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}</span>
-
-              <span class="sri-label">カラー</span>
-              <span class="sri-value">
-                <span class="sri-color-swatch" style="background:{{ reservation.room.color|default:'#3182CE' }};"></span>{{ reservation.room.color|default:'#3182CE' }}
-              </span>
             </div>
           </div>
         </div>
@@ -102,6 +97,11 @@
 
               <span class="sri-label">備考</span>
               <span class="sri-value sri-multiline">{{ reservation.notes|default:'―' }}</span>
+
+              <span class="sri-label">色</span>
+              <span class="sri-value">
+                <span class="sri-color-swatch" style="background:{{ reservation.color|default:'#3182CE' }};"></span>{{ reservation.color|default:'#3182CE' }}
+              </span>
             </div>
           </div>
         </div>

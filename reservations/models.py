@@ -172,10 +172,10 @@ class Reservation(models.Model):
     is_all_day = models.BooleanField(default=False, verbose_name='終日')
     is_cancelled = models.BooleanField(default=False)
 
-    # 予約カラーコード（カレンダー上の表示色）
+    # 予約の表示色（カレンダー上の色）
     color = models.CharField(
         max_length=7, default='#3182CE', blank=True,
-        verbose_name='カラーコード'
+        verbose_name='色'
     )
 
     created_at = models.DateTimeField(default=timezone.now)
