@@ -6,6 +6,7 @@
   <title>一覧 | 会議室予約システム</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/common.css' %}">
+  <link rel="stylesheet" href="{% static 'css/calendar.css' %}">
   <link rel="stylesheet" href="{% static 'css/timeline.css' %}">
 </head>
 <body>
@@ -22,6 +23,9 @@
 
     <!-- ① 左サイドバー -->
     <div class="timeline-sidebar">
+
+      <!-- 予約登録ボタン -->
+      <a href="{% url 'reservation_create' %}" class="btn-create-reservation sidebar-create-btn">＋ 予約を登録する</a>
 
       <!-- ミニカレンダー -->
       <div class="mini-calendar">
@@ -61,23 +65,10 @@
       <div class="timeline-date-nav">
         <div class="date-display">{{ target|date:"Y年n月j日（D）" }}</div>
         <div class="nav-btns">
-          <a href="?date={{ prev_date|date:'Y-m-d' }}">前日</a>
-          <a href="?date={{ today|date:'Y-m-d' }}" class="today-btn">本日</a>
-          <a href="?date={{ next_date|date:'Y-m-d' }}">翌日</a>
+          <a href="?date={{ prev_date|date:'Y-m-d' }}" class="nav-btn">前日</a>
+          <a href="?date={{ today|date:'Y-m-d' }}" class="nav-btn today-btn">本日</a>
+          <a href="?date={{ next_date|date:'Y-m-d' }}" class="nav-btn">翌日</a>
         </div>
-      </div>
-
-      <!-- リンク -->
-      <div class="sidebar-links">
-        <a href="{% url 'calendar' %}">カレンダー</a>
-        <a href="{% url 'reservation_timeline' %}" class="active">一覧</a>
-        <a href="{% url 'reservation_create' %}">＋ 予約を登録する</a>
-        <a href="{% url 'my_reservations' %}">自分の予約</a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'user_admin_list' %}">ユーザー管理</a>
-        <a href="{% url 'room_admin_list' %}">会議室管理</a>
-        <a href="{% url 'all_reservation_list' %}">全予約管理</a>
-        {% endif %}
       </div>
 
     </div><!-- /.timeline-sidebar -->
@@ -88,12 +79,37 @@
       <!-- ツールバー -->
       <div class="timeline-toolbar">
         <span class="tl-title">{{ target|date:"Y年n月j日" }}</span>
-        <div class="view-tabs">
-          <a href="{% url 'calendar' %}?view=day&date={{ target|date:'Y-m-d' }}" class="view-tab">日</a>
-          <a href="{% url 'calendar' %}?view=week&date={{ target|date:'Y-m-d' }}" class="view-tab">週</a>
-          <a href="{% url 'calendar' %}?view=month&date={{ target|date:'Y-m-d' }}" class="view-tab">月</a>
-          <a href="{% url 'reservation_timeline' %}?date={{ target|date:'Y-m-d' }}" class="view-tab active">一覧</a>
-        </div>
+        <div class="tl-toolbar-right">
+          <!-- カレンダーへ戻るボタン -->
+          <a href="{% url 'calendar' %}?date={{ target|date:'Y-m-d' }}" class="nav-btn">カレンダー</a>
+          <!-- ナビメニュー -->
+          <div class="nav-menu-wrap">
+            <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
+            <div class="nav-dropdown" id="navMenu">
+              <a href="{% url 'rooms:room_list' %}">会議室一覧</a>
+              <a href="{% url 'my_reservations' %}">自分の予約</a>
+              {% if request.user.is_staff %}
+              <div class="nav-submenu-wrapper">
+                <button class="nav-submenu-trigger" onclick="toggleAdminSubmenu(event)">管理メニュー •••</button>
+                <div class="nav-submenu" id="adminSubmenu">
+                  <a href="{% url 'user_admin_list' %}">ユーザー管理</a>
+                  <a href="{% url 'room_admin_list' %}">会議室マスタ管理</a>
+                  <a href="{% url 'all_reservation_list' %}">全予約管理</a>
+                  <a href="{% url 'facility_list' %}">設備管理</a>
+                  <a href="{% url 'building_list' %}">建物管理</a>
+                  <a href="{% url 'department_list' %}">所属管理</a>
+                  <a href="{% url 'operation_log' %}">操作ログ</a>
+                </div>
+              </div>
+              {% endif %}
+              <a href="{% url 'password_change' %}">パスワード変更</a>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">ログアウト</button>
+              </form>
+            </div>
+          </div><!-- /.nav-menu-wrap -->
+        </div><!-- /.tl-toolbar-right -->
       </div>
 
       <!-- タイムライングリッド -->

@@ -126,31 +126,16 @@
   gap: 4px;
 }
 
-.timeline-date-nav .nav-btns a {
-  flex: 1;
-  text-align: center;
-  padding: 5px 4px;
-  background: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  color: #495057;
-  text-decoration: none;
-  transition: background 0.15s;
-}
-
-.timeline-date-nav .nav-btns a:hover {
-  background: #e9ecef;
-}
-
+/* 本日ボタンのみ強調色（nav-btn スタイルを上書き） */
 .timeline-date-nav .nav-btns a.today-btn {
-  background: #0d6efd;
+  background: #2E75B6;
   color: #fff;
-  border-color: #0d6efd;
+  border-color: #2E75B6;
 }
 
 .timeline-date-nav .nav-btns a.today-btn:hover {
-  background: #0b5ed7;
+  background: #1F5A9E;
+  color: #fff;
 }
 
 /* サイドバーリンク */
@@ -351,7 +336,7 @@
 .timeline-toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
   padding: 8px 16px;
   background: #fff;
   border-bottom: 1px solid #dee2e6;
@@ -363,34 +348,11 @@
   color: #212529;
 }
 
-.timeline-toolbar .view-tabs {
+/* 右側グループ（カレンダーボタン ＋ •••） */
+.tl-toolbar-right {
   display: flex;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.timeline-toolbar .view-tab {
-  padding: 5px 14px;
-  font-size: 0.82rem;
-  background: #fff;
-  border: none;
-  cursor: pointer;
-  color: #495057;
-  border-right: 1px solid #dee2e6;
-  text-decoration: none;
-  display: inline-block;
-  line-height: 1.5;
-}
-
-.timeline-toolbar .view-tab:last-child {
-  border-right: none;
-}
-
-.timeline-toolbar .view-tab.active,
-.timeline-toolbar .view-tab:hover {
-  background: #0d6efd;
-  color: #fff;
+  align-items: center;
+  gap: 8px;
 }
 
 /* レスポンシブ：SP 対応 */

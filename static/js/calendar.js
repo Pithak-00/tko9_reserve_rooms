@@ -1,37 +1,10 @@
-// ===== ナビゲーションメニュー =====
-function toggleNavMenu(e) {
-  e.stopPropagation();
-  document.getElementById("navMenu")?.classList.toggle("open");
-}
-
-function toggleAdminSubmenu(e) {
-  e.stopPropagation();
-  document.getElementById("adminSubmenu")?.classList.toggle("open");
-  document.getElementById("adminArrow")?.classList.toggle("open");
-}
-
-// ===== メニュー外・画面外クリック時に閉じる処理（PC・スマホ共通） =====
+// ===== フィルターサイドバー 外クリックで閉じる（calendar 専用） =====
 document.addEventListener("click", function (e) {
   const sidebar = document.getElementById('roomSidebar');
   const hamburger = document.querySelector('.hamburger-btn');
-  const navMenu = document.getElementById("navMenu");
-  const dotsBtn = document.querySelector(".dots-btn");
-
-  // 1. 左側フィルターサイドバーの外側クリック判定
   if (sidebar && sidebar.classList.contains('open')) {
-    // クリックされた場所が「サイドバー自身」でも「ハンバーガーボタン」でもない場合、閉じる
     if (!sidebar.contains(e.target) && !hamburger?.contains(e.target)) {
       sidebar.classList.remove('open');
-    }
-  }
-
-  // 2. 右側三点リーダー（•••）メニューの外側クリック判定
-  if (navMenu && navMenu.classList.contains('open')) {
-    // クリックされた場所が「メニュー内」でも「三点リーダーボタン」でもない場合、閉じる
-    if (!navMenu.contains(e.target) && !dotsBtn?.contains(e.target)) {
-      navMenu.classList.remove("open");
-      document.getElementById("adminSubmenu")?.classList.remove("open");
-      document.getElementById("adminArrow")?.classList.remove("open");
     }
   }
 });

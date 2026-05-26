@@ -203,3 +203,28 @@ function formatTime(dt) {
   if (!dt) return '';
   return dt.toTimeString().slice(0, 5);
 }
+
+/* ===== ナビメニュー（•••）開閉 — calendar・timeline 共通 ===== */
+function toggleNavMenu(e) {
+  e.stopPropagation();
+  document.getElementById("navMenu")?.classList.toggle("open");
+}
+
+function toggleAdminSubmenu(e) {
+  e.stopPropagation();
+  document.getElementById("adminSubmenu")?.classList.toggle("open");
+  document.getElementById("adminArrow")?.classList.toggle("open");
+}
+
+// メニュー外クリックで閉じる
+document.addEventListener("click", function (e) {
+  const navMenu = document.getElementById("navMenu");
+  const dotsBtn = document.querySelector(".dots-btn");
+  if (navMenu && navMenu.classList.contains("open")) {
+    if (!navMenu.contains(e.target) && !dotsBtn?.contains(e.target)) {
+      navMenu.classList.remove("open");
+      document.getElementById("adminSubmenu")?.classList.remove("open");
+      document.getElementById("adminArrow")?.classList.remove("open");
+    }
+  }
+});
