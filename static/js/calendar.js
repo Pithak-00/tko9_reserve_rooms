@@ -1,37 +1,10 @@
-// ===== ナビゲーションメニュー =====
-function toggleNavMenu(e) {
-  e.stopPropagation();
-  document.getElementById("navMenu")?.classList.toggle("open");
-}
-
-function toggleAdminSubmenu(e) {
-  e.stopPropagation();
-  document.getElementById("adminSubmenu")?.classList.toggle("open");
-  document.getElementById("adminArrow")?.classList.toggle("open");
-}
-
-// ===== メニュー外・画面外クリック時に閉じる処理（PC・スマホ共通） =====
+// ===== フィルターサイドバー 外クリックで閉じる（calendar 専用） =====
 document.addEventListener("click", function (e) {
   const sidebar = document.getElementById('roomSidebar');
   const hamburger = document.querySelector('.hamburger-btn');
-  const navMenu = document.getElementById("navMenu");
-  const dotsBtn = document.querySelector(".dots-btn");
-
-  // 1. 左側フィルターサイドバーの外側クリック判定
   if (sidebar && sidebar.classList.contains('open')) {
-    // クリックされた場所が「サイドバー自身」でも「ハンバーガーボタン」でもない場合、閉じる
     if (!sidebar.contains(e.target) && !hamburger?.contains(e.target)) {
       sidebar.classList.remove('open');
-    }
-  }
-
-  // 2. 右側三点リーダー（•••）メニューの外側クリック判定
-  if (navMenu && navMenu.classList.contains('open')) {
-    // クリックされた場所が「メニュー内」でも「三点リーダーボタン」でもない場合、閉じる
-    if (!navMenu.contains(e.target) && !dotsBtn?.contains(e.target)) {
-      navMenu.classList.remove("open");
-      document.getElementById("adminSubmenu")?.classList.remove("open");
-      document.getElementById("adminArrow")?.classList.remove("open");
     }
   }
 });
@@ -99,27 +72,41 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     // 月ビュー：「● 終日/HH:MM 件名」形式で統一。週・日ビューはデフォルトと同等の HTML を返す
     eventContent: (arg) => {
+      const ep    = arg.event.extendedProps;
       const title = arg.event.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const room  = (ep.room_name   || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const reserver = (ep.reserved_by || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
       if (arg.view.type === 'dayGridMonth') {
-        // 月ビュー：ドット + 時刻ラベル + 件名（背景なし・黒文字）
+        // 月ビュー：ドット + 時刻ラベル + 件名 + 予約者
         const color = arg.event.backgroundColor || '#3182CE';
         const label = arg.event.allDay ? '終日' : arg.timeText;
+        const subParts = [room, reserver].filter(Boolean);
+        const sub = subParts.length
+          ? '<span class="mev-sub">' + subParts.join(' ／ ') + '</span>'
+          : '';
         return {
           html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
                 '<span class="mev-time">' + label + '</span>' +
-                '<span class="mev-title">&nbsp;' + title + '</span>',
+                '<span class="mev-title">&nbsp;' + title + '</span>' +
+                sub,
         };
       }
 
-      // 週・日ビュー：FullCalendar デフォルトと同等の構造を明示的に返す
-      // （eventContent を設定すると undefined を返しても空になるため）
+      // 週・日ビュー：件名の下に「会議室 ／ 予約者」を小さく表示
+      const subParts = [room, reserver].filter(Boolean);
+      const subHtml = subParts.length
+        ? '<div class="fc-event-sub">' + subParts.join(' ／ ') + '</div>'
+        : '';
+
       if (arg.timeText) {
         return {
           html: '<div class="fc-event-main-frame">' +
-                '<div class="fc-event-time">' + arg.timeText + '</div>' +
+                
                 '<div class="fc-event-title-container">' +
                 '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+                subHtml +
+                '<div class="fc-event-time">' + arg.timeText + '</div>' +
                 '</div></div>',
         };
       }
@@ -127,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
         html: '<div class="fc-event-main-frame">' +
               '<div class="fc-event-title-container">' +
               '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+              subHtml +
               '</div></div>',
       };
     },
@@ -148,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }],
     eventClick: handleEventClick,
     eventDrop: handleEventDrop,
-    eventResize: handleEventDrop,  // 同ロジック
+    eventResize: handleEventResize,
     dateClick: handleDateClick,
     select: handleSelect,
     datesSet: handleDatesSet,
@@ -210,7 +198,16 @@ function handleEventDrop(info) {
       })
       .then(r => {
         if (!r.ok) {
-          return r.json().then(d => { throw new Error(d.error); });
+          // レスポンスが JSON でない場合（Django エラーページ等の HTML）でも
+          // 安全にエラーメッセージを取り出す
+          return r.text().then(text => {
+            let msg = '変更に失敗しました';
+            try {
+              const d = JSON.parse(text);
+              if (d.error) msg = d.error;
+            } catch (_) { /* HTML レスポンスは無視して汎用メッセージを使う */ }
+            throw new Error(msg);
+          });
         }
         // 終日→通常への切り替え時に res.end が null の場合、
         // FullCalendar のイベントオブジェクトを更新してブロックを正しく描画する
@@ -229,6 +226,33 @@ function handleEventDrop(info) {
     '変更する',                // OK ボタンのラベル
     'btn-primary'              // OK ボタンの色（青）
   );
+}
+
+// eventResize コールバック — 同一日内のリサイズのみ許可
+function handleEventResize(info) {
+  const res = info.event;
+
+  if (res.start && res.end) {
+    // 開始日を日単位に正規化
+    const startDay = new Date(res.start);
+    startDay.setHours(0, 0, 0, 0);
+
+    // 終了が翌日 00:00:00（= 当日の末端）の場合は同日扱い
+    const endDay = new Date(res.end);
+    if (endDay.getHours() === 0 && endDay.getMinutes() === 0 && endDay.getSeconds() === 0) {
+      endDay.setDate(endDay.getDate() - 1);
+    }
+    endDay.setHours(0, 0, 0, 0);
+
+    if (startDay.getTime() !== endDay.getTime()) {
+      info.revert();
+      showToast('予約の時間変更は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  }
+
+  // 同一日内 → 通常の移動・更新ロジックへ
+  handleEventDrop(info);
 }
 
 // 月ビューでは eventClick と dateClick が同時発火するため、
@@ -596,16 +620,48 @@ function handleDateClick(info) {
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
 function handleSelect(info) {
-  const dateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+  const startDateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+
+  // ── 日をまたぐ選択を禁止 ──────────────────────────────────────
+  if (info.allDay) {
+    // 終日選択：end は exclusive のため「開始日の翌日 = 単一日」
+    const startTs = new Date(startDateStr).getTime();
+    const endTs   = new Date(info.endStr.slice(0, 10)).getTime();
+    const diffDays = (endTs - startTs) / (1000 * 60 * 60 * 24);
+    if (diffDays > 1) {
+      window.calendar?.unselect();
+      showToast('予約登録は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  } else {
+    // 時間選択：終了が 00:00:00 の場合は前日の末端として扱う
+    const endDt = info.end;  // Date オブジェクト
+    let effectiveEndDateStr;
+    if (endDt && endDt.getHours() === 0 && endDt.getMinutes() === 0 && endDt.getSeconds() === 0) {
+      const prev = new Date(endDt.getTime() - 60000);  // 1分前 = 23:59
+      effectiveEndDateStr =
+        `${prev.getFullYear()}-` +
+        `${String(prev.getMonth() + 1).padStart(2, '0')}-` +
+        `${String(prev.getDate()).padStart(2, '0')}`;
+    } else {
+      effectiveEndDateStr = info.endStr.slice(0, 10);
+    }
+    if (startDateStr !== effectiveEndDateStr) {
+      window.calendar?.unselect();
+      showToast('予約登録は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
 
   let url;
   if (info.allDay) {
     // 終日スロット選択：all_day=1 を渡してフォームを終日モードで開く
-    url = `/reservations/create/?date=${dateStr}&all_day=1`;
+    url = `/reservations/create/?date=${startDateStr}&all_day=1`;
   } else {
     const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
     const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
-    url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
+    url = `/reservations/create/?date=${startDateStr}&time=${timeStr}&end_time=${endTimeStr}`;
   }
 
   // サイドバーで1室のみ選択中なら room を自動補完

@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
-from reservations.views import CalendarView
+from reservations.views import CalendarView, ReservationTimelineView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", CalendarView.as_view(), name="home"),
+    path("", ReservationTimelineView.as_view(), name="home"),
     path("calendar/", CalendarView.as_view(), name="calendar"),
     path("accounts/", include("accounts.urls")),
     path("reservations/", include("reservations.urls")),

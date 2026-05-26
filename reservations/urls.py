@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    CalendarView,
+    ReservationTimelineView,
     ReservationCreateView,
     MyReservationListView,
     ReservationDetailView,
@@ -15,7 +15,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path("", CalendarView.as_view(), name="home"),
+    path("timeline/", ReservationTimelineView.as_view(), name="reservation_timeline"),
     # F-06: my reservations list  (/reservations/my/?tab=upcoming or ?tab=past)
     path("my/", MyReservationListView.as_view(), name="my_reservations"),
     # F-09: reservation create

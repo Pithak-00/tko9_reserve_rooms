@@ -639,6 +639,17 @@
   }
 }
 
+/* ===== 週・日ビュー：予約ブロック内サブテキスト（会議室 ／ 予約者） ===== */
+.fc-event-sub {
+  font-size: 0.78em;
+  opacity: 0.88;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
 /* ===== 月ビュー：統一イベント表示（ドット＋時刻/終日＋件名） ===== */
 .mev-dot {
   display: inline-block;
@@ -661,5 +672,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #1A1A2E;
+}
+.mev-sub {
+  font-size: 0.78em;
+  color: #4A5568;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 4px;
 }
 }

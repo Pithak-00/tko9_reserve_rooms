@@ -1,5 +1,7 @@
 import json
 import logging
+import calendar as cal_module
+from collections import defaultdict
 
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -146,8 +148,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         # 会議室一覧（JSON として埋め込み）
         rooms = Room.objects.filter(is_active=True).order_by('name')
         rooms_json = json.dumps([
-            {'id': r.id, 'name': r.name,
-             'color': r.color or '#3182CE'}
+            {'id': r.id, 'name': r.name}
             for r in rooms
         ], ensure_ascii=False)
 
@@ -171,6 +172,117 @@ class CalendarView(LoginRequiredMixin, TemplateView):
                 'week': 'timeGridWeek',
                 'month': 'dayGridMonth',
             }.get(view, 'timeGridWeek'),
+        })
+        return ctx
+
+
+# 一覧（タイムライン）ビュー
+class ReservationTimelineView(LoginRequiredMixin, TemplateView):
+    template_name = 'reservations/timeline.html'
+
+    HOUR_START = 8
+    HOUR_END   = 22   # exclusive（8:00〜21:xx を表示）
+    HOUR_WIDTH = 80   # px/時間
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        date_str = self.request.GET.get('date')
+        try:
+            target = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except (TypeError, ValueError):
+            target = date.today()
+
+        tz = timezone.get_current_timezone()
+        day_start = timezone.make_aware(datetime.combine(target, dt_time(0, 0)), tz)
+        day_end   = day_start + timedelta(days=1)
+
+        rooms = Room.objects.filter(is_active=True).order_by('name')
+
+        # その日の予約を全取得
+        reservations = (
+            Reservation.objects
+            .filter(is_cancelled=False, start_at__lt=day_end, end_at__gt=day_start)
+            .select_related('room', 'user')
+            .order_by('start_at')
+        )
+
+        # 会議室ごとに振り分け
+        room_res_map = defaultdict(list)
+        for res in reservations:
+            room_res_map[res.room_id].append(res)
+
+        hour_start = self.HOUR_START
+        hour_end   = self.HOUR_END
+        hour_width = self.HOUR_WIDTH
+        total_minutes = (hour_end - hour_start) * 60
+
+        room_data = []
+        for room in rooms:
+            res_list = []
+            for res in room_res_map.get(room.pk, []):
+                local_start = localtime(res.start_at)
+                local_end   = localtime(res.end_at)
+
+                start_min = (local_start.hour - hour_start) * 60 + local_start.minute
+                end_min   = (local_end.hour   - hour_start) * 60 + local_end.minute
+
+                # タイムライン範囲にクリップ
+                start_min = max(start_min, 0)
+                end_min   = min(end_min,   total_minutes)
+                if end_min <= start_min:
+                    continue
+
+                left_px  = int(start_min * hour_width / 60)
+                width_px = max(int((end_min - start_min) * hour_width / 60), 4)
+
+                res_list.append({
+                    'id':         res.pk,
+                    'title':      res.title,
+                    'reserved_by': res.reserved_by,
+                    'left_px':    left_px,
+                    'width_px':   width_px,
+                    'color':      res.color or '#3182CE',
+                    'start_str':  local_start.strftime('%H:%M'),
+                    'end_str':    local_end.strftime('%H:%M'),
+                    'is_all_day': res.is_all_day,
+                })
+            room_data.append({'room': room, 'reservations': res_list})
+
+        # ミニカレンダー用データ
+        year  = target.year
+        month = target.month
+        cal   = cal_module.Calendar(firstweekday=0)  # 月曜始まり
+        weeks = cal.monthdatescalendar(year, month)
+
+        # 前月・翌月ナビ
+        if month == 1:
+            prev_month_date = date(year - 1, 12, 1)
+        else:
+            prev_month_date = date(year, month - 1, 1)
+        if month == 12:
+            next_month_date = date(year + 1, 1, 1)
+        else:
+            next_month_date = date(year, month + 1, 1)
+
+        hours = list(range(hour_start, hour_end))
+        total_width = (hour_end - hour_start) * hour_width
+
+        ctx.update({
+            'target':          target,
+            'prev_date':       target - timedelta(days=1),
+            'next_date':       target + timedelta(days=1),
+            'today':           date.today(),
+            'room_data':       room_data,
+            'hours':           hours,
+            'hour_width':      hour_width,
+            'total_width':     total_width,
+            'weeks':           weeks,
+            'cal_year':        year,
+            'cal_month':       month,
+            'prev_month_date': prev_month_date,
+            'next_month_date': next_month_date,
+            'weekday_names':   ['月', '火', '水', '木', '金', '土', '日'],
         })
         return ctx
 
@@ -504,7 +616,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
 
         events = []
         for res in qs:
-            color = res.room.color or '#3182CE'
+            color = res.color or '#3182CE'
             events.append({
                 'id': res.id,
                 'title': res.title,
@@ -550,10 +662,13 @@ class ReservationMoveView(LoginRequiredMixin, View):
             )
             end_at = start_at + timedelta(minutes=30)
         else:
-            start_at   = datetime.fromisoformat(data['start_at'])
+            # JavaScript の toISOString() は '2026-05-26T01:00:00.000Z' 形式を返す。
+            # Python 3.10 以前は末尾の 'Z' を fromisoformat() が解釈できないため
+            # '+00:00' に置換して確実にパースする（Python 3.7+ 互換）。
+            start_at   = datetime.fromisoformat(data['start_at'].replace('Z', '+00:00'))
             end_at_str = data.get('end_at')
             end_at     = (
-                datetime.fromisoformat(end_at_str)
+                datetime.fromisoformat(end_at_str.replace('Z', '+00:00'))
                 if end_at_str
                 else start_at + timedelta(minutes=30)  # フォールバック：30分後
             )
@@ -599,7 +714,7 @@ class ReservationMoveView(LoginRequiredMixin, View):
         except Exception as e:
             logger.warning(f'Google sync failed: {e}')
 
-        color = reservation.room.color or '#3182CE'
+        color = reservation.color or '#3182CE'
         return JsonResponse({'id': reservation.id, 'color': color}, status=200)
     
 

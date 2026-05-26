@@ -56,10 +56,6 @@
               <span class="sri-label">所属別表示</span>
               <span class="sri-value">{% for d in reservation.room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}</span>
 
-              <span class="sri-label">カラー</span>
-              <span class="sri-value">
-                <span class="sri-color-swatch" style="background:{{ reservation.room.color|default:'#3182CE' }};"></span>{{ reservation.room.color|default:'#3182CE' }}
-              </span>
             </div>
           </div>
         </div>
@@ -121,6 +117,13 @@
               <div class="form-row">
                 <div class="label">備考</div>
                 <div class="input wide">{{ form.notes }}</div>
+              </div>
+              <div class="form-row">
+                <div class="label">色</div>
+                <div class="input">
+                  {{ form.color }}
+                  {% for error in form.color.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                </div>
               </div>
             </div>
           </div>

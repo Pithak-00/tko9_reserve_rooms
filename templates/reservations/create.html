@@ -70,12 +70,6 @@
                 {% if selected_room %}{% for d in selected_room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% empty %}―{% endfor %}{% endif %}
               </span>
 
-              <span class="sri-label">カラー</span>
-              <span class="sri-value" id="dispRoomColor">
-                {% if selected_room %}
-                  <span class="sri-color-swatch" id="dispRoomColorSwatch" style="background:{{ selected_room.color|default:'#3182CE' }};"></span>{{ selected_room.color|default:'#3182CE' }}
-                {% endif %}
-              </span>
             </div>
           </div>
         </div>
@@ -100,7 +94,6 @@
                               data-capacity="{{ room.capacity }}"
                               data-facilities="{% for f in room.facilities.all %}{{ f.name }}{% if not forloop.last %}、{% endif %}{% endfor %}"
                               data-departments="{% for d in room.departments.all %}{{ d.name }}{% if not forloop.last %}、{% endif %}{% endfor %}"
-                              data-color="{{ room.color|default:'#3182CE' }}"
                               {% if form.room.value|stringformat:"s" == room.id|stringformat:"s" %}selected{% endif %}>
                         {{ room.name }}
                       </option>
@@ -161,6 +154,13 @@
               <div class="form-row">
                 <div class="label">備考</div>
                 <div class="input wide">{{ form.notes }}</div>
+              </div>
+              <div class="form-row">
+                <div class="label">色</div>
+                <div class="input">
+                  {{ form.color }}
+                  {% for error in form.color.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+                </div>
               </div>
             </div>
           </div>

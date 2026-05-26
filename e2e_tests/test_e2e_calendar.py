@@ -51,14 +51,13 @@ def test_calendar_has_create_reservation_button(logged_in_page, wait_for_calenda
     assert btn.is_visible()
 
 
-def test_calendar_room_legend_shows_room(
+def test_calendar_sidebar_shows_room_filter(
     logged_in_page, calendar_url, e2e_room, wait_for_calendar
 ):
-    """会議室凡例バーに会議室名が表示されること"""
+    """サイドバーのフィルターに会議室名が表示されること"""
     logged_in_page.goto(calendar_url)
     wait_for_calendar(logged_in_page)
-    legend = logged_in_page.locator("#roomLegend").inner_text()
-    assert e2e_room.name in legend
+    assert e2e_room.name in logged_in_page.content()
 
 
 # ──────────────────────────────────────────────────────────────

@@ -38,7 +38,7 @@
             <span>すべて</span>
           </label>
           {% for room in rooms_list %}
-          <label class="room-label filter-item-label" style="border-left:3px solid {{ room.color|default:'#3182CE' }}">
+          <label class="room-label filter-item-label">
             <input type="checkbox" class="room-checkbox" value="{{ room.id }}" checked>
             <span>{{ room.name }}</span>
           </label>
@@ -164,6 +164,9 @@
             <button class="view-tab {% if view == 'month' %}active{% endif %}"
                     role="tab" aria-selected="{% if view == 'month' %}true{% else %}false{% endif %}"
                     onclick="location.href='?view=month&date='+getCalDateStr()">月</button>
+            <button class="view-tab"
+                    role="tab" aria-selected="false"
+                    onclick="location.href='{% url 'reservation_timeline' %}?date='+getCalDateStr()">会議室の一覧</button>
           </div>
           <!-- ナビメニュー -->
           <div class="nav-menu-wrap">
@@ -194,16 +197,6 @@
           </div>
           </div><!-- /.nav-menu-wrap -->
         </div>
-      </div>
-
-      <!-- 会議室凡例バー -->
-      <div class="room-legend" id="roomLegend">
-        {% for room in rooms_list %}
-        <span class="legend-item">
-          <span class="legend-dot" style="background:{{ room.color|default:'#3182CE' }}"></span>
-          {{ room.name }}
-        </span>
-        {% endfor %}
       </div>
 
       <!-- FullCalendar 描画エリア -->
