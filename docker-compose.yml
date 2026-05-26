@@ -4,7 +4,7 @@ services:
    container_name: django-sqlite-dev
    ports:
      - "2222:22"
-     - "8000:8000"
+     - "80:8000"
    volumes:
      - .:/workspace
    env_file:
@@ -12,3 +12,4 @@ services:
    working_dir: /workspace
    tty: true
    stdin_open: true
+   restart: unless-stopped
