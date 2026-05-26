@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一覧 | 会議室予約システム</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/common.css' %}">
+  <link rel="stylesheet" href="{% static 'css/timeline.css' %}">
+</head>
+<body>
+
+  <!-- ヘッダー -->
+  <div class="logo between">
+    <div class="header-logo">
+      <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
+      <span>社内会議室予約システム</span>
+    </div>
+  </div>
+
+  <div class="timeline-page">
+
+    <!-- ① 左サイドバー -->
+    <div class="timeline-sidebar">
+
+      <!-- ミニカレンダー -->
+      <div class="mini-calendar">
+        <div class="mini-cal-header">
+          <a href="?date={{ prev_month_date|date:'Y-m-d' }}">&lt;</a>
+          <span>{{ cal_year }}年{{ cal_month }}月</span>
+          <a href="?date={{ next_month_date|date:'Y-m-d' }}">&gt;</a>
+        </div>
+        <table class="mini-cal-table">
+          <thead>
+            <tr>
+              {% for wd in weekday_names %}
+                <th class="{% if forloop.counter == 6 %}sat{% elif forloop.counter == 7 %}sun{% endif %}">{{ wd }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for week in weeks %}
+            <tr>
+              {% for d in week %}
+              <td class="
+                {% if d.month != cal_month %}other-month{% endif %}
+                {% if d == today %}today-cell{% endif %}
+                {% if d == target %}selected-cell{% endif %}
+                {% if d.weekday == 5 %}sat{% elif d.weekday == 6 %}sun{% endif %}
+              ">
+                <a href="?date={{ d|date:'Y-m-d' }}">{{ d.day }}</a>
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 日付ナビ -->
+      <div class="timeline-date-nav">
+        <div class="date-display">{{ target|date:"Y年n月j日（D）" }}</div>
+        <div class="nav-btns">
+          <a href="?date={{ prev_date|date:'Y-m-d' }}">前日</a>
+          <a href="?date={{ today|date:'Y-m-d' }}" class="today-btn">本日</a>
+          <a href="?date={{ next_date|date:'Y-m-d' }}">翌日</a>
+        </div>
+      </div>
+
+      <!-- リンク -->
+      <div class="sidebar-links">
+        <a href="{% url 'calendar' %}">カレンダー</a>
+        <a href="{% url 'reservation_timeline' %}" class="active">一覧</a>
+        <a href="{% url 'reservation_create' %}">＋ 予約を登録する</a>
+        <a href="{% url 'my_reservations' %}">自分の予約</a>
+        {% if request.user.is_staff %}
+        <a href="{% url 'user_admin_list' %}">ユーザー管理</a>
+        <a href="{% url 'room_admin_list' %}">会議室管理</a>
+        <a href="{% url 'all_reservation_list' %}">全予約管理</a>
+        {% endif %}
+      </div>
+
+    </div><!-- /.timeline-sidebar -->
+
+    <!-- ② メインエリア -->
+    <div class="timeline-main">
+
+      <!-- ツールバー -->
+      <div class="timeline-toolbar">
+        <span class="tl-title">{{ target|date:"Y年n月j日" }}</span>
+        <div class="view-tabs">
+          <a href="{% url 'calendar' %}?view=day&date={{ target|date:'Y-m-d' }}" class="view-tab">日</a>
+          <a href="{% url 'calendar' %}?view=week&date={{ target|date:'Y-m-d' }}" class="view-tab">週</a>
+          <a href="{% url 'calendar' %}?view=month&date={{ target|date:'Y-m-d' }}" class="view-tab">月</a>
+          <a href="{% url 'reservation_timeline' %}?date={{ target|date:'Y-m-d' }}" class="view-tab active">一覧</a>
+        </div>
+      </div>
+
+      <!-- タイムライングリッド -->
+      <div class="timeline-grid-wrap">
+
+        <!-- 左固定：会議室名 -->
+        <div class="tl-rooms-col" id="roomsCol">
+          <div class="tl-header-spacer"></div>
+          <div class="tl-room-rows" id="roomRows">
+            {% for rd in room_data %}
+            <div class="tl-room-cell" title="{{ rd.room.name }}">{{ rd.room.name }}</div>
+            {% empty %}
+            <div class="tl-room-cell" style="color:#999;">会議室なし</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 右スクロール：タイムライン本体 -->
+        <div class="tl-scroll-area" id="scrollArea">
+          <div class="tl-inner" style="width:{{ total_width }}px; min-width:100%;">
+
+            <!-- 時間軸ヘッダー -->
+            <div class="tl-hour-header">
+              {% for h in hours %}
+              <div class="tl-hour-cell" style="min-width:{{ hour_width }}px; width:{{ hour_width }}px;">{{ h }}:00</div>
+              {% endfor %}
+            </div>
+
+            <!-- 会議室ごとの行 -->
+            {% for rd in room_data %}
+            <div class="tl-row" style="width:{{ total_width }}px;">
+              <!-- 時間スロット（背景グリッド） -->
+              {% for h in hours %}
+              <div class="tl-slot" style="min-width:{{ hour_width }}px; width:{{ hour_width }}px;"></div>
+              {% endfor %}
+
+              <!-- 予約ブロック -->
+              {% for ev in rd.reservations %}
+              {% if ev.is_all_day %}
+              <!-- 終日予約は行の上部にバッジ表示 -->
+              <a href="{% url 'reservation_detail' ev.id %}"
+                 class="tl-event"
+                 style="left:0; width:{{ total_width }}px; background:{{ ev.color }}; opacity:0.85; top:2px; height:20px; font-size:0.7rem;"
+                 title="終日: {{ ev.reserved_by }} | {{ ev.title }}">
+                <span class="tl-event-text">終日: {{ ev.reserved_by }} | {{ ev.title }}</span>
+              </a>
+              {% else %}
+              <a href="{% url 'reservation_detail' ev.id %}"
+                 class="tl-event"
+                 style="left:{{ ev.left_px }}px; width:{{ ev.width_px }}px; background:{{ ev.color }};"
+                 title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
+                <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
+              </a>
+              {% endif %}
+              {% endfor %}
+            </div>
+            {% empty %}
+            <div style="padding:24px; color:#999; text-align:center;">会議室が登録されていません</div>
+            {% endfor %}
+
+          </div><!-- /.tl-inner -->
+        </div><!-- /.tl-scroll-area -->
+
+      </div><!-- /.timeline-grid-wrap -->
+    </div><!-- /.timeline-main -->
+  </div><!-- /.timeline-page -->
+
+  <script src="{% static 'js/common.js' %}"></script>
+  <script>
+  // 左の会議室行とスクロール領域の縦スクロールを同期
+  (function () {
+    const scrollArea = document.getElementById('scrollArea');
+    const roomRows   = document.getElementById('roomRows');
+    if (!scrollArea || !roomRows) return;
+    scrollArea.addEventListener('scroll', function () {
+      roomRows.scrollTop = scrollArea.scrollTop;
+    });
+  })();
+  </script>
+</body>
+</html>
