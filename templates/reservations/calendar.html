@@ -196,13 +196,6 @@
         </div>
       </div>
 
-      <!-- 会議室凡例バー -->
-      <div class="room-legend" id="roomLegend">
-        {% for room in rooms_list %}
-        <span class="legend-item">{{ room.name }}</span>
-        {% endfor %}
-      </div>
-
       <!-- FullCalendar 描画エリア -->
       <div id="fullcalendar"
            data-rooms="{{ rooms_json }}"
