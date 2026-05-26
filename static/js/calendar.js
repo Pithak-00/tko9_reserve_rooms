@@ -129,10 +129,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (arg.timeText) {
         return {
           html: '<div class="fc-event-main-frame">' +
-                '<div class="fc-event-time">' + arg.timeText + '</div>' +
+                
                 '<div class="fc-event-title-container">' +
                 '<div class="fc-event-title fc-sticky">' + title + '</div>' +
                 subHtml +
+                '<div class="fc-event-time">' + arg.timeText + '</div>' +
                 '</div></div>',
         };
       }
