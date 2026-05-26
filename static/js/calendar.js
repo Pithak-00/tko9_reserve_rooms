@@ -99,27 +99,40 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     // 月ビュー：「● 終日/HH:MM 件名」形式で統一。週・日ビューはデフォルトと同等の HTML を返す
     eventContent: (arg) => {
+      const ep    = arg.event.extendedProps;
       const title = arg.event.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const room  = (ep.room_name   || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const reserver = (ep.reserved_by || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
       if (arg.view.type === 'dayGridMonth') {
-        // 月ビュー：ドット + 時刻ラベル + 件名（背景なし・黒文字）
+        // 月ビュー：ドット + 時刻ラベル + 件名 + 予約者
         const color = arg.event.backgroundColor || '#3182CE';
         const label = arg.event.allDay ? '終日' : arg.timeText;
+        const subParts = [room, reserver].filter(Boolean);
+        const sub = subParts.length
+          ? '<span class="mev-sub">' + subParts.join(' ／ ') + '</span>'
+          : '';
         return {
           html: '<span class="mev-dot" style="background-color:' + color + '"></span>' +
                 '<span class="mev-time">' + label + '</span>' +
-                '<span class="mev-title">&nbsp;' + title + '</span>',
+                '<span class="mev-title">&nbsp;' + title + '</span>' +
+                sub,
         };
       }
 
-      // 週・日ビュー：FullCalendar デフォルトと同等の構造を明示的に返す
-      // （eventContent を設定すると undefined を返しても空になるため）
+      // 週・日ビュー：件名の下に「会議室 ／ 予約者」を小さく表示
+      const subParts = [room, reserver].filter(Boolean);
+      const subHtml = subParts.length
+        ? '<div class="fc-event-sub">' + subParts.join(' ／ ') + '</div>'
+        : '';
+
       if (arg.timeText) {
         return {
           html: '<div class="fc-event-main-frame">' +
                 '<div class="fc-event-time">' + arg.timeText + '</div>' +
                 '<div class="fc-event-title-container">' +
                 '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+                subHtml +
                 '</div></div>',
         };
       }
@@ -127,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
         html: '<div class="fc-event-main-frame">' +
               '<div class="fc-event-title-container">' +
               '<div class="fc-event-title fc-sticky">' + title + '</div>' +
+              subHtml +
               '</div></div>',
       };
     },
