@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }],
     eventClick: handleEventClick,
     eventDrop: handleEventDrop,
-    eventResize: handleEventDrop,  // 同ロジック
+    eventResize: handleEventResize,
     dateClick: handleDateClick,
     select: handleSelect,
     datesSet: handleDatesSet,
@@ -229,6 +229,33 @@ function handleEventDrop(info) {
     '変更する',                // OK ボタンのラベル
     'btn-primary'              // OK ボタンの色（青）
   );
+}
+
+// eventResize コールバック — 同一日内のリサイズのみ許可
+function handleEventResize(info) {
+  const res = info.event;
+
+  if (res.start && res.end) {
+    // 開始日を日単位に正規化
+    const startDay = new Date(res.start);
+    startDay.setHours(0, 0, 0, 0);
+
+    // 終了が翌日 00:00:00（= 当日の末端）の場合は同日扱い
+    const endDay = new Date(res.end);
+    if (endDay.getHours() === 0 && endDay.getMinutes() === 0 && endDay.getSeconds() === 0) {
+      endDay.setDate(endDay.getDate() - 1);
+    }
+    endDay.setHours(0, 0, 0, 0);
+
+    if (startDay.getTime() !== endDay.getTime()) {
+      info.revert();
+      showToast('予約の時間変更は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  }
+
+  // 同一日内 → 通常の移動・更新ロジックへ
+  handleEventDrop(info);
 }
 
 // 月ビューでは eventClick と dateClick が同時発火するため、
