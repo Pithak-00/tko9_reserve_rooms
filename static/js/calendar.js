@@ -623,16 +623,48 @@ function handleDateClick(info) {
 
 // 空きスロット選択 → 予約作成画面へ遷移（F-09 カレンダー連携）
 function handleSelect(info) {
-  const dateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+  const startDateStr = info.startStr.slice(0, 10);  // 'YYYY-MM-DD'
+
+  // ── 日をまたぐ選択を禁止 ──────────────────────────────────────
+  if (info.allDay) {
+    // 終日選択：end は exclusive のため「開始日の翌日 = 単一日」
+    const startTs = new Date(startDateStr).getTime();
+    const endTs   = new Date(info.endStr.slice(0, 10)).getTime();
+    const diffDays = (endTs - startTs) / (1000 * 60 * 60 * 24);
+    if (diffDays > 1) {
+      window.calendar?.unselect();
+      showToast('予約登録は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  } else {
+    // 時間選択：終了が 00:00:00 の場合は前日の末端として扱う
+    const endDt = info.end;  // Date オブジェクト
+    let effectiveEndDateStr;
+    if (endDt && endDt.getHours() === 0 && endDt.getMinutes() === 0 && endDt.getSeconds() === 0) {
+      const prev = new Date(endDt.getTime() - 60000);  // 1分前 = 23:59
+      effectiveEndDateStr =
+        `${prev.getFullYear()}-` +
+        `${String(prev.getMonth() + 1).padStart(2, '0')}-` +
+        `${String(prev.getDate()).padStart(2, '0')}`;
+    } else {
+      effectiveEndDateStr = info.endStr.slice(0, 10);
+    }
+    if (startDateStr !== effectiveEndDateStr) {
+      window.calendar?.unselect();
+      showToast('予約登録は同じ日の範囲内のみ可能です', 'error');
+      return;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
 
   let url;
   if (info.allDay) {
     // 終日スロット選択：all_day=1 を渡してフォームを終日モードで開く
-    url = `/reservations/create/?date=${dateStr}&all_day=1`;
+    url = `/reservations/create/?date=${startDateStr}&all_day=1`;
   } else {
     const timeStr    = info.startStr.slice(11, 16);  // 'HH:MM'（開始時刻）
     const endTimeStr = info.endStr.slice(11, 16);    // 'HH:MM'（終了時刻：ドラッグ終端）
-    url = `/reservations/create/?date=${dateStr}&time=${timeStr}&end_time=${endTimeStr}`;
+    url = `/reservations/create/?date=${startDateStr}&time=${timeStr}&end_time=${endTimeStr}`;
   }
 
   // サイドバーで1室のみ選択中なら room を自動補完
