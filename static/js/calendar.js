@@ -210,7 +210,16 @@ function handleEventDrop(info) {
       })
       .then(r => {
         if (!r.ok) {
-          return r.json().then(d => { throw new Error(d.error); });
+          // レスポンスが JSON でない場合（Django エラーページ等の HTML）でも
+          // 安全にエラーメッセージを取り出す
+          return r.text().then(text => {
+            let msg = '変更に失敗しました';
+            try {
+              const d = JSON.parse(text);
+              if (d.error) msg = d.error;
+            } catch (_) { /* HTML レスポンスは無視して汎用メッセージを使う */ }
+            throw new Error(msg);
+          });
         }
         // 終日→通常への切り替え時に res.end が null の場合、
         // FullCalendar のイベントオブジェクトを更新してブロックを正しく描画する

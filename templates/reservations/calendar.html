@@ -38,7 +38,7 @@
             <span>すべて</span>
           </label>
           {% for room in rooms_list %}
-          <label class="room-label filter-item-label" style="border-left:3px solid {{ room.color|default:'#3182CE' }}">
+          <label class="room-label filter-item-label">
             <input type="checkbox" class="room-checkbox" value="{{ room.id }}" checked>
             <span>{{ room.name }}</span>
           </label>
@@ -199,10 +199,7 @@
       <!-- 会議室凡例バー -->
       <div class="room-legend" id="roomLegend">
         {% for room in rooms_list %}
-        <span class="legend-item">
-          <span class="legend-dot" style="background:{{ room.color|default:'#3182CE' }}"></span>
-          {{ room.name }}
-        </span>
+        <span class="legend-item">{{ room.name }}</span>
         {% endfor %}
       </div>
 

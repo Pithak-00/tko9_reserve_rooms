@@ -112,6 +112,7 @@ class ReservationForm(forms.ModelForm):
             "participants",
             "notes",
             "is_all_day",
+            "color",
         ]
 
         widgets = {
@@ -136,6 +137,12 @@ class ReservationForm(forms.ModelForm):
                 attrs={
                     "class": "form-control no-resize",
                     "rows": 4,
+                }
+            ),
+            "color": forms.TextInput(
+                attrs={
+                    "type": "color",
+                    "style": "width:60px;height:36px;padding:2px;border-radius:6px;cursor:pointer;",
                 }
             ),
         }

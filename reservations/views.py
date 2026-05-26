@@ -146,8 +146,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
         # 会議室一覧（JSON として埋め込み）
         rooms = Room.objects.filter(is_active=True).order_by('name')
         rooms_json = json.dumps([
-            {'id': r.id, 'name': r.name,
-             'color': r.color or '#3182CE'}
+            {'id': r.id, 'name': r.name}
             for r in rooms
         ], ensure_ascii=False)
 
@@ -504,7 +503,7 @@ class CalendarEventsAPI(LoginRequiredMixin, View):
 
         events = []
         for res in qs:
-            color = res.room.color or '#3182CE'
+            color = res.color or '#3182CE'
             events.append({
                 'id': res.id,
                 'title': res.title,
@@ -550,10 +549,13 @@ class ReservationMoveView(LoginRequiredMixin, View):
             )
             end_at = start_at + timedelta(minutes=30)
         else:
-            start_at   = datetime.fromisoformat(data['start_at'])
+            # JavaScript の toISOString() は '2026-05-26T01:00:00.000Z' 形式を返す。
+            # Python 3.10 以前は末尾の 'Z' を fromisoformat() が解釈できないため
+            # '+00:00' に置換して確実にパースする（Python 3.7+ 互換）。
+            start_at   = datetime.fromisoformat(data['start_at'].replace('Z', '+00:00'))
             end_at_str = data.get('end_at')
             end_at     = (
-                datetime.fromisoformat(end_at_str)
+                datetime.fromisoformat(end_at_str.replace('Z', '+00:00'))
                 if end_at_str
                 else start_at + timedelta(minutes=30)  # フォールバック：30分後
             )
@@ -599,7 +601,7 @@ class ReservationMoveView(LoginRequiredMixin, View):
         except Exception as e:
             logger.warning(f'Google sync failed: {e}')
 
-        color = reservation.room.color or '#3182CE'
+        color = reservation.color or '#3182CE'
         return JsonResponse({'id': reservation.id, 'color': color}, status=200)
     
 
