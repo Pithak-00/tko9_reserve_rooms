@@ -126,6 +126,18 @@
   gap: 4px;
 }
 
+/* <a> 要素として使う nav-btn：flex で均等幅・縦中央揃え・小さめサイズ */
+.timeline-date-nav .nav-btns a.nav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  height: 32px;
+  font-size: 13px;
+  padding: 0 8px;
+}
+
 /* 本日ボタンのみ強調色（nav-btn スタイルを上書き） */
 .timeline-date-nav .nav-btns a.today-btn {
   background: #2E75B6;
@@ -353,6 +365,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ツールバー内 <a>.nav-btn の縦中央揃え */
+.tl-toolbar-right a.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* レスポンシブ：SP 対応 */
