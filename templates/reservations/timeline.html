@@ -260,6 +260,10 @@
     window.addEventListener('load', positionEvents);
     window.addEventListener('resize', positionEvents);
 
+    // 長押し時のコンテキストメニュー（右クリックメニュー）を抑制
+    document.querySelector('.timeline-grid-wrap')
+      ?.addEventListener('contextmenu', e => e.preventDefault());
+
     /* ── 分オフセット → ISO UTC 文字列 ───────────────── */
     function minToISO(offsetMin) {
       const clamped = Math.round(Math.max(0, Math.min(offsetMin, totalMinutes)));
