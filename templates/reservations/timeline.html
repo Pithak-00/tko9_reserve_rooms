@@ -208,6 +208,7 @@
       <a id="tlPopEdit" href="#" class="btn btn-primary btn-sm">編集</a>
       <form id="tlPopCancelForm" method="post" action="#" style="display:inline">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button type="submit" class="btn btn-danger btn-sm">キャンセル</button>
       </form>
       <a id="tlPopDetail" href="#" class="btn btn-light btn-sm">詳細を見る</a>

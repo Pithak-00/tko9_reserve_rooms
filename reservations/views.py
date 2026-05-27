@@ -563,7 +563,8 @@ def reservation_cancel(request, pk):
     except Exception as e:
         logger.warning(f'Google sync on cancel failed: {e}')
 
-    return redirect("calendar")
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or 'calendar'
+    return redirect(next_url)
 
 
 class CalendarEventsAPI(LoginRequiredMixin, View):

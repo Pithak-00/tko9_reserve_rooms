@@ -136,6 +136,7 @@
           <button type="button" class="btn btn-light btn-md" id="closeCancelModal">戻る</button>
           <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" class="cancel-form">
             {% csrf_token %}
+            <input type="hidden" name="next" id="cancelNextUrl" value="">
             <button type="submit" class="btn btn-danger btn-md">キャンセルする</button>
           </form>
         </div>
@@ -144,5 +145,9 @@
 
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
+    <script>
+      // キャンセル後は詳細画面を開く前のページに戻る
+      document.getElementById('cancelNextUrl').value = document.referrer || '/';
+    </script>
   </body>
 </html>
