@@ -155,7 +155,7 @@
           data-create-url="{% url 'building_create' %}"
           data-edit-url-template="{% url 'building_edit' pk=0 %}"
           style='display:none'></div>
-    {% if toast %}<div class='toast show top-right'>{{ toast }}</div>{% endif %}
+    {% if toast %}<div class='toast show'>{{ toast }}</div>{% endif %}
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/building_admin.js' %}"></script>
   </body>

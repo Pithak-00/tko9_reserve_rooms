@@ -229,7 +229,7 @@
 
   <!-- トースト（Django messages） -->
   {% if messages %}{% for message in messages %}
-    <div class="toast show top-right" style="background:#27ae60;">{{ message }}</div>
+    <div class="toast show">{{ message }}</div>
   {% endfor %}{% endif %}
 
   <script src="{% static 'js/common.js' %}"></script>
