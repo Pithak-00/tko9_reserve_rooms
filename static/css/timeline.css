@@ -273,19 +273,19 @@
   display: flex;
   width: 100%;
   height: 48px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #dee2e6;
   position: relative;
 }
 
 .tl-row:hover {
-  background: #fafafa;
+  background: #eef4ff;
 }
 
 /* セル（各時間スロット） */
 .tl-slot {
   flex: 1;              /* 等幅で列を埋める */
   min-width: 44px;      /* これ以下になる場合のみ横スクロール */
-  border-right: 1px solid #f0f0f0;
+  border-right: 1px solid #dee2e6;
   box-sizing: border-box;
 }
 
