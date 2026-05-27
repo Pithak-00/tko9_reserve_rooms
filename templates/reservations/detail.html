@@ -112,10 +112,12 @@
           <a href="{% url 'reservation_edit' reservation.pk %}" class="btn btn-primary btn-md">編集する</a>
           <button type="button" class="btn btn-danger btn-md" id="openCancelModal">予約をキャンセル</button>
           {% endif %}
+          <a href="#" onclick="history.back(); return false;" class="btn btn-light btn-md">戻る</a>
         </div>
         {% else %}
         <div class="actions">
           <span class="badge-cancelled" style="padding:6px 16px;border-radius:6px;font-size:14px;">キャンセル済み</span>
+          <a href="#" onclick="history.back(); return false;" class="btn btn-light btn-md">戻る</a>
         </div>
         {% endif %}
       </div>
