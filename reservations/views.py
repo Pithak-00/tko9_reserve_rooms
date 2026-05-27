@@ -180,8 +180,8 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 class ReservationTimelineView(LoginRequiredMixin, TemplateView):
     template_name = 'reservations/timeline.html'
 
-    HOUR_START = 9
-    HOUR_END   = 22   # exclusive（8:00〜21:xx を表示）
+    HOUR_START = 8
+    HOUR_END   = 22   # 8:00〜22:00 を表示（range で 8〜21 列生成、右端が 22:00）
     HOUR_WIDTH = 80   # px/時間
 
     def get_context_data(self, **kwargs):

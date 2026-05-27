@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded', function () {
     initialView: fcView,
     initialDate: initialDate,
     firstDay: 1,  // 月曜始まり
-    slotMinTime: '00:00:00',
-    slotMaxTime: { hours: 24 },
+    slotMinTime: '08:00:00',
+    slotMaxTime: '22:00:00',
     slotDuration: '00:30:00',
-    scrollTime: '09:00:00',
+    scrollTime: '08:00:00',
     nowIndicator: true,
     dayMaxEvents: 2,
     editable: true,
