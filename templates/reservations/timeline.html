@@ -345,9 +345,35 @@
       let hasMoved = false;
       evEl.classList.add(isResize ? 'tl-event-resizing' : 'tl-event-dragging');
 
+      // 終日列へのドロップ用
+      const alldayColEl = document.getElementById('alldayCol');
+      let alldayDropCell = null; // 現在ホバー中の終日列セル
+
+      function clearAlldayHighlight() {
+        alldayColEl.querySelectorAll('.tl-allday-col-cell').forEach(c =>
+          c.classList.remove('tl-allday-drop-target'));
+        alldayDropCell = null;
+      }
+
       function onMove(e) {
         const contentX = toContentX(e.clientX);
         const curMin   = contentX / p;
+
+        // リサイズ中は終日列へのドロップ対象外
+        if (!isResize) {
+          const el   = document.elementFromPoint(e.clientX, e.clientY);
+          const cell = el ? el.closest('.tl-allday-col-cell[data-room-id]') : null;
+          if (cell) {
+            // 終日列にホバー中
+            clearAlldayHighlight();
+            cell.classList.add('tl-allday-drop-target');
+            alldayDropCell = cell;
+            hasMoved = true;
+            return; // タイムグリッド内の位置更新はしない
+          } else {
+            clearAlldayHighlight();
+          }
+        }
 
         if (isResize) {
           // 右端ドラッグ：幅を変える
@@ -362,15 +388,47 @@
         }
       }
 
-      async function onUp() {
+      async function onUp(e) {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         evEl.classList.remove('tl-event-dragging', 'tl-event-resizing');
 
-        if (!hasMoved) return; // クリックとして扱う（ポップアップはクリックハンドラで）
+        if (!hasMoved) {
+          clearAlldayHighlight();
+          return; // クリックとして扱う（ポップアップはクリックハンドラで）
+        }
 
         // ドラッグ後はクリックイベントを1回キャンセル
-        evEl.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); }, { once: true });
+        evEl.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); }, { once: true });
+
+        /* ── 終日列へドロップ → 終日予約に変換 ── */
+        if (alldayDropCell) {
+          const targetRoomId = alldayDropCell.dataset.roomId;
+          clearAlldayHighlight();
+          // ビジュアルを元位置に戻す（楽観的 UI は行わずリロード）
+          evEl.style.left  = (origStartMin * p) + 'px';
+          evEl.style.width = (origDurMin   * p) + 'px';
+          try {
+            const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+              body: JSON.stringify({
+                date:       targetDate,
+                room_id:    parseInt(targetRoomId),
+                is_all_day: true,
+              })
+            });
+            if (!resp.ok) {
+              const d = await resp.json().catch(() => ({}));
+              throw new Error(d.error || `エラー(${resp.status})`);
+            }
+            showToast('通常予約を終日予約に変換しました', false);
+            setTimeout(() => location.reload(), 800);
+          } catch (err) {
+            showToast(err.message, true);
+          }
+          return;
+        }
 
         const p2 = getPxPerMin();
         let newStartMin = origStartMin;
@@ -575,15 +633,183 @@
       if (e.key === 'Escape') popover.hidden = true;
     });
 
-    /* ── 終日列クリック → 終日予約作成 ────────────────── */
-    document.getElementById('alldayCol').addEventListener('click', function (e) {
-      // 予約ブロックのクリックはポップアップ表示（伝播で処理）
-      if (e.target.closest('.tl-event')) return;
-      const cell = e.target.closest('.tl-allday-col-cell[data-room-id]');
-      if (!cell) return;
-      window.location.href =
-        `/reservations/create/?room=${cell.dataset.roomId}&date=${targetDate}&all_day=1`;
-    });
+    /* ══════════════════════════════════════════════════════
+       終日列：セル選択ドラッグ → 終日予約作成
+               イベントドラッグ  → タイムグリッドへドロップで通常予約に変換
+       ══════════════════════════════════════════════════════ */
+    (function () {
+      const alldayColEl = document.getElementById('alldayCol');
+      const DEFAULT_DUR = 60; // ドロップ時のデフォルト時間幅（分）
+
+      /* ── ゴーストプレビュー ─── */
+      let ghost = null;
+      function createGhost(title, color) {
+        ghost = document.createElement('div');
+        ghost.className = 'tl-drag-ghost';
+        ghost.textContent = title;
+        ghost.style.background = color;
+        document.body.appendChild(ghost);
+      }
+      function moveGhost(x, y) {
+        if (!ghost) return;
+        ghost.style.left = (x + 12) + 'px';
+        ghost.style.top  = (y - 16) + 'px';
+      }
+      function removeGhost() {
+        if (ghost) { ghost.remove(); ghost = null; }
+      }
+
+      /* ── タイムグリッド上のプレビュー ─── */
+      let slotPreviewAd = null;
+      function showSlotPreview(row, startMin) {
+        clearSlotPreview();
+        if (!row) return;
+        const p = getPxPerMin();
+        const endMin = Math.min(startMin + DEFAULT_DUR, totalMinutes);
+        slotPreviewAd = document.createElement('div');
+        slotPreviewAd.className = 'tl-slot-preview';
+        slotPreviewAd.style.left  = (startMin * p) + 'px';
+        slotPreviewAd.style.width = ((endMin - startMin) * p) + 'px';
+        slotPreviewAd.textContent =
+          minToTimeStr(startMin) + '〜' + minToTimeStr(endMin);
+        row.appendChild(slotPreviewAd);
+      }
+      function clearSlotPreview() {
+        if (slotPreviewAd) { slotPreviewAd.remove(); slotPreviewAd = null; }
+      }
+
+      /* ══ ① セルドラッグ → 終日予約作成 ══ */
+      let dragStartCell = null;
+
+      function getCells() {
+        return Array.from(alldayColEl.querySelectorAll('.tl-allday-col-cell[data-room-id]'));
+      }
+      function highlightRange(fromIdx, toIdx) {
+        const cells = getCells();
+        const lo = Math.min(fromIdx, toIdx);
+        const hi = Math.max(fromIdx, toIdx);
+        cells.forEach((c, i) =>
+          c.classList.toggle('tl-allday-selecting', i >= lo && i <= hi));
+      }
+      function clearHighlight() {
+        getCells().forEach(c => c.classList.remove('tl-allday-selecting'));
+      }
+
+      alldayColEl.addEventListener('mousedown', function (e) {
+        if (e.target.closest('.tl-event')) return; // イベントドラッグで処理
+        const cell = e.target.closest('.tl-allday-col-cell[data-room-id]');
+        if (!cell) return;
+        e.preventDefault();
+        dragStartCell = cell;
+        highlightRange(getCells().indexOf(cell), getCells().indexOf(cell));
+      });
+
+      /* ══ ② 終日イベントドラッグ → タイムグリッドへ変換 ══ */
+      let adDragEv   = null; // ドラッグ中の終日イベント要素
+      let adDragRow  = null; // 現在ホバー中の tl-row
+      let adDropMin  = 0;
+
+      alldayColEl.addEventListener('mousedown', function (e) {
+        const evEl = e.target.closest('.tl-event');
+        if (!evEl) return;
+        if (evEl.dataset.canEdit !== '1') return;
+        e.preventDefault();
+        e.stopPropagation();
+        adDragEv = evEl;
+        createGhost(
+          (evEl.dataset.reservedBy || '') + ' | ' + (evEl.dataset.title || ''),
+          evEl.style.backgroundColor || '#3182CE'
+        );
+        evEl.style.opacity = '0.4';
+      });
+
+      document.addEventListener('mousemove', function (e) {
+        /* セルドラッグ */
+        if (dragStartCell) {
+          const el   = document.elementFromPoint(e.clientX, e.clientY);
+          const cell = el ? el.closest('.tl-allday-col-cell[data-room-id]') : null;
+          if (cell) highlightRange(
+            getCells().indexOf(dragStartCell), getCells().indexOf(cell));
+          return;
+        }
+
+        /* 終日イベントドラッグ */
+        if (!adDragEv) return;
+        moveGhost(e.clientX, e.clientY);
+
+        const el  = document.elementFromPoint(e.clientX, e.clientY);
+        const row = el ? el.closest('.tl-row') : null;
+        if (row) {
+          const p = getPxPerMin();
+          adDropMin = snap(toContentX(e.clientX) / p);
+          adDropMin = Math.max(0, Math.min(adDropMin, totalMinutes - DEFAULT_DUR));
+          adDragRow = row;
+          showSlotPreview(row, adDropMin);
+        } else {
+          clearSlotPreview();
+          adDragRow = null;
+        }
+      });
+
+      document.addEventListener('mouseup', async function (e) {
+        /* ── セルドラッグ終了 ── */
+        if (dragStartCell) {
+          const start = dragStartCell;
+          dragStartCell = null;
+          clearHighlight();
+          const endEl   = document.elementFromPoint(e.clientX, e.clientY);
+          if (endEl && endEl.closest('.tl-event')) return;
+          const roomId = start.dataset.roomId;
+          if (roomId) {
+            window.location.href =
+              `/reservations/create/?room=${roomId}&date=${targetDate}&all_day=1`;
+          }
+          return;
+        }
+
+        /* ── 終日イベントドラッグ終了 ── */
+        if (!adDragEv) return;
+        const evEl = adDragEv;
+        adDragEv   = null;
+        removeGhost();
+        clearSlotPreview();
+        evEl.style.opacity = '';
+
+        if (!adDragRow) return; // タイムグリッド外にドロップ → キャンセル
+
+        const row    = adDragRow;
+        adDragRow    = null;
+        const roomId = row.dataset.roomId;
+        if (!roomId) return;
+
+        const startMin = adDropMin;
+        const endMin   = startMin + DEFAULT_DUR;
+        const s = minToISO(startMin);
+        const f = minToISO(endMin);
+        if (!s || !f) { showToast('日時の計算に失敗しました', true); return; }
+
+        try {
+          const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+            body: JSON.stringify({
+              start_at:   s,
+              end_at:     f,
+              room_id:    parseInt(roomId),
+              is_all_day: false,
+            })
+          });
+          if (!resp.ok) {
+            const d = await resp.json().catch(() => ({}));
+            throw new Error(d.error || `エラー(${resp.status})`);
+          }
+          showToast('終日予約を通常予約に変換しました', false);
+          setTimeout(() => location.reload(), 800);
+        } catch (err) {
+          showToast(err.message, true);
+        }
+      });
+    })();
 
     /* ── 縦スクロール同期 ─────────────────────────────── */
     const alldayColRows = document.getElementById('alldayColRows');

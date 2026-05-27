@@ -585,3 +585,32 @@
   padding: 0 4px;
   cursor: pointer;
 }
+
+/* ── 終日列：ドラッグ選択中のハイライト ─────────────────── */
+.tl-allday-col-cell.tl-allday-selecting {
+  background: rgba(45, 117, 182, 0.18);
+  outline: 2px solid #2E75B6;
+  outline-offset: -2px;
+}
+
+.tl-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #2E75B6;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  opacity: 0.9;
+}
+
+/* 通常予約ブロックを終日列にドラッグしたときのドロップターゲット表示 */
+.tl-allday-col-cell.tl-allday-drop-target {
+  background: rgba(45, 117, 182, 0.22);
+  outline: 2px dashed #2E75B6;
+  outline-offset: -2px;
+}
