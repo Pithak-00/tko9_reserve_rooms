@@ -306,6 +306,58 @@
   box-sizing: border-box;
 }
 
+
+/* ── ドラッグ＆リサイズ ────────────────────────── */
+.tl-event:not(.tl-event-allday) {
+  cursor: grab;
+  user-select: none;
+}
+.tl-event-dragging {
+  cursor: grabbing !important;
+  opacity: 0.75;
+  z-index: 20;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.tl-event-resizing {
+  opacity: 0.85;
+  z-index: 20;
+}
+
+/* リサイズハンドル（右端） */
+.tl-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+  border-radius: 0 5px 5px 0;
+  background: rgba(255,255,255,0.25);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.tl-event:not(.tl-event-allday):hover .tl-resize-handle {
+  opacity: 1;
+}
+
+/* トースト通知 */
+.tl-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+.tl-toast-ok    { background: #2E75B6; }
+.tl-toast-error { background: #dc3545; }
+
 .tl-event:hover {
   filter: brightness(0.9);
 }
@@ -387,4 +439,74 @@
     font-size: 0.7rem;
     padding: 0 4px;
   }
+}
+
+/* ── 予約詳細ポップオーバー ──────────────────────────── */
+.tl-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+}
+
+.tl-popover {
+  position: fixed;
+  z-index: 100;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  width: 280px;
+  font-size: 0.88rem;
+  border: 1px solid #dee2e6;
+}
+
+.tl-popover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  border-bottom: 1px solid #eee;
+  color: #212529;
+}
+
+.tl-popover-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6c757d;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.tl-popover-close:hover {
+  color: #212529;
+}
+
+.tl-popover-body {
+  padding: 10px 14px;
+}
+
+.tl-popover-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+  align-items: flex-start;
+}
+
+.tl-popover-label {
+  color: #888;
+  font-size: 0.80rem;
+  min-width: 44px;
+  padding-top: 1px;
+  flex-shrink: 0;
+}
+
+.tl-popover-actions {
+  padding: 8px 14px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 6px;
 }

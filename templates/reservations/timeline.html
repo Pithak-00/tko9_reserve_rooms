@@ -23,11 +23,8 @@
 
     <!-- ① 左サイドバー -->
     <div class="timeline-sidebar">
-
-      <!-- 予約登録ボタン -->
       <a href="{% url 'reservation_create' %}" class="btn-create-reservation sidebar-create-btn">＋ 予約を登録する</a>
 
-      <!-- ミニカレンダー -->
       <div class="mini-calendar">
         <div class="mini-cal-header">
           <a href="?date={{ prev_month_date|date:'Y-m-d' }}">&lt;</a>
@@ -46,12 +43,7 @@
             {% for week in weeks %}
             <tr>
               {% for d in week %}
-              <td class="
-                {% if d.month != cal_month %}other-month{% endif %}
-                {% if d == today %}today-cell{% endif %}
-                {% if d == target %}selected-cell{% endif %}
-                {% if d.weekday == 5 %}sat{% elif d.weekday == 6 %}sun{% endif %}
-              ">
+              <td class="{% if d.month != cal_month %}other-month{% endif %} {% if d == today %}today-cell{% endif %} {% if d == target %}selected-cell{% endif %} {% if d.weekday == 5 %}sat{% elif d.weekday == 6 %}sun{% endif %}">
                 <a href="?date={{ d|date:'Y-m-d' }}">{{ d.day }}</a>
               </td>
               {% endfor %}
@@ -61,7 +53,6 @@
         </table>
       </div>
 
-      <!-- 日付ナビ -->
       <div class="timeline-date-nav">
         <div class="date-display">{{ target|date:"Y年n月j日（D）" }}</div>
         <div class="nav-btns">
@@ -70,19 +61,15 @@
           <a href="?date={{ next_date|date:'Y-m-d' }}" class="nav-btn">翌日</a>
         </div>
       </div>
-
     </div><!-- /.timeline-sidebar -->
 
     <!-- ② メインエリア -->
     <div class="timeline-main">
 
-      <!-- ツールバー -->
       <div class="timeline-toolbar">
         <span class="tl-title">{{ target|date:"Y年n月j日" }}</span>
         <div class="tl-toolbar-right">
-          <!-- カレンダーへ戻るボタン -->
           <a href="{% url 'calendar' %}?date={{ target|date:'Y-m-d' }}" class="nav-btn">カレンダー</a>
-          <!-- ナビメニュー -->
           <div class="nav-menu-wrap">
             <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
             <div class="nav-dropdown" id="navMenu">
@@ -108,8 +95,8 @@
                 <button type="submit" class="logout-btn">ログアウト</button>
               </form>
             </div>
-          </div><!-- /.nav-menu-wrap -->
-        </div><!-- /.tl-toolbar-right -->
+          </div>
+        </div>
       </div>
 
       <!-- タイムライングリッド -->
@@ -128,40 +115,59 @@
         </div>
 
         <!-- 右スクロール：タイムライン本体 -->
-        <div class="tl-scroll-area" id="scrollArea">
-          <div class="tl-inner" style="width:{{ total_width }}px; min-width:100%;">
+        <div class="tl-scroll-area" id="scrollArea"
+             data-total-minutes="{{ total_minutes }}"
+             data-hour-start="{{ hours.0 }}"
+             data-target-date="{{ target|date:'Y-m-d' }}">
+          <div class="tl-inner" id="tlInner">
 
             <!-- 時間軸ヘッダー -->
             <div class="tl-hour-header">
               {% for h in hours %}
-              <div class="tl-hour-cell" style="min-width:{{ hour_width }}px; width:{{ hour_width }}px;">{{ h }}:00</div>
+              <div class="tl-hour-cell">{{ h }}:00</div>
               {% endfor %}
             </div>
 
             <!-- 会議室ごとの行 -->
             {% for rd in room_data %}
-            <div class="tl-row" style="width:{{ total_width }}px;">
-              <!-- 時間スロット（背景グリッド） -->
+            <div class="tl-row"
+                 data-room-id="{{ rd.room.id }}"
+                 data-room-name="{{ rd.room.name }}">
               {% for h in hours %}
-              <div class="tl-slot" style="min-width:{{ hour_width }}px; width:{{ hour_width }}px;"></div>
+              <div class="tl-slot"></div>
               {% endfor %}
 
-              <!-- 予約ブロック -->
               {% for ev in rd.reservations %}
               {% if ev.is_all_day %}
-              <!-- 終日予約は行の上部にバッジ表示 -->
               <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event"
-                 style="left:0; width:{{ total_width }}px; background:{{ ev.color }}; opacity:0.85; top:2px; height:20px; font-size:0.7rem;"
+                 class="tl-event tl-event-allday"
+                 data-pk="{{ ev.id }}"
+                 data-start-min="0"
+                 data-dur-min="{{ total_minutes }}"
+                 data-title="{{ ev.title }}"
+                 data-start-str="終日"
+                 data-end-str=""
+                 data-reserved-by="{{ ev.reserved_by }}"
+                 data-room-name="{{ rd.room.name }}"
+                 style="background:{{ ev.color }}; opacity:0.85; top:2px; height:20px; font-size:0.7rem;"
                  title="終日: {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">終日: {{ ev.reserved_by }} | {{ ev.title }}</span>
               </a>
               {% else %}
               <a href="{% url 'reservation_detail' ev.id %}"
                  class="tl-event"
-                 style="left:{{ ev.left_px }}px; width:{{ ev.width_px }}px; background:{{ ev.color }};"
+                 data-pk="{{ ev.id }}"
+                 data-start-min="{{ ev.start_min }}"
+                 data-dur-min="{{ ev.dur_min }}"
+                 data-title="{{ ev.title }}"
+                 data-start-str="{{ ev.start_str }}"
+                 data-end-str="{{ ev.end_str }}"
+                 data-reserved-by="{{ ev.reserved_by }}"
+                 data-room-name="{{ rd.room.name }}"
+                 style="background:{{ ev.color }};"
                  title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
+                <span class="tl-resize-handle"></span>
               </a>
               {% endif %}
               {% endfor %}
@@ -172,21 +178,287 @@
 
           </div><!-- /.tl-inner -->
         </div><!-- /.tl-scroll-area -->
-
       </div><!-- /.timeline-grid-wrap -->
     </div><!-- /.timeline-main -->
   </div><!-- /.timeline-page -->
 
+  <!-- ── 予約詳細ポップアップ ── -->
+  <div id="tlPopover" class="tl-popover" hidden>
+    <div class="tl-popover-header">
+      <span id="tlPopTitle"></span>
+      <button class="tl-popover-close" onclick="closeTlPopover()">✕</button>
+    </div>
+    <div class="tl-popover-body">
+      <div class="tl-popover-row"><span class="tl-popover-label">会議室</span><span id="tlPopRoom"></span></div>
+      <div class="tl-popover-row"><span class="tl-popover-label">日時</span><span id="tlPopTime"></span></div>
+      <div class="tl-popover-row"><span class="tl-popover-label">予約者</span><span id="tlPopBy"></span></div>
+    </div>
+    <div class="tl-popover-actions">
+      <a id="tlPopDetail" href="#" class="btn btn-primary btn-sm">詳細</a>
+    </div>
+  </div>
+  <div id="tlOverlay" class="tl-overlay" hidden onclick="closeTlPopover()"></div>
+
+  <!-- トースト通知 -->
+  <div id="tlToast" class="tl-toast" hidden></div>
+
   <script src="{% static 'js/common.js' %}"></script>
   <script>
-  // 左の会議室行とスクロール領域の縦スクロールを同期
   (function () {
-    const scrollArea = document.getElementById('scrollArea');
-    const roomRows   = document.getElementById('roomRows');
-    if (!scrollArea || !roomRows) return;
-    scrollArea.addEventListener('scroll', function () {
-      roomRows.scrollTop = scrollArea.scrollTop;
+    const scrollArea   = document.getElementById('scrollArea');
+    const roomRows     = document.getElementById('roomRows');
+    const tlInner      = document.getElementById('tlInner');
+    const totalMinutes = parseInt(scrollArea.dataset.totalMinutes, 10);
+    const hourStart    = parseInt(scrollArea.dataset.hourStart, 10);
+    const targetDate   = scrollArea.dataset.targetDate; // "YYYY-MM-DD"
+    const SNAP_MIN     = 15;
+
+    // ── px/分（実描画幅ベース、ゼロ除算防止） ──
+    function getPxPerMin() {
+      const w = tlInner ? tlInner.offsetWidth : 0;
+      return w > 0 ? w / totalMinutes : 80 / 60;
+    }
+
+    // ── 全イベントの位置を再計算 ──
+    function positionEvents() {
+      const p = getPxPerMin();
+      scrollArea.querySelectorAll('.tl-event[data-start-min]').forEach(ev => {
+        const s = parseFloat(ev.dataset.startMin);
+        const d = parseFloat(ev.dataset.durMin);
+        if (isFinite(s) && isFinite(d)) {
+          ev.style.left  = (s * p) + 'px';
+          ev.style.width = Math.max(d * p, 4) + 'px';
+        }
+      });
+    }
+
+    // レイアウト確定後に配置（requestAnimationFrame で1フレーム待つ）
+    requestAnimationFrame(positionEvents);
+    window.addEventListener('resize', positionEvents);
+
+    // ── 分オフセット → ISO UTC 文字列（数値コンストラクタ使用で安全） ──
+    function minToISO(offsetMin) {
+      const safe = Math.round(Math.max(0, Math.min(offsetMin, totalMinutes)));
+      const absMin = hourStart * 60 + safe;
+      const h = Math.floor(absMin / 60);
+      const m = absMin % 60;
+      const [y, mo, d] = targetDate.split('-').map(Number);
+      // 数値コンストラクタ = ローカル時刻として解釈（文字列パースより確実）
+      const dt = new Date(y, mo - 1, d, h, m, 0);
+      return dt.toISOString();
+    }
+
+    // ── 15分スナップ ──
+    function snap(min) {
+      if (!isFinite(min)) return 0;
+      return Math.round(min / SNAP_MIN) * SNAP_MIN;
+    }
+
+    // ── CSRF ──
+    function getCsrf() {
+      const m = document.cookie.match(/csrftoken=([^;]+)/);
+      return m ? m[1] : '';
+    }
+
+    // ── トースト ──
+    const toastEl = document.getElementById('tlToast');
+    function showToast(msg, isErr) {
+      toastEl.textContent = msg;
+      toastEl.className   = 'tl-toast ' + (isErr ? 'tl-toast-error' : 'tl-toast-ok');
+      toastEl.hidden = false;
+      clearTimeout(toastEl._t);
+      toastEl._t = setTimeout(() => { toastEl.hidden = true; }, 3500);
+    }
+
+    // ── PATCH API ──
+    async function saveMove(pk, startMin, durMin) {
+      const resp = await fetch(`/reservations/${pk}/move/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+        body: JSON.stringify({
+          start_at: minToISO(startMin),
+          end_at:   minToISO(startMin + durMin)
+        })
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.error || `エラー(${resp.status})`);
+      }
+    }
+
+    // ── スクロールエリア内の X 座標（スクロール考慮） ──
+    function clientXToContentX(clientX) {
+      return clientX - scrollArea.getBoundingClientRect().left + scrollArea.scrollLeft;
+    }
+
+    // ── ドラッグ＆リサイズ ──
+    scrollArea.addEventListener('mousedown', function (e) {
+      const ev = e.target.closest('.tl-event:not(.tl-event-allday)');
+      if (!ev) return;
+
+      const isResize = !!e.target.closest('.tl-resize-handle');
+      e.preventDefault();
+
+      const p            = getPxPerMin();
+      const origStartMin = parseFloat(ev.dataset.startMin) || 0;
+      const origDurMin   = parseFloat(ev.dataset.durMin)   || 30;
+      const origLeft     = parseFloat(ev.style.left)  || (origStartMin * p);
+      const origWidth    = parseFloat(ev.style.width) || (origDurMin   * p);
+
+      // ドラッグ時はイベント内のどこをつかんだかを記憶
+      const grabOffset = isResize ? 0 : (e.clientX - ev.getBoundingClientRect().left);
+
+      let moved = false;
+      ev.classList.add(isResize ? 'tl-event-resizing' : 'tl-event-dragging');
+
+      function onMove(e) {
+        const dx = e.clientX - (isResize ? e.clientX - (e.movementX || 0) : e.clientX);
+
+        if (isResize) {
+          // 右端ハンドル：幅を変える
+          const contentX = clientXToContentX(e.clientX);
+          const newWidth = Math.max(p * SNAP_MIN, contentX - origLeft);
+          if (Math.abs(newWidth - origWidth) > 2) moved = true;
+          ev.style.width = newWidth + 'px';
+        } else {
+          // ドラッグ：left を変える
+          const contentX = clientXToContentX(e.clientX);
+          const newLeft  = Math.max(0, contentX - grabOffset);
+          if (Math.abs(newLeft - origLeft) > 2) moved = true;
+          ev.style.left  = newLeft + 'px';
+        }
+      }
+
+      async function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+        ev.classList.remove('tl-event-dragging', 'tl-event-resizing');
+
+        if (!moved) return; // クリック：ポップアップを開く（デフォルト動作続行）
+
+        // ドラッグ後はクリックイベントをキャンセル
+        ev.addEventListener('click', e => e.preventDefault(), { once: true });
+
+        const p = getPxPerMin();
+        let newStartMin = origStartMin;
+        let newDurMin   = origDurMin;
+
+        if (isResize) {
+          newDurMin = snap(parseFloat(ev.style.width) / p);
+          newDurMin = Math.max(SNAP_MIN, Math.min(newDurMin, totalMinutes - origStartMin));
+        } else {
+          newStartMin = snap(parseFloat(ev.style.left) / p);
+          newStartMin = Math.max(0, Math.min(newStartMin, totalMinutes - origDurMin));
+        }
+
+        // 楽観的 UI 更新
+        ev.dataset.startMin = newStartMin;
+        ev.dataset.durMin   = newDurMin;
+        ev.style.left  = (newStartMin * p) + 'px';
+        ev.style.width = (newDurMin   * p) + 'px';
+
+        try {
+          await saveMove(ev.dataset.pk, newStartMin, newDurMin);
+          // title 属性更新
+          const pad2 = n => String(Math.floor(n)).padStart(2, '0');
+          const s = hourStart * 60 + newStartMin;
+          const f = hourStart * 60 + newStartMin + newDurMin;
+          const startStr = `${pad2(s/60)}:${pad2(s%60)}`;
+          const endStr   = `${pad2(f/60)}:${pad2(f%60)}`;
+          ev.dataset.startStr = startStr;
+          ev.dataset.endStr   = endStr;
+          ev.title = `${startStr}〜${endStr} ${ev.dataset.reservedBy || ''} | ${ev.dataset.title || ''}`;
+          showToast('予約時間を更新しました', false);
+        } catch (err) {
+          ev.dataset.startMin = origStartMin;
+          ev.dataset.durMin   = origDurMin;
+          ev.style.left  = origLeft  + 'px';
+          ev.style.width = origWidth + 'px';
+          showToast(err.message, true);
+        }
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
     });
+
+    // ── 予約詳細ポップアップ ──
+    const popover = document.getElementById('tlPopover');
+    const overlay = document.getElementById('tlOverlay');
+
+    function openTlPopover(ev, anchorEl) {
+      document.getElementById('tlPopTitle').textContent = ev.dataset.title || '';
+      document.getElementById('tlPopRoom').textContent  = ev.dataset.roomName || '';
+      const startStr = ev.dataset.startStr || '';
+      const endStr   = ev.dataset.endStr   || '';
+      document.getElementById('tlPopTime').textContent =
+        startStr === '終日' ? '終日' : `${startStr}〜${endStr}`;
+      document.getElementById('tlPopBy').textContent   = ev.dataset.reservedBy || '';
+      document.getElementById('tlPopDetail').href =
+        `/reservations/${ev.dataset.pk}/`;
+
+      // アンカー要素の位置に合わせて表示
+      const rect = anchorEl.getBoundingClientRect();
+      // position:fixed なので viewport 座標をそのまま使う
+      let top  = rect.bottom + 6;
+      let left = rect.left;
+      // 画面右端はみ出し補正
+      if (left + 280 > window.innerWidth - 8) {
+        left = window.innerWidth - 280 - 8;
+      }
+      // 画面下端はみ出し → 上に表示
+      if (top + 180 > window.innerHeight) {
+        top = rect.top - 180 - 6;
+      }
+      popover.style.top  = top  + 'px';
+      popover.style.left = left + 'px';
+      popover.hidden  = false;
+      overlay.hidden  = false;
+    }
+
+    window.closeTlPopover = function () {
+      popover.hidden = true;
+      overlay.hidden = true;
+    };
+
+    // イベントのクリック → ポップアップ
+    scrollArea.addEventListener('click', function (e) {
+      const ev = e.target.closest('.tl-event');
+      if (ev) {
+        e.preventDefault();
+        openTlPopover(ev, ev);
+        return;
+      }
+
+      // ── スロットのクリック → 新規予約画面へ ──
+      const row = e.target.closest('.tl-row');
+      if (!row) return;
+      const roomId   = row.dataset.roomId;
+      if (!roomId) return;
+
+      const p        = getPxPerMin();
+      const contentX = clientXToContentX(e.clientX);
+      // クリック位置を15分単位にスナップ
+      let clickMin   = snap(contentX / p);
+      clickMin       = Math.max(0, Math.min(clickMin, totalMinutes - SNAP_MIN));
+      const endMin   = Math.min(clickMin + 60, totalMinutes); // デフォルト1時間
+
+      const pad2   = n => String(Math.floor(n)).padStart(2, '0');
+      const absS   = hourStart * 60 + clickMin;
+      const absE   = hourStart * 60 + endMin;
+      const sTime  = `${pad2(absS/60)}:${pad2(absS%60)}`;
+      const eTime  = `${pad2(absE/60)}:${pad2(absE%60)}`;
+
+      const url = `/reservations/create/?room=${roomId}&date=${targetDate}&time=${sTime}&end_time=${eTime}`;
+      window.location.href = url;
+    });
+
+    // ── 縦スクロール同期 ──
+    if (scrollArea && roomRows) {
+      scrollArea.addEventListener('scroll', () => {
+        roomRows.scrollTop = scrollArea.scrollTop;
+      });
+    }
   })();
   </script>
 </body>
