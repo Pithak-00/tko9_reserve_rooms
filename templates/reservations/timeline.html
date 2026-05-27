@@ -107,7 +107,7 @@
           <div class="tl-header-spacer"></div>
           <div class="tl-room-rows" id="roomRows">
             {% for rd in room_data %}
-            <div class="tl-room-cell" title="{{ rd.room.name }}">{{ rd.room.name }}</div>
+            <div class="tl-room-cell" title="{{ rd.room.name }}&#10;クリックで終日予約" data-room-id="{{ rd.room.id }}" data-room-name="{{ rd.room.name }}">{{ rd.room.name }}<span class="tl-allday-hint">終日＋</span></div>
             {% empty %}
             <div class="tl-room-cell" style="color:#999;">会議室なし</div>
             {% endfor %}
@@ -513,6 +513,15 @@
       if (!evEl) return;
       e.preventDefault();
       openTlPopover(evEl);
+    });
+
+    /* ── 会議室名クリック → 終日予約 ────────────────────── */
+    document.getElementById('roomRows').addEventListener('click', function (e) {
+      const cell = e.target.closest('.tl-room-cell[data-room-id]');
+      if (!cell) return;
+      const roomId = cell.dataset.roomId;
+      window.location.href =
+        `/reservations/create/?room=${roomId}&date=${targetDate}&all_day=1`;
     });
 
     /* ── 縦スクロール同期 ─────────────────────────────── */
