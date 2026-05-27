@@ -63,6 +63,12 @@
         <form method="post" novalidate>
           {% csrf_token %}
 
+          {% if form.non_field_errors %}
+            <div class="rsv-non-field-error">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
+
           <!-- 予約日時 -->
           <div class="admin-card rsv-card">
             <div class="rsv-card-header">予約日時</div>
@@ -127,12 +133,6 @@
               </div>
             </div>
           </div>
-
-          {% if form.non_field_errors %}
-            <div class="rsv-non-field-error">
-              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-            </div>
-          {% endif %}
 
           <div class="actions">
             <button type="submit" class="btn btn-primary btn-md">保存する</button>
