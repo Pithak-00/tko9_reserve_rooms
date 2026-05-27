@@ -268,8 +268,9 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
         else:
             next_month_date = date(year, month + 1, 1)
 
-        hours = list(range(hour_start, hour_end))
-        total_width = (hour_end - hour_start) * hour_width
+        hours         = list(range(hour_start, hour_end))
+        total_minutes = (hour_end - hour_start) * 60
+        total_width   = (hour_end - hour_start) * hour_width
 
         ctx.update({
             'target':          target,
@@ -277,9 +278,10 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
             'next_date':       target + timedelta(days=1),
             'today':           date.today(),
             'room_data':       room_data,
-            'hours':           hours,
-            'hour_width':      hour_width,
-            'total_width':     total_width,
+            'hours':         hours,
+            'total_minutes': total_minutes,
+            'hour_width':    hour_width,
+            'total_width':   total_width,
             'weeks':           weeks,
             'cal_year':        year,
             'cal_month':       month,
