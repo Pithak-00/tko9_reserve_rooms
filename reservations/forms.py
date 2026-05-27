@@ -8,13 +8,13 @@ from datetime import datetime, timedelta, time as dt_time
 def time_choices():
     choices = []
     current = datetime.strptime("00:00", "%H:%M")
-    end = datetime.strptime("23:30", "%H:%M")
+    end = datetime.strptime("23:45", "%H:%M")
 
     while current <= end:
         value = current.strftime("%H:%M")
         label = f"{current.hour}:{current.strftime('%M')}"
         choices.append((value, label))
-        current += timedelta(minutes=30)
+        current += timedelta(minutes=15)
 
     return choices
 
