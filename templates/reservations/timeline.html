@@ -322,7 +322,7 @@
     /* ══════════════════════════════════════════════════════
        ドラッグ移動 & リサイズ（既存予約ブロック）
        ══════════════════════════════════════════════════════ */
-    scrollArea.addEventListener('mousedown', function (e) {
+    scrollArea.addEventListener('pointerdown', function (e) {
       const evEl = e.target.closest('.tl-event:not(.tl-event-allday)');
       if (!evEl) return;
 
@@ -332,6 +332,7 @@
       const isResize = !!e.target.closest('.tl-resize-handle');
       e.preventDefault();
       e.stopPropagation(); // スロットドラッグに伝播させない
+      e.target.setPointerCapture(e.pointerId); // タッチでも確実に追跡
 
       const p            = getPxPerMin();
       // data-* から読む（style.left ではなく確実な値を使う）
@@ -389,8 +390,8 @@
       }
 
       async function onUp(e) {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
         evEl.classList.remove('tl-event-dragging', 'tl-event-resizing');
 
         if (!hasMoved) {
@@ -488,8 +489,8 @@
         );
       }
 
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
     });
 
     /* ══════════════════════════════════════════════════════
@@ -500,12 +501,13 @@
     let slotRow      = null;
     let slotStartMin = 0;
 
-    scrollArea.addEventListener('mousedown', function (e) {
+    scrollArea.addEventListener('pointerdown', function (e) {
       if (e.target.closest('.tl-event')) return; // イベントブロックは除外
       const row = e.target.closest('.tl-row');
       if (!row) return;
 
       e.preventDefault();
+      e.target.setPointerCapture(e.pointerId);
       slotRow      = row;
       slotDragging = false;
       slotStartMin = snap(toContentX(e.clientX) / getPxPerMin());
@@ -520,7 +522,7 @@
       row.appendChild(slotPreview);
     });
 
-    document.addEventListener('mousemove', function (e) {
+    document.addEventListener('pointermove', function (e) {
       if (!slotPreview || !slotRow) return;
       slotDragging = true;
 
@@ -536,7 +538,7 @@
       slotPreview.textContent = `${minToTimeStr(minA)}〜${minToTimeStr(minB)}`;
     });
 
-    document.addEventListener('mouseup', function (e) {
+    document.addEventListener('pointerup', function (e) {
       if (!slotRow) return;
 
       const row    = slotRow;
@@ -721,11 +723,12 @@
         getCells().forEach(c => c.classList.remove('tl-allday-selecting'));
       }
 
-      alldayColEl.addEventListener('mousedown', function (e) {
+      alldayColEl.addEventListener('pointerdown', function (e) {
         if (e.target.closest('.tl-event')) return; // イベントドラッグで処理
         const cell = e.target.closest('.tl-allday-col-cell[data-room-id]');
         if (!cell) return;
         e.preventDefault();
+        e.target.setPointerCapture(e.pointerId);
         dragStartCell = cell;
         highlightRange(getCells().indexOf(cell), getCells().indexOf(cell));
       });
@@ -735,12 +738,13 @@
       let adDragRow  = null; // 現在ホバー中の tl-row
       let adDropMin  = 0;
 
-      alldayColEl.addEventListener('mousedown', function (e) {
+      alldayColEl.addEventListener('pointerdown', function (e) {
         const evEl = e.target.closest('.tl-event');
         if (!evEl) return;
         if (evEl.dataset.canEdit !== '1') return;
         e.preventDefault();
         e.stopPropagation();
+        e.target.setPointerCapture(e.pointerId);
         adDragEv = evEl;
         createGhost(
           (evEl.dataset.reservedBy || '') + ' | ' + (evEl.dataset.title || ''),
@@ -749,7 +753,7 @@
         evEl.style.opacity = '0.4';
       });
 
-      document.addEventListener('mousemove', function (e) {
+      document.addEventListener('pointermove', function (e) {
         /* セルドラッグ */
         if (dragStartCell) {
           const el   = document.elementFromPoint(e.clientX, e.clientY);
@@ -777,7 +781,7 @@
         }
       });
 
-      document.addEventListener('mouseup', async function (e) {
+      document.addEventListener('pointerup', async function (e) {
         /* ── セルドラッグ終了 ── */
         if (dragStartCell) {
           const start = dragStartCell;
