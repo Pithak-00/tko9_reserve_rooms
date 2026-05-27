@@ -256,6 +256,8 @@
 
     // 1フレーム待ってレイアウト確定後に配置
     requestAnimationFrame(positionEvents);
+    // load 後にも再実行（フォント・スクロールバー確定後）
+    window.addEventListener('load', positionEvents);
     window.addEventListener('resize', positionEvents);
 
     /* ── 分オフセット → ISO UTC 文字列 ───────────────── */
