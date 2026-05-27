@@ -107,9 +107,37 @@
           <div class="tl-header-spacer"></div>
           <div class="tl-room-rows" id="roomRows">
             {% for rd in room_data %}
-            <div class="tl-room-cell" title="{{ rd.room.name }}&#10;クリックで終日予約" data-room-id="{{ rd.room.id }}" data-room-name="{{ rd.room.name }}">{{ rd.room.name }}<span class="tl-allday-hint">終日＋</span></div>
+            <div class="tl-room-cell" title="{{ rd.room.name }}">{{ rd.room.name }}</div>
             {% empty %}
             <div class="tl-room-cell" style="color:#999;">会議室なし</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 終日列（固定） -->
+        <div class="tl-allday-col" id="alldayCol">
+          <div class="tl-allday-col-header">終日</div>
+          <div class="tl-allday-col-rows" id="alldayColRows">
+            {% for rd in room_data %}
+            <div class="tl-allday-col-cell" data-room-id="{{ rd.room.id }}">
+              {% for ev in rd.reservations %}{% if ev.is_all_day %}
+              <div class="tl-event tl-event-allday"
+                   data-pk="{{ ev.id }}"
+                   data-start-min="0"
+                   data-dur-min="{{ total_minutes }}"
+                   data-title="{{ ev.title }}"
+                   data-start-str="終日"
+                   data-end-str=""
+                   data-reserved-by="{{ ev.reserved_by }}"
+                   data-room-name="{{ rd.room.name }}"
+                   data-can-edit="{{ ev.can_edit|yesno:'1,0' }}"
+                   style="background:{{ ev.color }}; position:static; width:100%; height:22px; font-size:0.68rem; border-radius:3px; margin-bottom:2px;">
+                <span class="tl-event-text">{{ ev.title }}</span>
+              </div>
+              {% endif %}{% endfor %}
+            </div>
+            {% empty %}
+            <div class="tl-allday-col-cell"></div>
             {% endfor %}
           </div>
         </div>
@@ -139,24 +167,8 @@
               {% endfor %}
 
               {% for ev in rd.reservations %}
-              {% if ev.is_all_day %}
-              <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event tl-event-allday"
-                 data-pk="{{ ev.id }}"
-                 data-start-min="0"
-                 data-dur-min="{{ total_minutes }}"
-                 data-title="{{ ev.title }}"
-                 data-start-str="終日"
-                 data-end-str=""
-                 data-reserved-by="{{ ev.reserved_by }}"
-                 data-room-name="{{ rd.room.name }}"
-                 style="background:{{ ev.color }}; opacity:0.85; top:2px; height:20px; font-size:0.7rem;"
-                 title="終日: {{ ev.reserved_by }} | {{ ev.title }}">
-                <span class="tl-event-text">終日: {{ ev.reserved_by }} | {{ ev.title }}</span>
-              </a>
-              {% else %}
-              <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event{% if not ev.can_edit %} tl-event-readonly{% endif %}"
+              {% if not ev.is_all_day %}
+              <div class="tl-event{% if not ev.can_edit %} tl-event-readonly{% endif %}"
                  data-pk="{{ ev.id }}"
                  data-start-min="{{ ev.start_min }}"
                  data-dur-min="{{ ev.dur_min }}"
@@ -170,7 +182,7 @@
                  title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
                 {% if ev.can_edit %}<span class="tl-resize-handle"></span>{% endif %}
-              </a>
+              </div>
               {% endif %}
               {% endfor %}
             </div>
@@ -548,25 +560,37 @@
       openTlPopover(evEl, e.clientX, e.clientY);
     });
 
+    // 終日列の予約ブロッククリック → ポップアップ
+    document.getElementById('alldayCol').addEventListener('click', function (e) {
+      const evEl = e.target.closest('.tl-event');
+      if (!evEl) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openTlPopover(evEl, e.clientX, e.clientY);
+    });
+
     // 外クリック・Escape で閉じる
     document.addEventListener('click', () => { popover.hidden = true; });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') popover.hidden = true;
     });
 
-    /* ── 会議室名クリック → 終日予約 ────────────────────── */
-    document.getElementById('roomRows').addEventListener('click', function (e) {
-      const cell = e.target.closest('.tl-room-cell[data-room-id]');
+    /* ── 終日列クリック → 終日予約作成 ────────────────── */
+    document.getElementById('alldayCol').addEventListener('click', function (e) {
+      // 予約ブロックのクリックはポップアップ表示（伝播で処理）
+      if (e.target.closest('.tl-event')) return;
+      const cell = e.target.closest('.tl-allday-col-cell[data-room-id]');
       if (!cell) return;
-      const roomId = cell.dataset.roomId;
       window.location.href =
-        `/reservations/create/?room=${roomId}&date=${targetDate}&all_day=1`;
+        `/reservations/create/?room=${cell.dataset.roomId}&date=${targetDate}&all_day=1`;
     });
 
     /* ── 縦スクロール同期 ─────────────────────────────── */
+    const alldayColRows = document.getElementById('alldayColRows');
     if (scrollArea && roomRows) {
       scrollArea.addEventListener('scroll', () => {
-        roomRows.scrollTop = scrollArea.scrollTop;
+        roomRows.scrollTop     = scrollArea.scrollTop;
+        if (alldayColRows) alldayColRows.scrollTop = scrollArea.scrollTop;
       });
     }
   })();
