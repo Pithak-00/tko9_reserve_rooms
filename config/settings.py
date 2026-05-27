@@ -26,7 +26,12 @@ SECRET_KEY = "django-insecure-)s=wy#0ecpfx92^f^m8d-fy+@rzh+^(o7um4t$i1!3twyo+krm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'tko9.bold-rooms-reserve.com',
+    '18.177.208.167',
+    'localhost',
+    '127.0.0.1',
+]
 
 
 # Application definition
@@ -148,12 +153,12 @@ GOOGLE_CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 # INSTALLED_APPS に追加（未追加の場合）
 # 'rest_framework',
 
-# ── .env ファイル（プロジェクトルートに作成）─────────────────
+# qq .env ファイル（プロジェクトルートに作成）qqqqqqqqqqqqqqqqq
 # GOOGLE_CLIENT_ID=<Google Cloud Console で取得した値>
 # GOOGLE_CLIENT_SECRET=<同上>
 # GOOGLE_REDIRECT_URI=http://localhost:8000/reservations/auth/google/callback/
 
-# ── Google Cloud Console での設定手順 ───────────────────────
+# qq Google Cloud Console での設定手順 qqqqqqqqqqqqqqqqqqqqqqq
 # 1. https://console.cloud.google.com/ にアクセス
 # 2. 「APIとサービス」→「認証情報」→「OAuthクライアントIDを作成」
 # 3. アプリケーションの種類：「ウェブアプリケーション」を選択
@@ -163,8 +168,11 @@ GOOGLE_CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 # 5. 「Google Calendar API」を有効化（「ライブラリ」から検索して有効化）
 # 6. クライアントID・シークレットを .env に記載
 
-# ── python-dotenv で .env を読み込む（manage.py と同階層に.env）─
+# qq python-dotenv で .env を読み込む（manage.py と同階層に.env）q
 # pip install python-dotenv
 # settings.py の先頭に追加:
 # from dotenv import load_dotenv
 # load_dotenv()
+CSRF_TRUSTED_ORIGINS = [
+    'https://tko9.bold-rooms-reserve.com',  # 新しいHTTPSのURLをスキーム付きで許可
+]                                                                                                                                                            [
