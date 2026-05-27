@@ -562,3 +562,8 @@
 .tl-room-cell:hover .tl-allday-hint {
   display: inline-block;
 }
+
+/* ── 他人の予約（読み取り専用）：カーソルをポインターに ── */
+.tl-event-readonly {
+  cursor: pointer !important;
+}

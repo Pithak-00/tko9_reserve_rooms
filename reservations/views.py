@@ -236,7 +236,9 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
                 left_px  = int(start_min * hour_width / 60)
                 width_px = max(int((end_min - start_min) * hour_width / 60), 4)
 
-                dur_min = end_min - start_min
+                dur_min  = end_min - start_min
+                can_edit = (res.user_id == self.request.user.pk or
+                            self.request.user.is_staff)
                 res_list.append({
                     'id':          res.pk,
                     'title':       res.title,
@@ -249,6 +251,7 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
                     'start_str':   local_start.strftime('%H:%M'),
                     'end_str':     local_end.strftime('%H:%M'),
                     'is_all_day':  res.is_all_day,
+                    'can_edit':    can_edit,
                 })
             room_data.append({'room': room, 'reservations': res_list})
 

@@ -156,7 +156,7 @@
               </a>
               {% else %}
               <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event"
+                 class="tl-event{% if not ev.can_edit %} tl-event-readonly{% endif %}"
                  data-pk="{{ ev.id }}"
                  data-start-min="{{ ev.start_min }}"
                  data-dur-min="{{ ev.dur_min }}"
@@ -165,10 +165,11 @@
                  data-end-str="{{ ev.end_str }}"
                  data-reserved-by="{{ ev.reserved_by }}"
                  data-room-name="{{ rd.room.name }}"
+                 data-can-edit="{{ ev.can_edit|yesno:'1,0' }}"
                  style="background:{{ ev.color }};"
                  title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
-                <span class="tl-resize-handle"></span>
+                {% if ev.can_edit %}<span class="tl-resize-handle"></span>{% endif %}
               </a>
               {% endif %}
               {% endfor %}
@@ -311,6 +312,9 @@
     scrollArea.addEventListener('mousedown', function (e) {
       const evEl = e.target.closest('.tl-event:not(.tl-event-allday)');
       if (!evEl) return;
+
+      // 編集権限なし：ドラッグ不可（クリックは通常通り許可）
+      if (evEl.dataset.canEdit !== '1') return;
 
       const isResize = !!e.target.closest('.tl-resize-handle');
       e.preventDefault();
