@@ -301,9 +301,9 @@
   text-overflow: ellipsis;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  text-decoration: none;
   transition: filter 0.15s;
   box-sizing: border-box;
+  user-select: none;
 }
 
 

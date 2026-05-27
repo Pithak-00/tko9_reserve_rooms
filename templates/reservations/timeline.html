@@ -140,8 +140,7 @@
 
               {% for ev in rd.reservations %}
               {% if ev.is_all_day %}
-              <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event tl-event-allday"
+              <div class="tl-event tl-event-allday"
                  data-pk="{{ ev.id }}"
                  data-start-min="0"
                  data-dur-min="{{ total_minutes }}"
@@ -153,10 +152,9 @@
                  style="background:{{ ev.color }}; opacity:0.85; top:2px; height:20px; font-size:0.7rem;"
                  title="終日: {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">終日: {{ ev.reserved_by }} | {{ ev.title }}</span>
-              </a>
+              </div>
               {% else %}
-              <a href="{% url 'reservation_detail' ev.id %}"
-                 class="tl-event{% if not ev.can_edit %} tl-event-readonly{% endif %}"
+              <div class="tl-event{% if not ev.can_edit %} tl-event-readonly{% endif %}"
                  data-pk="{{ ev.id }}"
                  data-start-min="{{ ev.start_min }}"
                  data-dur-min="{{ ev.dur_min }}"
@@ -170,7 +168,7 @@
                  title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
                 <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
                 {% if ev.can_edit %}<span class="tl-resize-handle"></span>{% endif %}
-              </a>
+              </div>
               {% endif %}
               {% endfor %}
             </div>
