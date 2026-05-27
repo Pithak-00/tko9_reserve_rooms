@@ -353,7 +353,7 @@
         if (!hasMoved) return; // クリックとして扱う（ポップアップはクリックハンドラで）
 
         // ドラッグ後はクリックイベントを1回キャンセル
-        evEl.addEventListener('click', e => e.preventDefault(), { once: true });
+        evEl.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); }, { once: true });
 
         const p2 = getPxPerMin();
         let newStartMin = origStartMin;
