@@ -428,13 +428,70 @@
 
 /* レスポンシブ：SP 対応 */
 @media (max-width: 640px) {
+  /* ページ全体を縦積みに変更（高さはビューポートに固定） */
+  .timeline-page {
+    flex-direction: column;
+    height: calc(100vh - 56px);
+    overflow: hidden;
+  }
+
+  /* サイドバーを横並び帯として上部に表示（最大高さで抑制） */
   .timeline-sidebar {
-    display: none;
+    width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 8px;
+    gap: 8px;
+    border-right: none;
+    border-bottom: 1px solid #dee2e6;
+    overflow-y: auto;
+    max-height: 55vh;
   }
+
+  /* 予約登録ボタンは全幅 */
+  .timeline-sidebar .sidebar-create-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ミニカレンダーと日付ナビを横並び */
+  .mini-calendar {
+    flex: 1 1 180px;
+    min-width: 180px;
+  }
+
+  .timeline-date-nav {
+    flex: 0 0 auto;
+    min-width: 110px;
+  }
+
+  /* サイドバーリンクは横並び */
+  .sidebar-links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  /* メインエリアはスクロール可能な残り領域 */
+  .timeline-main {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  /* タイムライングリッドも縦スクロール対応 */
+  .timeline-grid-wrap {
+    overflow: hidden;
+  }
+
+  /* 会議室名カラムを少し狭く */
   .tl-rooms-col {
-    width: 80px;
-    min-width: 80px;
+    width: 70px;
+    min-width: 70px;
   }
+
   .tl-room-cell {
     font-size: 0.7rem;
     padding: 0 4px;
