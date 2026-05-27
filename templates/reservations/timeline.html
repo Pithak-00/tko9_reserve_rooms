@@ -405,28 +405,38 @@
         if (alldayDropCell) {
           const targetRoomId = alldayDropCell.dataset.roomId;
           clearAlldayHighlight();
-          // ビジュアルを元位置に戻す（楽観的 UI は行わずリロード）
           evEl.style.left  = (origStartMin * p) + 'px';
           evEl.style.width = (origDurMin   * p) + 'px';
-          try {
-            const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
-              body: JSON.stringify({
-                date:       targetDate,
-                room_id:    parseInt(targetRoomId),
-                is_all_day: true,
-              })
-            });
-            if (!resp.ok) {
-              const d = await resp.json().catch(() => ({}));
-              throw new Error(d.error || `エラー(${resp.status})`);
-            }
-            showToast('通常予約を終日予約に変換しました', false);
-            setTimeout(() => location.reload(), 800);
-          } catch (err) {
-            showToast(err.message, true);
-          }
+          const origTimeStr = `${minToTimeStr(origStartMin)}〜${minToTimeStr(origStartMin + origDurMin)}`;
+          showConfirm(
+            `「${evEl.dataset.title || ''}（${origTimeStr}）」を\n終日予約に変更しますか？`,
+            async () => {
+              try {
+                const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                  body: JSON.stringify({
+                    date:       targetDate,
+                    room_id:    parseInt(targetRoomId),
+                    is_all_day: true,
+                  })
+                });
+                if (!resp.ok) {
+                  const d = await resp.json().catch(() => ({}));
+                  throw new Error(d.error || `エラー(${resp.status})`);
+                }
+                showToast('通常予約を終日予約に変換しました', false);
+                setTimeout(() => location.reload(), 800);
+              } catch (err) {
+                showToast(err.message, true);
+              }
+            },
+            null,
+            '変更する',
+            'btn-primary',
+            'キャンセル',
+            '予約変更の確認'
+          );
           return;
         }
 
@@ -442,29 +452,40 @@
           newStartMin = Math.max(0, Math.min(newStartMin, totalMinutes - origDurMin));
         }
 
-        // 楽観的 UI 更新
-        evEl.dataset.startMin = newStartMin;
-        evEl.dataset.durMin   = newDurMin;
+        // 確認後に UI 更新・API 呼び出し
         evEl.style.left  = (newStartMin * p2) + 'px';
         evEl.style.width = (newDurMin   * p2) + 'px';
-
-        try {
-          await saveMove(evEl.dataset.pk, newStartMin, newDurMin);
-          // data-str 属性も更新
-          const sStr = minToTimeStr(newStartMin);
-          const eStr = minToTimeStr(newStartMin + newDurMin);
-          evEl.dataset.startStr = sStr;
-          evEl.dataset.endStr   = eStr;
-          evEl.title = `${sStr}〜${eStr} ${evEl.dataset.reservedBy || ''} | ${evEl.dataset.title || ''}`;
-          showToast('予約時間を更新しました', false);
-        } catch (err) {
-          // 失敗時は元に戻す
-          evEl.dataset.startMin = origStartMin;
-          evEl.dataset.durMin   = origDurMin;
-          evEl.style.left  = (origStartMin * p2) + 'px';
-          evEl.style.width = (origDurMin   * p2) + 'px';
-          showToast(err.message, true);
-        }
+        const newSStr = minToTimeStr(newStartMin);
+        const newEStr = minToTimeStr(newStartMin + newDurMin);
+        showConfirm(
+          `「${evEl.dataset.title || ''}」を\n${newSStr}〜${newEStr} に変更しますか？`,
+          async () => {
+            evEl.dataset.startMin = newStartMin;
+            evEl.dataset.durMin   = newDurMin;
+            try {
+              await saveMove(evEl.dataset.pk, newStartMin, newDurMin);
+              evEl.dataset.startStr = newSStr;
+              evEl.dataset.endStr   = newEStr;
+              evEl.title = `${newSStr}〜${newEStr} ${evEl.dataset.reservedBy || ''} | ${evEl.dataset.title || ''}`;
+              showToast('予約時間を更新しました', false);
+            } catch (err) {
+              evEl.dataset.startMin = origStartMin;
+              evEl.dataset.durMin   = origDurMin;
+              evEl.style.left  = (origStartMin * p2) + 'px';
+              evEl.style.width = (origDurMin   * p2) + 'px';
+              showToast(err.message, true);
+            }
+          },
+          () => {
+            // キャンセル → 元の位置に戻す
+            evEl.style.left  = (origStartMin * p2) + 'px';
+            evEl.style.width = (origDurMin   * p2) + 'px';
+          },
+          '変更する',
+          'btn-primary',
+          'キャンセル',
+          '予約変更の確認'
+        );
       }
 
       document.addEventListener('mousemove', onMove);
@@ -583,10 +604,15 @@
         e.preventDefault();
         e.stopPropagation();
         const dt = s === '終日' ? '終日' : `${s}〜${f}`;
-        if (confirm(`「${evEl.dataset.title}（${dt}）」をキャンセルしますか？
-この操作は取り消せません。`)) {
-          cancelForm.submit();
-        }
+        showConfirm(
+          `「${evEl.dataset.title}（${dt}）」をキャンセルしますか？\nこの操作は取り消せません。`,
+          () => { cancelForm.submit(); },
+          null,
+          'キャンセルする',
+          'btn-danger',
+          '戻る',
+          '予約のキャンセル確認'
+        );
       };
 
       // 位置計算（クリック座標基準・画面端補正）
@@ -788,26 +814,38 @@
         const f = minToISO(endMin);
         if (!s || !f) { showToast('日時の計算に失敗しました', true); return; }
 
-        try {
-          const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
-            body: JSON.stringify({
-              start_at:   s,
-              end_at:     f,
-              room_id:    parseInt(roomId),
-              is_all_day: false,
-            })
-          });
-          if (!resp.ok) {
-            const d = await resp.json().catch(() => ({}));
-            throw new Error(d.error || `エラー(${resp.status})`);
-          }
-          showToast('終日予約を通常予約に変換しました', false);
-          setTimeout(() => location.reload(), 800);
-        } catch (err) {
-          showToast(err.message, true);
-        }
+        const dropSStr = minToTimeStr(startMin);
+        const dropEStr = minToTimeStr(endMin);
+        showConfirm(
+          `「${evEl.dataset.title || ''}」を\n${dropSStr}〜${dropEStr} の通常予約に変更しますか？`,
+          async () => {
+            try {
+              const resp = await fetch(`/reservations/${evEl.dataset.pk}/move/`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
+                body: JSON.stringify({
+                  start_at:   s,
+                  end_at:     f,
+                  room_id:    parseInt(roomId),
+                  is_all_day: false,
+                })
+              });
+              if (!resp.ok) {
+                const d = await resp.json().catch(() => ({}));
+                throw new Error(d.error || `エラー(${resp.status})`);
+              }
+              showToast('終日予約を通常予約に変換しました', false);
+              setTimeout(() => location.reload(), 800);
+            } catch (err) {
+              showToast(err.message, true);
+            }
+          },
+          null,
+          '変更する',
+          'btn-primary',
+          'キャンセル',
+          '予約変更の確認'
+        );
       });
     })();
 
