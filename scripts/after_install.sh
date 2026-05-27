@@ -6,7 +6,7 @@ echo "AfterInstall started"
 APP_DIR="/home/ec2-user/test/test_app"
 
 # 権限設定
-chown -R root:root $APP_DIR
+chown -R ec2-user:ec2-user $APP_DIR
 chmod -R 755 $APP_DIR
 
 # .env と DB をアプリディレクトリにコピー

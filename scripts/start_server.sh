@@ -13,11 +13,11 @@ echo "Move directory completed"
 
 echo "Old container cleanup completed"
 
+/usr/bin/docker builder prune -a -f
+
 /usr/bin/docker compose up -d --build
 
 echo "Docker compose up completed"
-
-/usr/bin/docker builder prune -a -f
 
 echo "Docker build cache cleanup completed"
 
