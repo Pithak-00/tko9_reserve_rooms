@@ -224,7 +224,8 @@ function handleEventDrop(info) {
     },
     () => { info.revert(); },  // キャンセル：元の位置に戻す
     '変更する',                // OK ボタンのラベル
-    'btn-primary'              // OK ボタンの色（青）
+    'btn-primary',             // OK ボタンの色（青）
+    '戻る'                     // 戻るボタンのラベル
   );
 }
 
