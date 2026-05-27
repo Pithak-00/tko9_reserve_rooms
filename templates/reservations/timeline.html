@@ -69,7 +69,7 @@
       <div class="timeline-toolbar">
         <span class="tl-title">{{ target|date:"Y年n月j日" }}</span>
         <div class="tl-toolbar-right">
-          <a href="{% url 'calendar' %}?date={{ target|date:'Y-m-d' }}" class="nav-btn">カレンダー</a>
+          <a href="{% url 'calendar' %}?date={{ target|date:'Y-m-d' }}" class="view-tab">カレンダー</a>
           <div class="nav-menu-wrap">
             <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
             <div class="nav-dropdown" id="navMenu">

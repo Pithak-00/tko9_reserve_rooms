@@ -437,11 +437,16 @@
   gap: 8px;
 }
 
-/* ツールバー内 <a>.nav-btn の縦中央揃え */
-.tl-toolbar-right a.nav-btn {
+/* ツールバー内 <a>.view-tab の縦中央揃え・リンク装飾リセット */
+.tl-toolbar-right a.view-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
+.tl-toolbar-right a.view-tab:hover {
+  color: #fff;
 }
 
 /* レスポンシブ：SP 対応 */
