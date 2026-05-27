@@ -118,6 +118,7 @@
         <div class="tl-scroll-area" id="scrollArea"
              data-total-minutes="{{ total_minutes }}"
              data-hour-start="{{ hours.0 }}"
+             data-hour-width="{{ hour_width }}"
              data-target-date="{{ target|date:'Y-m-d' }}">
           <div class="tl-inner" id="tlInner">
 
@@ -205,62 +206,72 @@
   <script src="{% static 'js/common.js' %}"></script>
   <script>
   (function () {
+    /* ============================================================
+       Timeline: 配置・ドラッグ移動・リサイズ・スロットドラッグ新規予約
+       ============================================================ */
     const scrollArea   = document.getElementById('scrollArea');
     const roomRows     = document.getElementById('roomRows');
     const tlInner      = document.getElementById('tlInner');
     const totalMinutes = parseInt(scrollArea.dataset.totalMinutes, 10);
     const hourStart    = parseInt(scrollArea.dataset.hourStart, 10);
+    const hourWidth    = parseInt(scrollArea.dataset.hourWidth,  10) || 80; // px/時間
     const targetDate   = scrollArea.dataset.targetDate; // "YYYY-MM-DD"
     const SNAP_MIN     = 15;
 
-    // ── px/分（実描画幅ベース、ゼロ除算防止） ──
+    /* ── px/分（HOUR_WIDTH ベースで確実に算出） ─────── */
     function getPxPerMin() {
-      const w = tlInner ? tlInner.offsetWidth : 0;
-      return w > 0 ? w / totalMinutes : 80 / 60;
+      // スロットセルの実際の描画幅を測る（flex-shrink:0 なので常に hourWidth）
+      const slot = scrollArea.querySelector('.tl-slot');
+      const slotW = slot ? slot.offsetWidth : hourWidth;
+      return slotW / 60;
     }
 
-    // ── 全イベントの位置を再計算 ──
+    /* ── イベント位置を data-* から再計算 ─────────────── */
     function positionEvents() {
       const p = getPxPerMin();
       scrollArea.querySelectorAll('.tl-event[data-start-min]').forEach(ev => {
         const s = parseFloat(ev.dataset.startMin);
         const d = parseFloat(ev.dataset.durMin);
-        if (isFinite(s) && isFinite(d)) {
+        if (isFinite(s) && isFinite(d) && d > 0) {
           ev.style.left  = (s * p) + 'px';
           ev.style.width = Math.max(d * p, 4) + 'px';
         }
       });
     }
 
-    // レイアウト確定後に配置（requestAnimationFrame で1フレーム待つ）
+    // 1フレーム待ってレイアウト確定後に配置
     requestAnimationFrame(positionEvents);
     window.addEventListener('resize', positionEvents);
 
-    // ── 分オフセット → ISO UTC 文字列（数値コンストラクタ使用で安全） ──
+    /* ── 分オフセット → ISO UTC 文字列 ───────────────── */
     function minToISO(offsetMin) {
-      const safe = Math.round(Math.max(0, Math.min(offsetMin, totalMinutes)));
-      const absMin = hourStart * 60 + safe;
+      const clamped = Math.round(Math.max(0, Math.min(offsetMin, totalMinutes)));
+      const absMin  = hourStart * 60 + clamped;
       const h = Math.floor(absMin / 60);
       const m = absMin % 60;
-      const [y, mo, d] = targetDate.split('-').map(Number);
-      // 数値コンストラクタ = ローカル時刻として解釈（文字列パースより確実）
-      const dt = new Date(y, mo - 1, d, h, m, 0);
+      const parts = targetDate.split('-').map(Number);
+      if (parts.length !== 3 || parts.some(isNaN)) return null;
+      const dt = new Date(parts[0], parts[1] - 1, parts[2], h, m, 0);
       return dt.toISOString();
     }
 
-    // ── 15分スナップ ──
+    /* ── 15分スナップ ─────────────────────────────────── */
     function snap(min) {
-      if (!isFinite(min)) return 0;
-      return Math.round(min / SNAP_MIN) * SNAP_MIN;
+      return isFinite(min) ? Math.round(min / SNAP_MIN) * SNAP_MIN : 0;
     }
 
-    // ── CSRF ──
+    /* ── スクロールエリア内の X 座標 ─────────────────── */
+    function toContentX(clientX) {
+      return clientX - scrollArea.getBoundingClientRect().left + scrollArea.scrollLeft;
+    }
+
+    /* ── CSRF ─────────────────────────────────────────── */
     function getCsrf() {
       const m = document.cookie.match(/csrftoken=([^;]+)/);
       return m ? m[1] : '';
     }
 
-    // ── トースト ──
+    /* ── トースト ─────────────────────────────────────── */
     const toastEl = document.getElementById('tlToast');
     function showToast(msg, isErr) {
       toastEl.textContent = msg;
@@ -270,15 +281,15 @@
       toastEl._t = setTimeout(() => { toastEl.hidden = true; }, 3500);
     }
 
-    // ── PATCH API ──
+    /* ── PATCH API ────────────────────────────────────── */
     async function saveMove(pk, startMin, durMin) {
+      const s = minToISO(startMin);
+      const e = minToISO(startMin + durMin);
+      if (!s || !e) throw new Error('日時の計算に失敗しました');
       const resp = await fetch(`/reservations/${pk}/move/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrf() },
-        body: JSON.stringify({
-          start_at: minToISO(startMin),
-          end_at:   minToISO(startMin + durMin)
-        })
+        body: JSON.stringify({ start_at: s, end_at: e })
       });
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
@@ -286,134 +297,209 @@
       }
     }
 
-    // ── スクロールエリア内の X 座標（スクロール考慮） ──
-    function clientXToContentX(clientX) {
-      return clientX - scrollArea.getBoundingClientRect().left + scrollArea.scrollLeft;
+    /* ── 時刻文字列生成 ───────────────────────────────── */
+    function minToTimeStr(offsetMin) {
+      const absMin = hourStart * 60 + offsetMin;
+      const h = Math.floor(absMin / 60);
+      const m = absMin % 60;
+      return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
     }
 
-    // ── ドラッグ＆リサイズ ──
+    /* ══════════════════════════════════════════════════════
+       ドラッグ移動 & リサイズ（既存予約ブロック）
+       ══════════════════════════════════════════════════════ */
     scrollArea.addEventListener('mousedown', function (e) {
-      const ev = e.target.closest('.tl-event:not(.tl-event-allday)');
-      if (!ev) return;
+      const evEl = e.target.closest('.tl-event:not(.tl-event-allday)');
+      if (!evEl) return;
 
       const isResize = !!e.target.closest('.tl-resize-handle');
       e.preventDefault();
+      e.stopPropagation(); // スロットドラッグに伝播させない
 
       const p            = getPxPerMin();
-      const origStartMin = parseFloat(ev.dataset.startMin) || 0;
-      const origDurMin   = parseFloat(ev.dataset.durMin)   || 30;
-      const origLeft     = parseFloat(ev.style.left)  || (origStartMin * p);
-      const origWidth    = parseFloat(ev.style.width) || (origDurMin   * p);
+      // data-* から読む（style.left ではなく確実な値を使う）
+      const origStartMin = parseFloat(evEl.dataset.startMin);
+      const origDurMin   = parseFloat(evEl.dataset.durMin);
+      const downContentX = toContentX(e.clientX);
 
-      // ドラッグ時はイベント内のどこをつかんだかを記憶
-      const grabOffset = isResize ? 0 : (e.clientX - ev.getBoundingClientRect().left);
+      // ドラッグ開始時の「イベント左端から何分分をつかんだか」
+      const grabOffsetMin = isResize ? 0 : (downContentX / p - origStartMin);
 
-      let moved = false;
-      ev.classList.add(isResize ? 'tl-event-resizing' : 'tl-event-dragging');
+      let hasMoved = false;
+      evEl.classList.add(isResize ? 'tl-event-resizing' : 'tl-event-dragging');
 
       function onMove(e) {
-        const dx = e.clientX - (isResize ? e.clientX - (e.movementX || 0) : e.clientX);
+        const contentX = toContentX(e.clientX);
+        const curMin   = contentX / p;
 
         if (isResize) {
-          // 右端ハンドル：幅を変える
-          const contentX = clientXToContentX(e.clientX);
-          const newWidth = Math.max(p * SNAP_MIN, contentX - origLeft);
-          if (Math.abs(newWidth - origWidth) > 2) moved = true;
-          ev.style.width = newWidth + 'px';
+          // 右端ドラッグ：幅を変える
+          const newDurMin = Math.max(SNAP_MIN, curMin - origStartMin);
+          if (Math.abs(newDurMin - origDurMin) > 1) hasMoved = true;
+          evEl.style.width = (newDurMin * p) + 'px';
         } else {
-          // ドラッグ：left を変える
-          const contentX = clientXToContentX(e.clientX);
-          const newLeft  = Math.max(0, contentX - grabOffset);
-          if (Math.abs(newLeft - origLeft) > 2) moved = true;
-          ev.style.left  = newLeft + 'px';
+          // 全体ドラッグ：位置を変える
+          const newLeft = Math.max(0, (curMin - grabOffsetMin) * p);
+          if (Math.abs(newLeft - origStartMin * p) > 2) hasMoved = true;
+          evEl.style.left = newLeft + 'px';
         }
       }
 
       async function onUp() {
         document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
-        ev.classList.remove('tl-event-dragging', 'tl-event-resizing');
+        document.removeEventListener('mouseup', onUp);
+        evEl.classList.remove('tl-event-dragging', 'tl-event-resizing');
 
-        if (!moved) return; // クリック：ポップアップを開く（デフォルト動作続行）
+        if (!hasMoved) return; // クリックとして扱う（ポップアップはクリックハンドラで）
 
-        // ドラッグ後はクリックイベントをキャンセル
-        ev.addEventListener('click', e => e.preventDefault(), { once: true });
+        // ドラッグ後はクリックイベントを1回キャンセル
+        evEl.addEventListener('click', e => e.preventDefault(), { once: true });
 
-        const p = getPxPerMin();
+        const p2 = getPxPerMin();
         let newStartMin = origStartMin;
         let newDurMin   = origDurMin;
 
         if (isResize) {
-          newDurMin = snap(parseFloat(ev.style.width) / p);
+          newDurMin = snap(parseFloat(evEl.style.width) / p2);
           newDurMin = Math.max(SNAP_MIN, Math.min(newDurMin, totalMinutes - origStartMin));
         } else {
-          newStartMin = snap(parseFloat(ev.style.left) / p);
+          newStartMin = snap(parseFloat(evEl.style.left) / p2);
           newStartMin = Math.max(0, Math.min(newStartMin, totalMinutes - origDurMin));
         }
 
         // 楽観的 UI 更新
-        ev.dataset.startMin = newStartMin;
-        ev.dataset.durMin   = newDurMin;
-        ev.style.left  = (newStartMin * p) + 'px';
-        ev.style.width = (newDurMin   * p) + 'px';
+        evEl.dataset.startMin = newStartMin;
+        evEl.dataset.durMin   = newDurMin;
+        evEl.style.left  = (newStartMin * p2) + 'px';
+        evEl.style.width = (newDurMin   * p2) + 'px';
 
         try {
-          await saveMove(ev.dataset.pk, newStartMin, newDurMin);
-          // title 属性更新
-          const pad2 = n => String(Math.floor(n)).padStart(2, '0');
-          const s = hourStart * 60 + newStartMin;
-          const f = hourStart * 60 + newStartMin + newDurMin;
-          const startStr = `${pad2(s/60)}:${pad2(s%60)}`;
-          const endStr   = `${pad2(f/60)}:${pad2(f%60)}`;
-          ev.dataset.startStr = startStr;
-          ev.dataset.endStr   = endStr;
-          ev.title = `${startStr}〜${endStr} ${ev.dataset.reservedBy || ''} | ${ev.dataset.title || ''}`;
+          await saveMove(evEl.dataset.pk, newStartMin, newDurMin);
+          // data-str 属性も更新
+          const sStr = minToTimeStr(newStartMin);
+          const eStr = minToTimeStr(newStartMin + newDurMin);
+          evEl.dataset.startStr = sStr;
+          evEl.dataset.endStr   = eStr;
+          evEl.title = `${sStr}〜${eStr} ${evEl.dataset.reservedBy || ''} | ${evEl.dataset.title || ''}`;
           showToast('予約時間を更新しました', false);
         } catch (err) {
-          ev.dataset.startMin = origStartMin;
-          ev.dataset.durMin   = origDurMin;
-          ev.style.left  = origLeft  + 'px';
-          ev.style.width = origWidth + 'px';
+          // 失敗時は元に戻す
+          evEl.dataset.startMin = origStartMin;
+          evEl.dataset.durMin   = origDurMin;
+          evEl.style.left  = (origStartMin * p2) + 'px';
+          evEl.style.width = (origDurMin   * p2) + 'px';
           showToast(err.message, true);
         }
       }
 
       document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup',   onUp);
+      document.addEventListener('mouseup', onUp);
     });
 
-    // ── 予約詳細ポップアップ ──
+    /* ══════════════════════════════════════════════════════
+       スロット操作：クリック → 新規予約 / ドラッグ → 時間範囲指定して新規予約
+       ══════════════════════════════════════════════════════ */
+    let slotDragging = false;
+    let slotPreview  = null;
+    let slotRow      = null;
+    let slotStartMin = 0;
+
+    scrollArea.addEventListener('mousedown', function (e) {
+      if (e.target.closest('.tl-event')) return; // イベントブロックは除外
+      const row = e.target.closest('.tl-row');
+      if (!row) return;
+
+      e.preventDefault();
+      slotRow      = row;
+      slotDragging = false;
+      slotStartMin = snap(toContentX(e.clientX) / getPxPerMin());
+      slotStartMin = Math.max(0, Math.min(slotStartMin, totalMinutes - SNAP_MIN));
+
+      // プレビューブロック生成
+      slotPreview = document.createElement('div');
+      slotPreview.className = 'tl-slot-preview';
+      const p = getPxPerMin();
+      slotPreview.style.left   = (slotStartMin * p) + 'px';
+      slotPreview.style.width  = (SNAP_MIN * p) + 'px';
+      row.appendChild(slotPreview);
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!slotPreview || !slotRow) return;
+      slotDragging = true;
+
+      const p       = getPxPerMin();
+      const curMin  = snap(toContentX(e.clientX) / p);
+      const minA    = Math.max(0, Math.min(slotStartMin, curMin));
+      const minB    = Math.min(totalMinutes, Math.max(slotStartMin + SNAP_MIN, curMin + SNAP_MIN));
+
+      slotPreview.style.left  = (minA * p) + 'px';
+      slotPreview.style.width = Math.max((minB - minA) * p, SNAP_MIN * p) + 'px';
+
+      // プレビューに時刻ラベル表示
+      slotPreview.textContent = `${minToTimeStr(minA)}〜${minToTimeStr(minB)}`;
+    });
+
+    document.addEventListener('mouseup', function (e) {
+      if (!slotRow) return;
+
+      const row    = slotRow;
+      const roomId = row.dataset.roomId;
+      slotRow      = null;
+
+      if (slotPreview) {
+        slotPreview.remove();
+        slotPreview = null;
+      }
+
+      if (!roomId) return;
+
+      const p      = getPxPerMin();
+      const curMin = snap(toContentX(e.clientX) / p);
+
+      let startMin, endMin;
+      if (slotDragging) {
+        // ドラッグ：開始〜終了をそのまま使う
+        startMin = Math.max(0, Math.min(slotStartMin, curMin));
+        endMin   = Math.min(totalMinutes, Math.max(slotStartMin + SNAP_MIN, curMin + SNAP_MIN));
+      } else {
+        // クリック：1時間のデフォルト
+        startMin = slotStartMin;
+        endMin   = Math.min(slotStartMin + 60, totalMinutes);
+      }
+      slotDragging = false;
+
+      const sTime = minToTimeStr(startMin);
+      const eTime = minToTimeStr(endMin);
+      window.location.href =
+        `/reservations/create/?room=${roomId}&date=${targetDate}&time=${sTime}&end_time=${eTime}`;
+    });
+
+    /* ══════════════════════════════════════════════════════
+       予約詳細ポップアップ
+       ══════════════════════════════════════════════════════ */
     const popover = document.getElementById('tlPopover');
     const overlay = document.getElementById('tlOverlay');
 
-    function openTlPopover(ev, anchorEl) {
-      document.getElementById('tlPopTitle').textContent = ev.dataset.title || '';
-      document.getElementById('tlPopRoom').textContent  = ev.dataset.roomName || '';
-      const startStr = ev.dataset.startStr || '';
-      const endStr   = ev.dataset.endStr   || '';
+    function openTlPopover(evEl) {
+      document.getElementById('tlPopTitle').textContent = evEl.dataset.title || '';
+      document.getElementById('tlPopRoom').textContent  = evEl.dataset.roomName || '';
+      const s = evEl.dataset.startStr || '';
+      const f = evEl.dataset.endStr   || '';
       document.getElementById('tlPopTime').textContent =
-        startStr === '終日' ? '終日' : `${startStr}〜${endStr}`;
-      document.getElementById('tlPopBy').textContent   = ev.dataset.reservedBy || '';
-      document.getElementById('tlPopDetail').href =
-        `/reservations/${ev.dataset.pk}/`;
+        s === '終日' ? '終日' : `${s}〜${f}`;
+      document.getElementById('tlPopBy').textContent = evEl.dataset.reservedBy || '';
+      document.getElementById('tlPopDetail').href    = `/reservations/${evEl.dataset.pk}/`;
 
-      // アンカー要素の位置に合わせて表示
-      const rect = anchorEl.getBoundingClientRect();
-      // position:fixed なので viewport 座標をそのまま使う
+      const rect = evEl.getBoundingClientRect();
       let top  = rect.bottom + 6;
       let left = rect.left;
-      // 画面右端はみ出し補正
-      if (left + 280 > window.innerWidth - 8) {
-        left = window.innerWidth - 280 - 8;
-      }
-      // 画面下端はみ出し → 上に表示
-      if (top + 180 > window.innerHeight) {
-        top = rect.top - 180 - 6;
-      }
+      if (left + 280 > window.innerWidth - 8) left = window.innerWidth - 280 - 8;
+      if (top  + 200 > window.innerHeight)    top  = rect.top - 200 - 6;
       popover.style.top  = top  + 'px';
       popover.style.left = left + 'px';
-      popover.hidden  = false;
-      overlay.hidden  = false;
+      popover.hidden = false;
+      overlay.hidden = false;
     }
 
     window.closeTlPopover = function () {
@@ -421,39 +507,15 @@
       overlay.hidden = true;
     };
 
-    // イベントのクリック → ポップアップ
+    // イベントクリック → ポップアップ（ドラッグ後は preventDefault で抑止済）
     scrollArea.addEventListener('click', function (e) {
-      const ev = e.target.closest('.tl-event');
-      if (ev) {
-        e.preventDefault();
-        openTlPopover(ev, ev);
-        return;
-      }
-
-      // ── スロットのクリック → 新規予約画面へ ──
-      const row = e.target.closest('.tl-row');
-      if (!row) return;
-      const roomId   = row.dataset.roomId;
-      if (!roomId) return;
-
-      const p        = getPxPerMin();
-      const contentX = clientXToContentX(e.clientX);
-      // クリック位置を15分単位にスナップ
-      let clickMin   = snap(contentX / p);
-      clickMin       = Math.max(0, Math.min(clickMin, totalMinutes - SNAP_MIN));
-      const endMin   = Math.min(clickMin + 60, totalMinutes); // デフォルト1時間
-
-      const pad2   = n => String(Math.floor(n)).padStart(2, '0');
-      const absS   = hourStart * 60 + clickMin;
-      const absE   = hourStart * 60 + endMin;
-      const sTime  = `${pad2(absS/60)}:${pad2(absS%60)}`;
-      const eTime  = `${pad2(absE/60)}:${pad2(absE%60)}`;
-
-      const url = `/reservations/create/?room=${roomId}&date=${targetDate}&time=${sTime}&end_time=${eTime}`;
-      window.location.href = url;
+      const evEl = e.target.closest('.tl-event');
+      if (!evEl) return;
+      e.preventDefault();
+      openTlPopover(evEl);
     });
 
-    // ── 縦スクロール同期 ──
+    /* ── 縦スクロール同期 ─────────────────────────────── */
     if (scrollArea && roomRows) {
       scrollArea.addEventListener('scroll', () => {
         roomRows.scrollTop = scrollArea.scrollTop;

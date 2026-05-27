@@ -180,7 +180,7 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 class ReservationTimelineView(LoginRequiredMixin, TemplateView):
     template_name = 'reservations/timeline.html'
 
-    HOUR_START = 8
+    HOUR_START = 9
     HOUR_END   = 22   # exclusive（8:00〜21:xx を表示）
     HOUR_WIDTH = 80   # px/時間
 
@@ -236,16 +236,19 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
                 left_px  = int(start_min * hour_width / 60)
                 width_px = max(int((end_min - start_min) * hour_width / 60), 4)
 
+                dur_min = end_min - start_min
                 res_list.append({
-                    'id':         res.pk,
-                    'title':      res.title,
+                    'id':          res.pk,
+                    'title':       res.title,
                     'reserved_by': res.reserved_by,
-                    'left_px':    left_px,
-                    'width_px':   width_px,
-                    'color':      res.color or '#3182CE',
-                    'start_str':  local_start.strftime('%H:%M'),
-                    'end_str':    local_end.strftime('%H:%M'),
-                    'is_all_day': res.is_all_day,
+                    'start_min':   start_min,
+                    'dur_min':     dur_min,
+                    'left_px':     left_px,
+                    'width_px':    width_px,
+                    'color':       res.color or '#3182CE',
+                    'start_str':   local_start.strftime('%H:%M'),
+                    'end_str':     local_end.strftime('%H:%M'),
+                    'is_all_day':  res.is_all_day,
                 })
             room_data.append({'room': room, 'reservations': res_list})
 
