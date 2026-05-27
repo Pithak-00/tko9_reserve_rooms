@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', function () {
     firstDay: 1,  // 月曜始まり
     slotMinTime: '08:00:00',
     slotMaxTime: '22:00:00',
-    slotDuration: '00:30:00',
+    slotDuration: '00:15:00',
+    snapDuration: '00:15:00',
     scrollTime: '08:00:00',
     nowIndicator: true,
     dayMaxEvents: 2,
@@ -67,6 +68,8 @@ document.addEventListener('DOMContentLoaded', function () {
     headerToolbar: false,  // カスタムツールバー使用
     // 時刻を常に HH:MM 形式で表示（日本語ロケールのデフォルト「10時」を上書き）
     eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+    // タイムライン左の時間ラベルを「8:00」形式に（ja ロケールのデフォルト「8時」を上書き）
+    slotLabelFormat: { hour: 'numeric', minute: '2-digit', hour12: false },
     views: {
       dayGridMonth: { displayEventTime: true },
     },
