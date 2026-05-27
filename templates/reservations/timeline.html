@@ -184,22 +184,23 @@
     </div><!-- /.timeline-main -->
   </div><!-- /.timeline-page -->
 
-  <!-- ── 予約詳細ポップアップ ── -->
-  <div id="tlPopover" class="tl-popover" hidden>
-    <div class="tl-popover-header">
-      <span id="tlPopTitle"></span>
-      <button class="tl-popover-close" onclick="closeTlPopover()">✕</button>
+  <!-- ── 予約詳細ポップアップ（カレンダーと共通スタイル） ── -->
+  <div id="tlPopover" class="reservation-popover" hidden>
+    <div class="popover-title" id="tlPopTitle"></div>
+    <div class="popover-body">
+      <p><strong>日時</strong>: <span id="tlPopTime"></span></p>
+      <p><strong>会議室</strong>: <span id="tlPopRoom"></span></p>
+      <p><strong>予約者</strong>: <span id="tlPopBy"></span></p>
     </div>
-    <div class="tl-popover-body">
-      <div class="tl-popover-row"><span class="tl-popover-label">会議室</span><span id="tlPopRoom"></span></div>
-      <div class="tl-popover-row"><span class="tl-popover-label">日時</span><span id="tlPopTime"></span></div>
-      <div class="tl-popover-row"><span class="tl-popover-label">予約者</span><span id="tlPopBy"></span></div>
-    </div>
-    <div class="tl-popover-actions">
-      <a id="tlPopDetail" href="#" class="btn btn-primary btn-sm">詳細</a>
+    <div class="popover-actions">
+      <a id="tlPopEdit" href="#" class="btn btn-primary btn-sm">編集</a>
+      <form id="tlPopCancelForm" method="post" action="#" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">キャンセル</button>
+      </form>
+      <a id="tlPopDetail" href="#" class="btn btn-light btn-sm">詳細を見る</a>
     </div>
   </div>
-  <div id="tlOverlay" class="tl-overlay" hidden onclick="closeTlPopover()"></div>
 
   <!-- トースト通知 -->
   <div id="tlToast" class="tl-toast" hidden></div>
@@ -480,43 +481,77 @@
     });
 
     /* ══════════════════════════════════════════════════════
-       予約詳細ポップアップ
+       予約詳細ポップアップ（カレンダー画面と共通スタイル）
        ══════════════════════════════════════════════════════ */
     const popover = document.getElementById('tlPopover');
-    const overlay = document.getElementById('tlOverlay');
 
-    function openTlPopover(evEl) {
-      document.getElementById('tlPopTitle').textContent = evEl.dataset.title || '';
-      document.getElementById('tlPopRoom').textContent  = evEl.dataset.roomName || '';
+    function openTlPopover(evEl, clickX, clickY) {
+      const canEdit = evEl.dataset.canEdit === '1';
+      const pk      = evEl.dataset.pk;
+
+      // 内容セット
+      const titleEl = document.getElementById('tlPopTitle');
+      titleEl.textContent = evEl.dataset.title || '';
+      titleEl.style.backgroundColor = evEl.style.backgroundColor || '#3182CE';
+
       const s = evEl.dataset.startStr || '';
       const f = evEl.dataset.endStr   || '';
       document.getElementById('tlPopTime').textContent =
         s === '終日' ? '終日' : `${s}〜${f}`;
-      document.getElementById('tlPopBy').textContent = evEl.dataset.reservedBy || '';
-      document.getElementById('tlPopDetail').href    = `/reservations/${evEl.dataset.pk}/`;
+      document.getElementById('tlPopRoom').textContent = evEl.dataset.roomName || '';
+      document.getElementById('tlPopBy').textContent   = evEl.dataset.reservedBy || '';
+      document.getElementById('tlPopDetail').href      = `/reservations/${pk}/`;
 
-      const rect = evEl.getBoundingClientRect();
-      let top  = rect.bottom + 6;
-      let left = rect.left;
-      if (left + 280 > window.innerWidth - 8) left = window.innerWidth - 280 - 8;
-      if (top  + 200 > window.innerHeight)    top  = rect.top - 200 - 6;
-      popover.style.top  = top  + 'px';
-      popover.style.left = left + 'px';
+      // 編集・キャンセルボタンは権限がある場合のみ表示
+      const editBtn    = document.getElementById('tlPopEdit');
+      const cancelForm = document.getElementById('tlPopCancelForm');
+      editBtn.href             = `/reservations/${pk}/edit/`;
+      editBtn.style.display    = canEdit ? '' : 'none';
+      cancelForm.style.display = canEdit ? '' : 'none';
+      cancelForm.action        = `/reservations/${pk}/cancel/`;
+      cancelForm.onsubmit = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dt = s === '終日' ? '終日' : `${s}〜${f}`;
+        if (confirm(`「${evEl.dataset.title}（${dt}）」をキャンセルしますか？
+この操作は取り消せません。`)) {
+          cancelForm.submit();
+        }
+      };
+
+      // 位置計算（クリック座標基準・画面端補正）
       popover.hidden = false;
-      overlay.hidden = false;
-    }
+      const margin = 10;
+      const poW = popover.offsetWidth  || 300;
+      const poH = popover.offsetHeight || 220;
+      const vw  = window.innerWidth;
+      const vh  = window.innerHeight;
 
-    window.closeTlPopover = function () {
-      popover.hidden = true;
-      overlay.hidden = true;
-    };
+      let left = clickX + margin;
+      if (left + poW > vw - margin) left = clickX - poW - margin;
+      if (left < margin) left = margin;
+
+      let top = clickY + margin;
+      if (top + poH > vh - margin) top = clickY - poH - margin;
+      if (top < margin) top = margin;
+
+      popover.style.left = `${left}px`;
+      popover.style.top  = `${top}px`;
+    }
 
     // イベントクリック → ポップアップ（ドラッグ後は preventDefault で抑止済）
     scrollArea.addEventListener('click', function (e) {
       const evEl = e.target.closest('.tl-event');
       if (!evEl) return;
       e.preventDefault();
-      openTlPopover(evEl);
+      e.stopPropagation(); // 外クリック閉じ処理に伝播させない
+      openTlPopover(evEl, e.clientX, e.clientY);
+    });
+
+    // 外クリック・Escape で閉じる
+    document.addEventListener('click', () => { popover.hidden = true; });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') popover.hidden = true;
     });
 
     /* ── 会議室名クリック → 終日予約 ────────────────────── */

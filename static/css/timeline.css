@@ -441,75 +441,7 @@
   }
 }
 
-/* ── 予約詳細ポップオーバー ──────────────────────────── */
-.tl-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99;
-  background: transparent;
-}
 
-.tl-popover {
-  position: fixed;
-  z-index: 100;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
-  width: 280px;
-  font-size: 0.88rem;
-  border: 1px solid #dee2e6;
-}
-
-.tl-popover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 14px;
-  font-weight: 700;
-  font-size: 0.92rem;
-  border-bottom: 1px solid #eee;
-  color: #212529;
-}
-
-.tl-popover-close {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  color: #6c757d;
-  line-height: 1;
-  padding: 0 2px;
-}
-
-.tl-popover-close:hover {
-  color: #212529;
-}
-
-.tl-popover-body {
-  padding: 10px 14px;
-}
-
-.tl-popover-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
-  align-items: flex-start;
-}
-
-.tl-popover-label {
-  color: #888;
-  font-size: 0.80rem;
-  min-width: 44px;
-  padding-top: 1px;
-  flex-shrink: 0;
-}
-
-.tl-popover-actions {
-  padding: 8px 14px;
-  border-top: 1px solid #eee;
-  display: flex;
-  gap: 6px;
-}
 
 /* ── スロットドラッグ：新規予約プレビュー ───────────────── */
 .tl-slot-preview {
