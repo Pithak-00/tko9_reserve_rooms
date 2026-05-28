@@ -17,7 +17,11 @@
       <div class="top-links">
         <span class="header-username">{{ request.user.name }}</span>
         <span class="sep">｜</span>
+        <a href="{% url 'reservation_timeline' %}">会議室の一覧に戻る</a>
+        <span class="sep">｜</span>
         <a href="{% url 'calendar' %}">カレンダーに戻る</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'my_reservations' %}">自分の予約</a>
         <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
