@@ -98,7 +98,9 @@
     <tbody>
       {% for rsv in reservations %}
         <tr>
-          <td>{{ rsv.start_at|date:"Y/m/d" }}&nbsp;{{ rsv.start_at|time:"H:i" }}</td>
+          <td>
+            {{ rsv.start_at|date:"Y/m/d" }}&nbsp;{% if rsv.is_all_day %}終日{% else %}{{ rsv.start_at|time:"H:i" }}〜{{ rsv.end_at|time:"H:i" }}{% endif %}
+          </td>
           <td>{{ rsv.room.name }}</td>
           <td>{{ rsv.title }}</td>
           <td>{{ rsv.user.name }}</td>
