@@ -179,8 +179,8 @@
                  data-room-name="{{ rd.room.name }}"
                  data-can-edit="{{ ev.can_edit|yesno:'1,0' }}"
                  style="background:{{ ev.color }};"
-                 title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.reserved_by }} | {{ ev.title }}">
-                <span class="tl-event-text">{{ ev.reserved_by }} | {{ ev.title }}</span>
+                 title="{{ ev.start_str }}〜{{ ev.end_str }} {{ ev.title }}">
+                <span class="tl-event-text">{{ ev.title }}</span>
                 {% if ev.can_edit %}<span class="tl-resize-handle"></span>{% endif %}
               </div>
               {% endif %}
@@ -456,7 +456,7 @@
                 await saveMove(evEl.dataset.pk, newStartMin, newDurMin);
                 evEl.dataset.startStr = newSStr;
                 evEl.dataset.endStr   = newEStr;
-                evEl.title = `${newSStr}〜${newEStr} ${evEl.dataset.reservedBy || ''} | ${evEl.dataset.title || ''}`;
+                evEl.title = `${newSStr}〜${newEStr} ${evEl.dataset.title || ''}`;
                 showToast('予約時間を更新しました', false);
               } catch (err) {
                 evEl.dataset.startMin = origStartMin;
@@ -795,7 +795,7 @@
         e.target.setPointerCapture(e.pointerId);
         adDragEv = evEl;
         createGhost(
-          (evEl.dataset.reservedBy || '') + ' | ' + (evEl.dataset.title || ''),
+          evEl.dataset.title || '',
           evEl.style.backgroundColor || '#3182CE'
         );
         evEl.style.opacity = '0.4';
