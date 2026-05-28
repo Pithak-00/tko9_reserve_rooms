@@ -239,7 +239,8 @@
 .tl-inner {
   display: flex;
   flex-direction: column;
-  min-width: 100%; /* スクロールエリア以上に広がれるよう min-width のみ指定 */
+  /* 14スロット × min-width 44px = 616px を下限に。スクロールエリアが広ければそちらに合わせる */
+  min-width: max(100%, 616px);
 }
 
 /* 時間軸ヘッダー（スティッキー上部固定） */
