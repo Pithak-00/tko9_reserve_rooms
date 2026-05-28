@@ -108,3 +108,25 @@ class TestF10ReservationDetail(TestCase):
             response,
             "/accounts/login/?next={}".format(self.url),
         )
+
+    # ------------------------------------------------------------------ 追加テスト
+
+    def test_cancelled_reservation_is_accessible(self):
+        """正常系: キャンセル済み予約の詳細ページも 200 OK で表示されること"""
+        self.reservation.is_cancelled = True
+        self.reservation.save()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_cancelled_reservation_hides_cancel_button(self):
+        """正常系: キャンセル済み予約の詳細ではキャンセルフォームが非表示になること"""
+        self.reservation.is_cancelled = True
+        self.reservation.save()
+        response = self.client.get(self.url)
+        cancel_url = reverse("reservation_cancel", kwargs={"pk": self.reservation.pk})
+        self.assertNotContains(response, cancel_url)
+
+    def test_detail_shows_participants(self):
+        """正常系: 参加者名がページに表示されること"""
+        response = self.client.get(self.url)
+        self.assertContains(response, "参加者A")

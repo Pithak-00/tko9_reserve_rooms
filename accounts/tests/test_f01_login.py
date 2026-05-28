@@ -15,6 +15,9 @@ class TestF01Login(TestCase):
 
     def setUp(self):
         self.url = reverse("login")
+        # LOGIN_REDIRECT_URL = "/reservations/timeline/"（settings.py）
+        self.login_redirect_url = "/reservations/timeline/"
+        # カレンダー画面（ログイン必須ページとして未認証リダイレクトのテストに使用）
         self.calendar_url = "/calendar/"
         # テスト用ユーザー（login_id はメールアドレス形式）
         self.user = User.objects.create_user(
@@ -27,8 +30,8 @@ class TestF01Login(TestCase):
     # 正常系
     # ──────────────────────────────────────────────
 
-    def test_login_success_redirects_to_calendar(self):
-        """正常系: 有効なID・PWでログイン → カレンダー画面（/calendar/）へリダイレクト"""
+    def test_login_success_redirects_to_timeline(self):
+        """正常系: 有効なID・PWでログイン → タイムライン画面（LOGIN_REDIRECT_URL）へリダイレクト"""
         response = self.client.post(
             self.url,
             {
@@ -36,7 +39,7 @@ class TestF01Login(TestCase):
                 "password": "TestPass123",
             },
         )
-        self.assertRedirects(response, self.calendar_url)
+        self.assertRedirects(response, self.login_redirect_url)
 
     def test_unauthenticated_access_redirects_to_login(self):
         """正常系: 未ログイン状態でカレンダーにアクセス → ログイン画面へリダイレクト"""
@@ -99,3 +102,25 @@ class TestF01Login(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "このフィールドは必須です。")
+
+    # ──────────────────────────────────────────────
+    # 追加テスト
+    # ──────────────────────────────────────────────
+
+    def test_login_get_returns_200(self):
+        """正常系: GET /accounts/login/ → 200 OK でログインフォームが表示されること"""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_login_get_contains_form(self):
+        """正常系: GET ログイン画面 → username / password フィールドが含まれること"""
+        response = self.client.get(self.url)
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, 'name="password"')
+
+    def test_already_authenticated_user_sees_login_form(self):
+        """正常系: 既にログイン済みの状態でログイン画面へアクセス → 200 OK でフォームが表示されること
+        （CustomLoginView は redirect_authenticated_user=False のためリダイレクトしない）"""
+        self.client.login(username="test@example.com", password="TestPass123")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)

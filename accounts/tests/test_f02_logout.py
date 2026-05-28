@@ -46,3 +46,19 @@ class TestF02Logout(TestCase):
             response,
             f"{self.login_url}?next={self.calendar_url}",
         )
+
+    # ──────────────────────────────────────────────
+    # 追加テスト
+    # ──────────────────────────────────────────────
+
+    def test_logout_unauthenticated_still_redirects_to_login(self):
+        """正常系: 未ログイン状態でログアウト POST → ログイン画面へリダイレクトされること"""
+        response = self.client.post(self.logout_url)
+        self.assertRedirects(response, self.login_url)
+
+    def test_logout_twice_is_safe(self):
+        """正常系: 二重ログアウトしてもエラーにならないこと"""
+        self._login()
+        self.client.post(self.logout_url)
+        response = self.client.post(self.logout_url)
+        self.assertRedirects(response, self.login_url)
