@@ -15,7 +15,11 @@
         <span>社内会議室予約システム：操作ログ</span>
       </div>
       <div class="top-links">
-        <a href="/">戻る</a>
+        <a href="{% url 'reservation_timeline' %}">会議室の一覧</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'calendar' %}">カレンダー</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'my_reservations' %}">自分の予約</a>
         <span class="sep">｜</span>
         <span class="header-username">{{ request.user.name }}さん</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">

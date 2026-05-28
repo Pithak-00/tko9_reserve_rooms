@@ -80,7 +80,7 @@
           <div class="nav-menu-wrap">
             <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
             <div class="nav-dropdown" id="navMenu">
-              <a href="{% url 'rooms:room_list' %}">会議室一覧</a>
+              <a href="{% url 'rooms:room_list' %}">会議室一覧・検索</a>
               <a href="{% url 'my_reservations' %}">自分の予約</a>
               {% if request.user.is_staff %}
               <div class="nav-submenu-wrapper">

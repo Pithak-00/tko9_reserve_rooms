@@ -15,9 +15,9 @@
         <span>社内会議室予約システム</span>
       </div>
       <div class="top-links">
-        <a href="{% url 'reservation_timeline' %}">会議室の一覧に戻る</a>
+        <a href="{% url 'reservation_timeline' %}">会議室の一覧</a>
         <span class="sep">｜</span>
-        <a href="{% url 'calendar' %}">カレンダーに戻る</a>
+        <a href="{% url 'calendar' %}">カレンダー</a>
         <span class="sep">｜</span>
         <a href="{% url 'my_reservations' %}">自分の予約</a>
         <span class="sep">｜</span>
@@ -149,7 +149,7 @@
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
     <script>
-      // キャンセル後は詳細画面を開く前のページに戻る
+      // キャンセル後は詳細画面を開く前のページ
       document.getElementById('cancelNextUrl').value = document.referrer || '/';
     </script>
   </body>
