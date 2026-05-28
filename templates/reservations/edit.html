@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>予約編集 | 会議室予約システム</title>
     {% load static %}
+  <link rel="icon" type="image/webp" href="{% static 'image/bold-logo.webp' %}">
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/reservations.css' %}">
   </head>
@@ -15,11 +16,16 @@
         <span>社内会議室予約システム</span>
       </div>
       <div class="top-links">
-        <a href="{% url 'calendar' %}">カレンダーに戻る</a>
+        <a href="{% url 'reservation_timeline' %}">会議室の一覧</a>
         <span class="sep">｜</span>
+        <a href="{% url 'calendar' %}">カレンダー</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'my_reservations' %}">自分の予約</a>
+        <span class="sep">｜</span>
+        <span class="header-username">{{ request.user.name }}さん</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
-          <button type="submit" class="logout-btn">ログアウト</button>
+          <button type="submit" class="logout-btn-tab">ログアウト</button>
         </form>
       </div>
     </div>
@@ -62,6 +68,12 @@
 
         <form method="post" novalidate>
           {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="rsv-non-field-error">
+              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+          {% endif %}
 
           <!-- 予約日時 -->
           <div class="admin-card rsv-card">
@@ -128,15 +140,9 @@
             </div>
           </div>
 
-          {% if form.non_field_errors %}
-            <div class="rsv-non-field-error">
-              {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-            </div>
-          {% endif %}
-
           <div class="actions">
             <button type="submit" class="btn btn-primary btn-md">保存する</button>
-            <a href="{% url 'reservation_detail' reservation.pk %}" class="btn btn-light btn-md">キャンセル</a>
+            <a href="#" onclick="history.back(); return false;" class="btn btn-light btn-md">戻る</a>
           </div>
         </form>
       </div>

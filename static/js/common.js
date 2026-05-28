@@ -171,8 +171,8 @@ function getCsrfToken() {
 // 成功・エラートースト
 function showToast(msg, type = 'success') {
   const t = document.createElement('div');
-  t.className = 'toast show top-right';
-  t.style.backgroundColor = type === 'error' ? '#c0392b' : '#27ae60';
+  t.className = 'toast show';
+  t.style.backgroundColor = type === 'error' ? '#dc3545' : '#2E75B6';
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.classList.add('hide'); setTimeout(() => t.remove(), 500); }, 3000);
@@ -181,8 +181,8 @@ function showToast(msg, type = 'success') {
 // 「元に戻す」付きトースト（5秒）
 function showUndoToast(msg, onUndo) {
   const t = document.createElement('div');
-  t.className = 'toast show top-right';
-  t.style.backgroundColor = '#2563eb';
+  t.className = 'toast show';
+  t.style.backgroundColor = '#2E75B6';
   t.innerHTML = `${msg} <button style='margin-left:12px;background:none;border:1px solid #fff;
     color:#fff;cursor:pointer;border-radius:4px;padding:2px 8px;'>元に戻す</button>`;
   document.body.appendChild(t);

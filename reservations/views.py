@@ -180,8 +180,8 @@ class CalendarView(LoginRequiredMixin, TemplateView):
 class ReservationTimelineView(LoginRequiredMixin, TemplateView):
     template_name = 'reservations/timeline.html'
 
-    HOUR_START = 9
-    HOUR_END   = 22   # exclusive（8:00〜21:xx を表示）
+    HOUR_START = 8
+    HOUR_END   = 22   # 8:00〜22:00 を表示（range で 8〜21 列生成、右端が 22:00）
     HOUR_WIDTH = 80   # px/時間
 
     def get_context_data(self, **kwargs):
@@ -223,6 +223,26 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
             for res in room_res_map.get(room.pk, []):
                 local_start = localtime(res.start_at)
                 local_end   = localtime(res.end_at)
+                can_edit    = (res.user_id == self.request.user.pk or
+                               self.request.user.is_staff)
+
+                # 終日予約は時刻計算をスキップして固定値で登録
+                if res.is_all_day:
+                    res_list.append({
+                        'id':          res.pk,
+                        'title':       res.title,
+                        'reserved_by': res.reserved_by,
+                        'start_min':   0,
+                        'dur_min':     total_minutes,
+                        'left_px':     0,
+                        'width_px':    0,
+                        'color':       res.color or '#3182CE',
+                        'start_str':   '終日',
+                        'end_str':     '',
+                        'is_all_day':  True,
+                        'can_edit':    can_edit,
+                    })
+                    continue
 
                 start_min = (local_start.hour - hour_start) * 60 + local_start.minute
                 end_min   = (local_end.hour   - hour_start) * 60 + local_end.minute
@@ -237,8 +257,6 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
                 width_px = max(int((end_min - start_min) * hour_width / 60), 4)
 
                 dur_min  = end_min - start_min
-                can_edit = (res.user_id == self.request.user.pk or
-                            self.request.user.is_staff)
                 res_list.append({
                     'id':          res.pk,
                     'title':       res.title,
@@ -250,7 +268,7 @@ class ReservationTimelineView(LoginRequiredMixin, TemplateView):
                     'color':       res.color or '#3182CE',
                     'start_str':   local_start.strftime('%H:%M'),
                     'end_str':     local_end.strftime('%H:%M'),
-                    'is_all_day':  res.is_all_day,
+                    'is_all_day':  False,
                     'can_edit':    can_edit,
                 })
             room_data.append({'room': room, 'reservations': res_list})
@@ -545,7 +563,8 @@ def reservation_cancel(request, pk):
     except Exception as e:
         logger.warning(f'Google sync on cancel failed: {e}')
 
-    return redirect("calendar")
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or 'calendar'
+    return redirect(next_url)
 
 
 class CalendarEventsAPI(LoginRequiredMixin, View):

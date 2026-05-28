@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>予約詳細 | 会議室予約システム</title>
     {% load static %}
+  <link rel="icon" type="image/webp" href="{% static 'image/bold-logo.webp' %}">
     <link rel="stylesheet" href="{% static 'css/common.css' %}">
     <link rel="stylesheet" href="{% static 'css/reservations.css' %}">
   </head>
@@ -15,13 +16,16 @@
         <span>社内会議室予約システム</span>
       </div>
       <div class="top-links">
-        <a href="{% url 'calendar' %}">カレンダーに戻る</a>
+        <a href="{% url 'reservation_timeline' %}">会議室の一覧</a>
+        <span class="sep">｜</span>
+        <a href="{% url 'calendar' %}">カレンダー</a>
         <span class="sep">｜</span>
         <a href="{% url 'my_reservations' %}">自分の予約</a>
         <span class="sep">｜</span>
+        <span class="header-username">{{ request.user.name }}さん</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
-          <button type="submit" class="logout-btn">ログアウト</button>
+          <button type="submit" class="logout-btn-tab">ログアウト</button>
         </form>
       </div>
     </div>
@@ -112,10 +116,12 @@
           <a href="{% url 'reservation_edit' reservation.pk %}" class="btn btn-primary btn-md">編集する</a>
           <button type="button" class="btn btn-danger btn-md" id="openCancelModal">予約をキャンセル</button>
           {% endif %}
+          <a href="#" onclick="history.back(); return false;" class="btn btn-light btn-md">戻る</a>
         </div>
         {% else %}
         <div class="actions">
           <span class="badge-cancelled" style="padding:6px 16px;border-radius:6px;font-size:14px;">キャンセル済み</span>
+          <a href="#" onclick="history.back(); return false;" class="btn btn-light btn-md">戻る</a>
         </div>
         {% endif %}
       </div>
@@ -134,6 +140,7 @@
           <button type="button" class="btn btn-light btn-md" id="closeCancelModal">戻る</button>
           <form method="post" action="{% url 'reservation_cancel' reservation.pk %}" class="cancel-form">
             {% csrf_token %}
+            <input type="hidden" name="next" id="cancelNextUrl" value="">
             <button type="submit" class="btn btn-danger btn-md">キャンセルする</button>
           </form>
         </div>
@@ -142,5 +149,9 @@
 
     <script src="{% static 'js/common.js' %}"></script>
     <script src="{% static 'js/reservations.js' %}"></script>
+    <script>
+      // キャンセル後は詳細画面を開く前のページ
+      document.getElementById('cancelNextUrl').value = document.referrer || '/';
+    </script>
   </body>
 </html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>カレンダー</title>
   {% load static %}
+  <link rel="icon" type="image/webp" href="{% static 'image/bold-logo.webp' %}">
   <link rel="stylesheet" href="{% static 'css/common.css' %}">
   <link rel="stylesheet" href="{% static 'css/calendar.css' %}">
   <!-- FullCalendar v6 -->
@@ -16,6 +17,13 @@
     <div class="header-logo">
       <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
       <span>社内会議室予約システム</span>
+    </div>
+    <div class="top-links">
+      <span class="header-username">{{ request.user.name }}さん</span>
+      <form method="post" action="{% url 'logout' %}" class="logout-form">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn-tab">ログアウト</button>
+      </form>
     </div>
   </div>
 
@@ -172,7 +180,7 @@
           <div class="nav-menu-wrap">
           <button class="dots-btn" onclick="toggleNavMenu(event)">•••</button>
           <div class="nav-dropdown" id="navMenu">
-            <a href="{% url 'rooms:room_list' %}">会議室一覧</a>
+            <a href="{% url 'rooms:room_list' %}">会議室一覧・検索</a>
             <a href="{% url 'my_reservations' %}">自分の予約</a>
             </a>
             {% if request.user.is_staff %}
@@ -190,10 +198,6 @@
             </div>
             {% endif %}
             <a href="{% url 'password_change' %}">パスワード変更</a>
-            <form method="post" action="{% url 'logout' %}">
-              {% csrf_token %}
-              <button type="submit" class="logout-btn">ログアウト</button>
-            </form>
           </div>
           </div><!-- /.nav-menu-wrap -->
         </div>
@@ -220,6 +224,7 @@
       <a class="btn btn-primary btn-sm btn-edit" href="#">編集</a>
       <form id="popover-cancel-form" method="post" action="#" style="display:inline">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
         <button type="submit" class="btn btn-danger btn-sm btn-cancel">キャンセル</button>
       </form>
       <a class="btn btn-light btn-sm btn-detail" href="#">詳細を見る</a>
@@ -228,7 +233,7 @@
 
   <!-- トースト（Django messages） -->
   {% if messages %}{% for message in messages %}
-    <div class="toast show top-right" style="background:#27ae60;">{{ message }}</div>
+    <div class="toast show">{{ message }}</div>
   {% endfor %}{% endif %}
 
   <script src="{% static 'js/common.js' %}"></script>

@@ -77,6 +77,14 @@ body {
   color: #ccc;
 }
 
+.header-username {
+  font-size: 14px;
+  color: #444;
+  font-weight: 600;
+  font-family: "Segoe UI", sans-serif;
+  white-space: nowrap;
+}
+
 .top-links .logout-btn {
   background: none;
   border: none;
@@ -90,6 +98,34 @@ body {
 .top-links .logout-btn:hover {
   color: #e74c3c;
   text-decoration: underline;
+}
+
+/* ログアウト ボタン（view-tab 風） */
+.logout-btn-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  height: 34px;
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: "Segoe UI", sans-serif;
+  color: #333;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.logout-btn-tab:hover {
+  background: #2E75B6;
+  color: #fff;
+  border-color: #2E75B6;
+}
+
+.logout-form {
+  display: inline;
+  margin: 0;
 }
 
 .logout-form {
@@ -215,26 +251,34 @@ body {
 /* ===== トースト ===== */
 .toast {
   position: fixed;
-  background-color: #28a745;
-  color: white;
-  padding: 20px 30px;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-  font-size: 16px;
-  z-index: 1000;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #2E75B6;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 9999;
   opacity: 1;
   transition: opacity 0.5s ease;
 }
 
 .toast.top-right {
-  top: 20px;
-  right: 20px;
+  /* 上中央に統一（クラス名は後方互換のため残す） */
+  top: 24px;
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .toast.center {
-  top: 50%;
+  top: 24px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 .toast.hide {
@@ -242,7 +286,7 @@ body {
 }
 
 .toast.error {
-  background-color: #d9534f;
+  background-color: #dc3545;
 }
 
 /* ===== ツールバー ===== */
@@ -412,9 +456,9 @@ body {
       padding: 24px 16px;							
       border-radius: 8px;							
     }							
-    .modal-footer {							
-      flex-direction: column;							
-      gap: 8px;							
+    .modal-footer {
+      flex-direction: column-reverse; /* モバイル：OKを上・キャンセルを下に */
+      gap: 8px;
     }							
     .modal-footer .btn {							
       width: 100%;							
