@@ -19,6 +19,8 @@
         <span>社内会議室予約システム：CSVインポート</span>
       </div>
       <div class="top-links">
+        <span class="header-username">{{ request.user.name }}</span>
+        <span class="sep">｜</span>
         <a href="{% url 'user_admin_list' %}">戻る</a>
         <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">

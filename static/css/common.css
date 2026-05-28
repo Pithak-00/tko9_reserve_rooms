@@ -77,6 +77,14 @@ body {
   color: #ccc;
 }
 
+.header-username {
+  font-size: 14px;
+  color: #444;
+  font-weight: 600;
+  font-family: "Segoe UI", sans-serif;
+  white-space: nowrap;
+}
+
 .top-links .logout-btn {
   background: none;
   border: none;

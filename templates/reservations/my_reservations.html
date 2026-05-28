@@ -17,6 +17,8 @@
         <span>社内会議室予約システム：自分の予約一覧</span>
       </div>
       <div class="top-links">
+        <span class="header-username">{{ request.user.name }}</span>
+        <span class="sep">｜</span>
         <a href="{% url 'calendar' %}">日次カレンダーに戻る</a>
         <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">

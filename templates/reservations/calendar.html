@@ -17,6 +17,9 @@
       <a href="/"><img src="{% static 'image/bold-logo.webp' %}" alt="logo"></a>
       <span>社内会議室予約システム</span>
     </div>
+    <div class="top-links">
+      <span class="header-username">{{ request.user.name }}</span>
+    </div>
   </div>
 
   <div class="calendar-container">
