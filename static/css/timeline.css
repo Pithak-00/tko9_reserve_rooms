@@ -239,8 +239,8 @@
 .tl-inner {
   display: flex;
   flex-direction: column;
-  width: 100%;    /* スクロールエリアに合わせて伸縮 */
-  min-width: 0;
+  /* 14スロット × min-width 44px = 616px を下限に。スクロールエリアが広ければそちらに合わせる */
+  min-width: max(100%, 616px);
 }
 
 /* 時間軸ヘッダー（スティッキー上部固定） */
@@ -252,7 +252,7 @@
   z-index: 10;
   background: #f1f3f5;
   border-bottom: 2px solid #dee2e6;
-  width: 100%;
+  /* width は子要素（tl-hour-cell）のサイズで決まるよう指定しない */
 }
 
 .tl-hour-cell {
@@ -271,7 +271,7 @@
 /* 各行（会議室ごと） */
 .tl-row {
   display: flex;
-  width: 100%;
+  /* width: 100% を外し、子スロットのサイズで行幅が決まるようにする */
   height: 48px;
   border-bottom: 1px solid #dee2e6;
   position: relative;

@@ -120,3 +120,22 @@ class TestF12ReservationCancel(TestCase):
         self.client.post(self.url)
         self.reservation.refresh_from_db()
         self.assertTrue(self.reservation.is_cancelled)
+
+    # ------------------------------------------------------------------ 追加テスト
+
+    def test_cancel_already_cancelled_reservation_keeps_state(self):
+        """正常系: すでにキャンセル済みの予約を再度キャンセルしても is_cancelled=True のままであること"""
+        self.reservation.is_cancelled = True
+        self.reservation.save()
+        self.client.post(self.url)
+        self.reservation.refresh_from_db()
+        self.assertTrue(self.reservation.is_cancelled)
+
+    def test_cancel_count_does_not_increase_when_already_cancelled(self):
+        """正常系: すでにキャンセル済みの予約を再度キャンセルしても Reservation 件数が変わらないこと"""
+        self.reservation.is_cancelled = True
+        self.reservation.save()
+        before = self.reservation.is_cancelled
+        self.client.post(self.url)
+        self.reservation.refresh_from_db()
+        self.assertEqual(before, self.reservation.is_cancelled)

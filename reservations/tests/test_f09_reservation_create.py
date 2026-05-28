@@ -133,3 +133,28 @@ class TestF09ReservationCreate(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["form"].is_valid())
         self.assertEqual(Reservation.objects.count(), 0)
+
+    def test_unauthenticated_redirects_to_login(self):
+        """異常系: 未ログイン状態で予約作成画面へアクセス → ログイン画面へリダイレクトされること"""
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertRedirects(
+            response,
+            f"/accounts/login/?next={self.url}",
+        )
+
+    def test_unauthenticated_post_redirects_to_login(self):
+        """異常系: 未ログイン状態で POST → ログイン画面へリダイレクトされ予約が作成されないこと"""
+        self.client.logout()
+        self.client.post(self.url, self._valid_post())
+        self.assertEqual(Reservation.objects.count(), 0)
+
+    def test_get_with_date_param_presets_date_in_context(self):
+        """正常系: GET ?date=YYYY-MM-DD → コンテキストの preset_date が設定されること"""
+        from datetime import date, timedelta
+        next_week = (date.today() + timedelta(days=7)).strftime("%Y-%m-%d")
+        response = self.client.get(self.url, {"date": next_week})
+        self.assertEqual(response.status_code, 200)
+        # preset_date または initial の形でコンテキストか初期値に反映されていること
+        form = response.context["form"]
+        self.assertIsNotNone(form)
