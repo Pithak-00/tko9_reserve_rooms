@@ -100,6 +100,34 @@ body {
   text-decoration: underline;
 }
 
+/* ログアウト ボタン（view-tab 風） */
+.logout-btn-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+  height: 34px;
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: "Segoe UI", sans-serif;
+  color: #333;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.logout-btn-tab:hover {
+  background: #2E75B6;
+  color: #fff;
+  border-color: #2E75B6;
+}
+
+.logout-form {
+  display: inline;
+  margin: 0;
+}
+
 .logout-form {
   display: inline;
   margin: 0;

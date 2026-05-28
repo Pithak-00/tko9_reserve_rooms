@@ -22,10 +22,9 @@
         <a href="{% url 'user_admin_list' %}">戻る</a>
         <span class="sep">｜</span>
         <span class="header-username">{{ request.user.name }}さん</span>
-        <span class="sep">｜</span>
         <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
-          <button type="submit" class="logout-btn">ログアウト</button>
+          <button type="submit" class="logout-btn-tab">ログアウト</button>
         </form>
       </div>
     </div>
