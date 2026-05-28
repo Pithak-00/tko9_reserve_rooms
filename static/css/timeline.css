@@ -601,15 +601,14 @@
   background: #eef4ff;
 }
 
-/* 終日列の古いスタイルを上書き（終日列バッジ） */
+/* 終日列のイベントブロック：通常の予約ブロックと同じ高さ・スタイルにする */
 .tl-allday-col-cell .tl-event {
   position: static !important;
   width: 100% !important;
-  height: 20px !important;
-  font-size: 0.65rem !important;
-  border-radius: 3px !important;
-  margin-bottom: 2px;
-  padding: 0 4px;
+  height: 38px !important;   /* 通常ブロックと同じ高さ */
+  font-size: 0.75rem !important;
+  border-radius: 5px !important;
+  padding: 0 8px;
   cursor: pointer;
 }
 
