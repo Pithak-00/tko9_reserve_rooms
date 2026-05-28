@@ -447,6 +447,7 @@ class ReservationCreateView(CreateView):
                 _generate_recurrence_instances(reservation)
 
         self.object = reservation
+        color_str = reservation.color or '#3182CE'
         _log_operation(
             self.request,
             OperationLog.ACTION_CREATE,
@@ -455,7 +456,8 @@ class ReservationCreateView(CreateView):
                 f"{reservation.room.name} / "
                 f"{reservation.title} / "
                 f"{localtime(reservation.start_at).strftime('%Y-%m-%d %H:%M')}"
-                f"〜{localtime(reservation.end_at).strftime('%H:%M')}"
+                f"〜{localtime(reservation.end_at).strftime('%H:%M')} / "
+                f"色: {color_str}"
             ),
         )
         GoogleSyncService(self.request.user).create_event(reservation)
@@ -528,6 +530,10 @@ class ReservationUpdateView(LoginRequiredMixin, UpdateView):
             diff_parts.append("参加者を変更")
         if old.notes != reservation.notes:
             diff_parts.append("備考を変更")
+        old_color = old.color or '#3182CE'
+        new_color = reservation.color or '#3182CE'
+        if old_color.lower() != new_color.lower():
+            diff_parts.append(f"色: 「{old_color}」→「{new_color}」")
         detail = " / ".join(diff_parts) if diff_parts else "変更なし"
         _log_operation(self.request, OperationLog.ACTION_UPDATE, self.object, detail=detail)
         try:

@@ -117,7 +117,7 @@
                   <td style="white-space:nowrap;">
                     {{ log.start_at|date:"Y/m/d" }}&nbsp;{{ log.start_at|time:"H:i" }}〜{{ log.end_at|time:"H:i" }}
                   </td>
-                  <td>{{ log.detail|default:'―' }}</td>
+                  <td class="detail-cell">{{ log.detail|default:'―' }}</td>
                   <td style="white-space:nowrap;">{{ log.ip_address|default:'―' }}</td>
                 </tr>
               {% empty %}
@@ -145,5 +145,14 @@
     </div>
 
     <script src="{% static 'js/common.js' %}"></script>
+    <script>
+      /* 変更内容列の #RRGGBB をカラースウォッチ付きに置換 */
+      document.querySelectorAll('.detail-cell').forEach(function(cell) {
+        cell.innerHTML = cell.textContent.replace(
+          /(#[0-9A-Fa-f]{6})/g,
+          '<span style="display:inline-block;width:13px;height:13px;background:$1;border:1px solid rgba(0,0,0,0.25);border-radius:3px;vertical-align:middle;margin-right:3px;"></span>$1'
+        );
+      });
+    </script>
   </body>
 </html>

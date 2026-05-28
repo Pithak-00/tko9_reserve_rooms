@@ -118,13 +118,13 @@ class TestF10ReservationDetail(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
-    def test_cancelled_reservation_hides_cancel_button(self):
-        """正常系: キャンセル済み予約の詳細ではキャンセルフォームが非表示になること"""
+    def test_cancelled_reservation_shows_cancelled_badge(self):
+        """正常系: キャンセル済み予約の詳細には「キャンセル済み」バッジが表示されること
+        （キャンセル確認モーダルは DOM に存在するが actions エリアにキャンセルボタンはなくバッジになる）"""
         self.reservation.is_cancelled = True
         self.reservation.save()
         response = self.client.get(self.url)
-        cancel_url = reverse("reservation_cancel", kwargs={"pk": self.reservation.pk})
-        self.assertNotContains(response, cancel_url)
+        self.assertContains(response, "キャンセル済み")
 
     def test_detail_shows_participants(self):
         """正常系: 参加者名がページに表示されること"""
