@@ -175,4 +175,4 @@ GOOGLE_CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 # load_dotenv()
 CSRF_TRUSTED_ORIGINS = [
     'https://tko9.bold-rooms-reserve.com',  # 新しいHTTPSのURLをスキーム付きで許可
-]                                                                                                                                                            [
+]
