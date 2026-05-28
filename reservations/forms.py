@@ -5,10 +5,16 @@ from .models import Room, Reservation
 from datetime import datetime, timedelta, time as dt_time
 
 
-def time_choices():
+BOOKING_HOUR_START = 8   # 予約可能開始時刻（時）
+BOOKING_HOUR_END   = 22  # 予約可能終了時刻（時）
+
+
+def time_choices(start_hour: int = BOOKING_HOUR_START,
+                 end_hour: int   = BOOKING_HOUR_END) -> list:
+    """start_hour:00 〜 end_hour:00 を 15 分刻みで返す"""
     choices = []
-    current = datetime.strptime("00:00", "%H:%M")
-    end = datetime.strptime("23:45", "%H:%M")
+    current = datetime(2000, 1, 1, start_hour, 0)
+    end     = datetime(2000, 1, 1, end_hour, 0)
 
     while current <= end:
         value = current.strftime("%H:%M")
@@ -213,6 +219,16 @@ class ReservationForm(forms.ModelForm):
 
             if start >= end:
                 raise ValidationError("終了時刻は開始時刻より後にしてください")
+
+            # 予約可能時間帯チェック（8:00〜22:00）
+            if start.time() < dt_time(BOOKING_HOUR_START, 0):
+                raise ValidationError(
+                    f"開始時刻は {BOOKING_HOUR_START}:00 以降にしてください"
+                )
+            if end.time() > dt_time(BOOKING_HOUR_END, 0):
+                raise ValidationError(
+                    f"終了時刻は {BOOKING_HOUR_END}:00 以前にしてください"
+                )
 
         cleaned_data["start_at"] = start
         cleaned_data["end_at"] = end
