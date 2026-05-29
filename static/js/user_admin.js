@@ -9,7 +9,8 @@
 const _userUrlEl = document.getElementById("js-user-urls");
 const USER_URL = {
   create: _userUrlEl.dataset.createUrl,
-  editTemplate: _userUrlEl.dataset.editUrlTemplate, // 例: /admin-panel/users/0/edit/
+  editTemplate: _userUrlEl.dataset.editUrlTemplate,       // 例: /admin-panel/users/0/edit/
+  pwResetTemplate: _userUrlEl.dataset.pwResetUrlTemplate, // 例: /admin-panel/users/0/reset-password/
 };
 
 /* =====================================================
@@ -90,3 +91,71 @@ function closeUserModalOnOverlay(event) {
     closeUserModal();
   }
 }
+
+/* =====================================================
+   パスワードリセットモーダル
+   ===================================================== */
+
+/**
+ * パスワードリセットモーダルを開く
+ * @param {number} userId  対象ユーザーの pk
+ * @param {string} userName 対象ユーザーの氏名
+ */
+function openPasswordResetModal(userId, userName) {
+  const modal = document.getElementById("passwordResetModal");
+  const form  = document.getElementById("passwordResetForm");
+
+  // フォームの action を対象ユーザーの URL に設定
+  form.action = USER_URL.pwResetTemplate.replace("/0/", "/" + userId + "/");
+
+  // 対象ユーザー名を表示
+  document.getElementById("passwordResetTarget").textContent =
+    "対象ユーザー：" + userName;
+
+  // フィールドとエラーをリセット
+  document.getElementById("id_new_password").value = "";
+  document.getElementById("id_confirm_password").value = "";
+  ["err_new_password", "err_confirm_password", "passwordResetErrors"].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ""; el.style.display = "none"; }
+  });
+
+  modal.classList.add("open");
+}
+
+/** パスワードリセットモーダルを閉じる */
+function closePasswordResetModal() {
+  document.getElementById("passwordResetModal").classList.remove("open");
+}
+
+/** オーバーレイクリックで閉じる */
+function closePasswordResetModalOnOverlay(event) {
+  if (event.target === document.getElementById("passwordResetModal")) {
+    closePasswordResetModal();
+  }
+}
+
+/** クライアントサイドバリデーション（送信前チェック） */
+document.getElementById("passwordResetForm").addEventListener("submit", function (e) {
+  const pw      = document.getElementById("id_new_password").value;
+  const confirm = document.getElementById("id_confirm_password").value;
+  let hasError  = false;
+
+  const errPw  = document.getElementById("err_new_password");
+  const errCon = document.getElementById("err_confirm_password");
+  errPw.textContent  = ""; errPw.style.display  = "none";
+  errCon.textContent = ""; errCon.style.display = "none";
+
+  if (pw.length < 8) {
+    errPw.textContent = "パスワードは8文字以上で入力してください。";
+    errPw.style.display = "block";
+    hasError = true;
+  }
+  if (pw !== confirm) {
+    errCon.textContent = "パスワードが一致しません。";
+    errCon.style.display = "block";
+    hasError = true;
+  }
+
+  if (hasError) e.preventDefault();
+});

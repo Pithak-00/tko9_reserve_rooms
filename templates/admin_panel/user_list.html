@@ -136,6 +136,13 @@
                             data-role="{{ user.role }}"
                             data-department-id="{{ user.department_id|default:'' }}">編集</button>
                     {# F-16: 有効化 / 無効化 #}
+                    {# パスワードリセットボタン #}
+                    <button type="button"
+                            class="btn btn-warning btn-sm"
+                            onclick="openPasswordResetModal({{ user.pk }}, '{{ user.name|escapejs }}')"
+                            title="パスワードをリセット">
+                      PW リセット
+                    </button>
                     {% if user.pk == request.user.pk %}
                       <button type="button"
                               class="btn btn-light btn-sm"
@@ -297,10 +304,62 @@
         </form>
       </div>
     </div>
+    <!-- ==========================================================
+     パスワードリセットモーダル
+     ========================================================== -->
+    <div class="modal-overlay"
+         id="passwordResetModal"
+         onclick="closePasswordResetModalOnOverlay(event)">
+      <div class="modal-box modal-box--form">
+        <h5>パスワードをリセット</h5>
+        <p id="passwordResetTarget" style="margin:0 0 16px;color:#4A5568;font-size:14px;"></p>
+        <form id="passwordResetForm" method="post" action="" novalidate>
+          {% csrf_token %}
+          <div id="passwordResetErrors" style="display:none;"
+               class="alert-danger" style="margin-bottom:12px;"></div>
+          <table class="form-table">
+            <tr>
+              <th>新しいパスワード <span class="required">*</span></th>
+              <td>
+                <input type="password"
+                       id="id_new_password"
+                       name="new_password"
+                       placeholder="8文字以上"
+                       autocomplete="new-password"
+                       class="form-control"
+                       style="width:100%;">
+                <div id="err_new_password" class="error-text" style="display:none;"></div>
+              </td>
+            </tr>
+            <tr>
+              <th>確認 <span class="required">*</span></th>
+              <td>
+                <input type="password"
+                       id="id_confirm_password"
+                       name="confirm_password"
+                       placeholder="上記と同じパスワード"
+                       autocomplete="new-password"
+                       class="form-control"
+                       style="width:100%;">
+                <div id="err_confirm_password" class="error-text" style="display:none;"></div>
+              </td>
+            </tr>
+          </table>
+          <div class="modal-footer" style="margin-top:20px;">
+            <button type="button"
+                    class="btn btn-light btn-md"
+                    onclick="closePasswordResetModal()">キャンセル</button>
+            <button type="submit" class="btn btn-warning btn-md">リセットする</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- JS に渡す URL 定数 -->
     <div id="js-user-urls"
          data-create-url="{% url 'user_create' %}"
          data-edit-url-template="{% url 'user_edit' pk=0 %}"
+         data-pw-reset-url-template="{% url 'user_password_reset' pk=0 %}"
          style="display:none"></div>
     <script src="{% static 'js/user_admin.js' %}"></script>
     <script src="{% static 'js/common.js' %}"></script>

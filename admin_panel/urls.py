@@ -9,6 +9,7 @@ from .views import (
     UserCreateView,
     UserUpdateView,
     UserToggleActiveView,
+    UserPasswordResetView,
     CSVImportView,
     CSVImportExecuteView,
     AllReservationListView,
@@ -38,6 +39,12 @@ urlpatterns = [
         "users/<int:pk>/toggle-active/",
         UserToggleActiveView.as_view(),
         name="user_toggle_active",
+    ),
+    # F-15拡張: パスワードリセット
+    path(
+        "users/<int:pk>/reset-password/",
+        UserPasswordResetView.as_view(),
+        name="user_password_reset",
     ),
     # F-17: CSVインポート
     path("users/csv-import/", CSVImportView.as_view(), name="csv_import"),

@@ -18,7 +18,7 @@ from datetime import date
 from reservations.models import Room, Reservation, Building, Facility, OperationLog
 from reservations.forms import ReservationFilterForm
 from accounts.models import Department, User
-from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm, FacilityForm, BuildingForm, DepartmentForm
+from .forms import RoomForm, UserCreateForm, UserUpdateForm, CSVUploadForm, FacilityForm, BuildingForm, DepartmentForm, UserPasswordResetForm
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +311,37 @@ class UserToggleActiveView(StaffRequiredMixin, View):
         )
         messages.success(
             request, "ユーザー「{}」を{}しました。".format(target.name, action)
+        )
+        return redirect("user_admin_list")
+
+
+class UserPasswordResetView(StaffRequiredMixin, View):
+    """管理者によるユーザーパスワードリセット（F-15 拡張）"""
+
+    def post(self, request, pk):
+        target = get_object_or_404(User, pk=pk)
+        form = UserPasswordResetForm(request.POST)
+
+        if not form.is_valid():
+            # バリデーションエラーはフラッシュメッセージで通知してリダイレクト
+            errors = []
+            for field_errors in form.errors.values():
+                errors.extend(field_errors)
+            messages.error(request, '　'.join(errors))
+            return redirect("user_admin_list")
+
+        new_password = form.cleaned_data['new_password']
+        target.set_password(new_password)
+        target.save(update_fields=['password'])
+
+        logger.info(
+            "Password reset: target_login_id=%s by admin=%s",
+            target.login_id,
+            request.user.login_id,
+        )
+        messages.success(
+            request,
+            "ユーザー「{}」のパスワードをリセットしました。".format(target.name),
         )
         return redirect("user_admin_list")
 

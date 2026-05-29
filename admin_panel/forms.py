@@ -242,3 +242,40 @@ class DepartmentForm(forms.ModelForm):  # FacilityForm と同パターン
         if qs.exists():
             raise forms.ValidationError('この所属名称はすでに登録されています')
         return name
+
+
+class UserPasswordResetForm(forms.Form):
+    """管理者によるユーザーパスワードリセットフォーム"""
+
+    new_password = forms.CharField(
+        label='新しいパスワード',
+        min_length=8,
+        widget=forms.PasswordInput(attrs={
+            'placeholder': '8文字以上',
+            'autocomplete': 'new-password',
+            'class': 'form-control',
+        }),
+        error_messages={
+            'min_length': 'パスワードは8文字以上で入力してください。',
+            'required': '新しいパスワードを入力してください。',
+        },
+    )
+    confirm_password = forms.CharField(
+        label='新しいパスワード（確認）',
+        widget=forms.PasswordInput(attrs={
+            'placeholder': '上記と同じパスワード',
+            'autocomplete': 'new-password',
+            'class': 'form-control',
+        }),
+        error_messages={
+            'required': '確認用パスワードを入力してください。',
+        },
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        pw = cleaned.get('new_password')
+        confirm = cleaned.get('confirm_password')
+        if pw and confirm and pw != confirm:
+            raise forms.ValidationError('パスワードが一致しません。')
+        return cleaned
