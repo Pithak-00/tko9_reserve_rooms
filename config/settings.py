@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-)s=wy#0ecpfx92^f^m8d-fy+@rzh+^(o7um4t$i1!3twyo+krm"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     'tko9.bold-rooms-reserve.com',
@@ -176,3 +176,6 @@ GOOGLE_CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events']
 CSRF_TRUSTED_ORIGINS = [
     'https://tko9.bold-rooms-reserve.com',  # 新しいHTTPSのURLをスキーム付きで許可
 ]
+
+SESSION_COOKIE_SECURE = True   # セッション Cookie を HTTPS 専用に
+CSRF_COOKIE_SECURE    = True   # CSRF Cookie も同様
