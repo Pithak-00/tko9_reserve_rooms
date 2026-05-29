@@ -26,12 +26,7 @@ SECRET_KEY = "django-insecure-)s=wy#0ecpfx92^f^m8d-fy+@rzh+^(o7um4t$i1!3twyo+krm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    'tko9.bold-rooms-reserve.com',
-    '18.177.208.167',
-    'localhost',
-    '127.0.0.1',
-]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
